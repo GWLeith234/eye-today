@@ -1,0 +1,7 @@
+# Builder is left at Railway's default (Railpack). Node version comes from
+# package.json "engines" / .nvmrc.
+[deploy]
+startCommand = "npm run start"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
