@@ -32,25 +32,27 @@ export function MediaUploader() {
 
     setBusy(true);
     setMessage(null);
-    const path = `${crypto.randomUUID()}.${ext}`;
-    // Straight to Storage with the signed-in session; the file never passes through a server action.
-    const { error } = await createClient().storage.from("media").upload(path, file, { contentType: file.type });
-    if (error) {
-      setBusy(false);
-      return setMessage({ kind: "error", text: "Upload failed. Please try again." });
-    }
+    try {
+      const path = `${crypto.randomUUID()}.${ext}`;
+      // Straight to Storage with the signed-in session; the file never passes through a server action.
+      const { error } = await createClient().storage.from("media").upload(path, file, { contentType: file.type });
+      if (error) return setMessage({ kind: "error", text: "Upload failed. Please try again." });
 
-    const result = await registerMedia({
-      path,
-      alt: data.get("alt"),
-      credit: data.get("credit"),
-      caption: data.get("caption"),
-    });
-    setBusy(false);
-    if (!result.ok) return setMessage({ kind: "error", text: result.error });
-    form.reset();
-    setMessage({ kind: "ok", text: "Image added." });
-    router.refresh();
+      const result = await registerMedia({
+        path,
+        alt: data.get("alt"),
+        credit: data.get("credit"),
+        caption: data.get("caption"),
+      });
+      if (!result.ok) return setMessage({ kind: "error", text: result.error });
+      form.reset();
+      setMessage({ kind: "ok", text: "Image added." });
+      router.refresh();
+    } catch {
+      setMessage({ kind: "error", text: "Upload failed (network or server error). Please try again." });
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (

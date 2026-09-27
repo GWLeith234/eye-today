@@ -29,6 +29,7 @@ export type EditorArticle = {
   scheduled_for: string | null;
   published_at: string | null;
   body_json: unknown;
+  body_html?: string | null;
 };
 
 type Option = { id: string; name: string };
@@ -36,6 +37,20 @@ type MediaOption = { id: string; storage_path: string; alt: string | null };
 type RevisionRow = { id: string; created_at: string; title: string | null };
 
 const EMPTY_DOC = { type: "doc", content: [{ type: "paragraph" }] };
+
+// What the editor opens with: the stored JSON, else the stored (sanitized) HTML, else empty.
+function initialContent(article: EditorArticle): { content: object | string; fromHtml: boolean } {
+  if (article.body_json && typeof article.body_json === "object") return { content: article.body_json, fromHtml: false };
+  if (article.body_html?.trim()) return { content: article.body_html, fromHtml: true };
+  return { content: EMPTY_DOC, fromHtml: false };
+}
+
+function hasBodyContent(html: string | null | undefined) {
+  if (!html) return false;
+  return html.replace(/<[^>]*>/g, "").trim().length > 0 || /<(img|iframe|figure|hr)\b/i.test(html);
+}
+
+const UNEXPECTED = "Something went wrong talking to the server. Your changes are still here; try again.";
 
 function toLocalInput(iso: string | null) {
   if (!iso) return "";
@@ -68,11 +83,17 @@ export function ArticleEditor({
   const [scheduleAt, setScheduleAt] = useState(toLocalInput(article.scheduled_for));
   const [result, setResult] = useState<SaveResult | null>(null);
   const [showRevisions, setShowRevisions] = useState(false);
+  const [initial] = useState(() => initialContent(article));
+  const [contentError, setContentError] = useState(false);
+  // True when this article already has body text, so an empty editor must never overwrite it.
+  const hadBody = hasBodyContent(article.body_html);
 
   const editor = useEditor({
     extensions: editorExtensions,
-    content: (article.body_json as object) ?? EMPTY_DOC,
+    content: initial.content,
     immediatelyRender: false,
+    enableContentCheck: true,
+    onContentError: () => setContentError(true),
     editorProps: { attributes: { class: "article-body min-h-[20rem] rounded border p-4 focus:outline-none", "aria-label": "Article body" } },
   });
 
@@ -87,11 +108,18 @@ export function ArticleEditor({
     });
   }
 
+  const ready = Boolean(editor) && !contentError;
+
   function submit(intent: SaveIntent) {
-    if (!editor) return;
+    if (!editor || contentError) return;
+    if (hadBody && editor.isEmpty && !window.confirm("The body is empty. Saving will erase this article's existing text. Continue?")) {
+      return;
+    }
     setResult(null);
     startTransition(async () => {
-      const outcome = await saveArticle({
+      let outcome: SaveResult;
+      try {
+        outcome = await saveArticle({
         id: form.id,
         intent,
         title: form.title,
@@ -109,7 +137,10 @@ export function ArticleEditor({
         // ProseMirror attrs are null-prototype objects, which server actions
         // cannot read; send a plain JSON copy.
         body_json: JSON.parse(JSON.stringify(editor.getJSON())),
-      });
+        });
+      } catch {
+        outcome = { ok: false, error: UNEXPECTED };
+      }
       setResult(outcome);
       if (outcome.ok) {
         setForm((current) => ({ ...current, id: outcome.id, status: outcome.status }));
@@ -123,9 +154,13 @@ export function ArticleEditor({
   function restore(revisionId: string) {
     if (!form.id || !window.confirm("Restore this revision? The current version stays in the history.")) return;
     startTransition(async () => {
-      const outcome = await restoreRevision({ articleId: form.id, revisionId });
-      setResult(outcome);
-      if (outcome.ok) window.location.reload();
+      try {
+        const outcome = await restoreRevision({ articleId: form.id, revisionId });
+        setResult(outcome);
+        if (outcome.ok) window.location.reload();
+      } catch {
+        setResult({ ok: false, error: UNEXPECTED });
+      }
     });
   }
 
@@ -215,25 +250,37 @@ export function ArticleEditor({
           <button type="button" className={tool} onClick={() => editor?.chain().focus().redo().run()}>Redo</button>
         </div>
 
+        {!editor ? <p className="text-sm opacity-70">Loading editor…</p> : null}
+        {contentError ? (
+          <p role="alert" className="rounded border border-red-600 p-2 text-sm">
+            This article&apos;s stored body could not be loaded into the editor, so saving is disabled to protect it.
+            Restore a revision or contact an admin.
+          </p>
+        ) : null}
+        {initial.fromHtml && !contentError ? (
+          <p role="status" className="rounded border border-yellow-600 p-2 text-sm">
+            This body was loaded from its stored HTML. Check it before saving; anything the editor can&apos;t represent is dropped.
+          </p>
+        ) : null}
         <EditorContent editor={editor} />
         {fieldError("body")}
 
         <div className="flex flex-wrap items-end gap-2">
-          <button type="button" disabled={pending} onClick={() => submit("save")} className="rounded bg-foreground px-4 py-2 text-background disabled:opacity-50">
+          <button type="button" disabled={pending || !ready} onClick={() => submit("save")} className="rounded bg-foreground px-4 py-2 text-background disabled:opacity-50">
             {form.id ? "Save" : "Save draft"}
           </button>
-          <button type="button" disabled={pending} onClick={() => submit("publish")} className="rounded border px-4 py-2 disabled:opacity-50">
+          <button type="button" disabled={pending || !ready} onClick={() => submit("publish")} className="rounded border px-4 py-2 disabled:opacity-50">
             Publish now
           </button>
           <label className="flex flex-col gap-1 text-sm">
             Schedule for
             <input type="datetime-local" name="scheduled_for" value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)} className="rounded border px-2 py-1" />
           </label>
-          <button type="button" disabled={pending || !scheduleAt} onClick={() => submit("schedule")} className="rounded border px-4 py-2 disabled:opacity-50">
+          <button type="button" disabled={pending || !ready || !scheduleAt} onClick={() => submit("schedule")} className="rounded border px-4 py-2 disabled:opacity-50">
             Schedule
           </button>
           {form.status === "published" || form.status === "scheduled" ? (
-            <button type="button" disabled={pending} onClick={() => submit("unpublish")} className="rounded border px-4 py-2 disabled:opacity-50">
+            <button type="button" disabled={pending || !ready} onClick={() => submit("unpublish")} className="rounded border px-4 py-2 disabled:opacity-50">
               Unpublish
             </button>
           ) : null}
@@ -347,7 +394,7 @@ export function ArticleEditor({
                     <span>
                       {new Date(r.created_at).toLocaleString()} — {r.title ?? "Untitled"}
                     </span>
-                    <button type="button" disabled={pending} onClick={() => restore(r.id)} className="rounded border px-2 py-0.5 disabled:opacity-50">
+                    <button type="button" disabled={pending || !ready} onClick={() => restore(r.id)} className="rounded border px-2 py-0.5 disabled:opacity-50">
                       Restore
                     </button>
                   </li>

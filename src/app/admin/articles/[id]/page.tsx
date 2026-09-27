@@ -21,6 +21,7 @@ type ArticleRow = {
   scheduled_for: string | null;
   published_at: string | null;
   body_json: unknown;
+  body_html: string | null;
   article_tags: { tag_id: string }[];
   article_authors: { profile_id: string; sort: number }[];
 };
@@ -34,7 +35,7 @@ export default async function EditArticlePage({ params }: PageProps<"/admin/arti
     supabase
       .from("articles")
       .select(
-        "id, title, dek, slug, section_id, hero_media_id, is_sponsored, sponsor_name, seo_title, seo_description, status, scheduled_for, published_at, body_json, article_tags(tag_id), article_authors(profile_id, sort)",
+        "id, title, dek, slug, section_id, hero_media_id, is_sponsored, sponsor_name, seo_title, seo_description, status, scheduled_for, published_at, body_json, body_html, article_tags(tag_id), article_authors(profile_id, sort)",
       )
       .eq("id", id)
       .maybeSingle<ArticleRow>(),
@@ -69,6 +70,8 @@ export default async function EditArticlePage({ params }: PageProps<"/admin/arti
         scheduled_for: article.scheduled_for,
         published_at: article.published_at,
         body_json: article.body_json,
+        // Rows written without body_json (imports, direct API edits) open from their stored HTML.
+        body_html: article.body_html,
       }}
       {...lists}
       revisions={(revisions ?? []) as { id: string; created_at: string; title: string | null }[]}

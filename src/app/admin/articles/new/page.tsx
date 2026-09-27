@@ -25,6 +25,7 @@ export default async function NewArticlePage() {
         scheduled_for: null,
         published_at: null,
         body_json: null,
+        body_html: null,
       }}
       {...lists}
       revisions={[]}
