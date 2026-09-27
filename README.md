@@ -26,9 +26,37 @@ Locally, sign-in emails land in the mail catcher that `npx supabase start` print
 
 ```bash
 npm run lint
+npm test            # node:test — HTML sanitizer
 npm run typecheck   # next typegen && tsc --noEmit
 npm run build
 ```
+
+## Newsroom CMS
+
+Editors and admins work in `/admin`: articles (TipTap editor with images, pull quotes, YouTube and
+X/Instagram embeds), media, sections and tags. On save the server rebuilds HTML from the editor JSON
+with the same extensions and sanitizes it (`src/lib/editor/`); the browser's HTML is never stored.
+Every save and every restore adds a row to `article_revisions`.
+
+- **Publish** sets `published_at = now()`. **Schedule** sets `scheduled_for`; the article is public
+  from that moment (RLS), and the cron later flips its status to `published`.
+- **Preview** (`/preview/<id>?token=…`) needs a signed-in editor and an hour-long HMAC token.
+- **Media** uploads go straight from the browser to the `media` bucket; the server then checks the
+  file's real bytes (JPEG/PNG/WebP/GIF only) and records width, height, alt, credit and caption.
+- Public articles live at `/articles/<slug>`.
+
+### Scheduled publishing cron (Railway)
+
+The web service stays a long-running server; do **not** add a cron schedule to it. Create a second
+Railway service in the same project for the cron:
+
+1. New service → Empty service (or any small image with `curl`, e.g. `curlimages/curl`).
+2. Settings → Cron Schedule: `*/5 * * * *` (no more often than every 5 minutes).
+3. Start command:
+   `curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://eye-today-web-production.up.railway.app/api/cron/publish`
+4. Variables: `CRON_SECRET` — the same value as on the web service.
+
+`POST /api/cron/publish` returns `{"published": n}`, or `401` without the right bearer token.
 
 ## Auth and roles
 
@@ -58,15 +86,16 @@ In Supabase → Authentication:
 
 ## Database
 
-RLS checks for migration 0002:
+RLS checks (local stack; each file runs in one transaction and rolls back):
 
 ```bash
 npx supabase db reset
 psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f supabase/tests/0002_rls.sql
+psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f supabase/tests/0003_cms.sql
 ```
 
 All schema changes go in new files under `supabase/migrations/`. Every table has RLS
 enabled and forced, and new objects get no `anon`/`authenticated` privileges by default.
 Visitors can read only `sections` and published articles. Signed-in users act through their own
 session (RLS applies). The service role (`src/lib/supabase/admin.ts`, server-only) is used only to
-send invites.
+send invites and by the scheduled-publish cron route.
