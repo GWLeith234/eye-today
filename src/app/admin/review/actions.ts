@@ -60,16 +60,23 @@ export async function requestChanges(formData: FormData) {
   }
   const { id, note } = parsed.data;
 
-  const { data: article } = await ctx.supabase.from("articles").select("site_id").eq("id", id).maybeSingle<{ site_id: string }>();
+  const { data: article } = await ctx.supabase
+    .from("articles")
+    .select("site_id, status")
+    .eq("id", id)
+    .maybeSingle<{ site_id: string; status: string }>();
   if (!article) redirect("/admin/review");
+  if (!REVIEWABLE.includes(article.status)) back(id, { error: "moved" });
 
-  const moved = await transition(ctx, id, REVIEWABLE, { status: "draft" });
-  if (!moved) back(id, { error: "moved" });
-
+  // Note first: if it fails the story stays in review and the editor can retry.
+  // Unlocking first would hand the story back with no explanation.
   const { error: noteError } = await ctx.supabase
     .from("editorial_notes")
     .insert({ site_id: article.site_id, article_id: id, author_id: ctx.userId, body: note, resolved: false });
   if (noteError) back(id, { error: "note_failed" });
+
+  const moved = await transition(ctx, id, REVIEWABLE, { status: "draft" });
+  if (!moved) back(id, { error: "moved" });
 
   const mail = await sendMail({
     to: await authorEmails(ctx, id),

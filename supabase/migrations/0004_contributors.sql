@@ -23,6 +23,27 @@ update public.articles a
  where first_author.article_id = a.id
    and a.created_by is null;
 
+-- created_by is set once. Update policies only see the new row, so without this
+-- a co-author could set created_by to themselves and take over the draft.
+-- Clearing it (the profile FK's on delete set null) is still allowed.
+create function public.articles_lock_created_by()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.created_by is distinct from old.created_by and new.created_by is not null then
+    raise exception 'created_by cannot be changed' using errcode = '42501';
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public.articles_lock_created_by() from public, anon, authenticated;
+
+create trigger articles_lock_created_by
+  before update of created_by on public.articles
+  for each row execute function public.articles_lock_created_by();
+
 -- ---------------------------------------------------------------------------
 -- profiles.email, kept in sync from auth.users. Not user-editable: the 0002
 -- column UPDATE grant (display_name, bio, avatar_url) is unchanged.
@@ -138,7 +159,16 @@ stable
 security definer
 set search_path = ''
 as $$
-  select a.status from public.articles a where a.id = article_status.article;
+  -- Only for people who may already see the story: editors, admins, its creator
+  -- or an author. Everyone else gets null, so a draft's status does not leak.
+  select a.status
+    from public.articles a
+   where a.id = article_status.article
+     and (
+       public.current_app_role() in ('editor', 'admin')
+       or a.created_by = auth.uid()
+       or public.is_article_author(a.id)
+     );
 $$;
 
 revoke all on function public.is_article_creator(uuid) from public, anon;

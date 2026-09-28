@@ -18,11 +18,14 @@ export async function sendMail({ to, subject, text }: { to: string[]; subject: s
   const recipients = [...new Set(to.map((address) => address.trim().toLowerCase()).filter(Boolean))];
   if (recipients.length === 0) return { ok: false, warning: "Saved, but there was nobody to email." };
 
+  // Titles are user-written; keep them from adding header lines.
+  const cleanSubject = subject.replace(/[\r\n]+/g, " ").trim().slice(0, 200);
+
   const resend = new Resend(key);
   let failures = 0;
   for (const recipient of recipients) {
     try {
-      const { error } = await resend.emails.send({ from, to: recipient, subject, text });
+      const { error } = await resend.emails.send({ from, to: recipient, subject: cleanSubject, text });
       if (error) {
         failures++;
         console.error("email failed", { name: error.name, message: error.message });

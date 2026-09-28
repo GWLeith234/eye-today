@@ -331,5 +331,70 @@ $$;
 reset role;
 \echo 'ok  editorial notes'
 
+-- article_status() only answers people who can already see the story ----------
+
+reset role;
+update public.articles set status = 'draft' where id = 'b5000000-0000-4000-8000-00000000000b';
+
+set local request.jwt.claims = '{"sub": "f4000000-0000-4000-8000-00000000000f", "role": "authenticated"}';
+set local role authenticated;
+do $$
+begin
+  assert public.article_status('b5000000-0000-4000-8000-00000000000b'::uuid) is null,
+    'readers cannot read a draft''s status';
+end;
+$$;
+reset role;
+
+set local request.jwt.claims = '{"sub": "a4000000-0000-4000-8000-00000000000a", "role": "authenticated"}';
+set local role authenticated;
+do $$
+begin
+  assert public.article_status('b5000000-0000-4000-8000-00000000000b'::uuid) is null,
+    'other contributors cannot read a draft''s status';
+end;
+$$;
+reset role;
+
+set local request.jwt.claims = '{"sub": "e4000000-0000-4000-8000-00000000000e", "role": "authenticated"}';
+set local role authenticated;
+do $$
+begin
+  assert public.article_status('b5000000-0000-4000-8000-00000000000b'::uuid) = 'draft', 'editors read any status';
+end;
+$$;
+reset role;
+\echo 'ok  article_status visibility'
+
+-- A co-author cannot take over created_by ----------------------------------------
+
+insert into public.article_authors (article_id, profile_id, site_id)
+values ('b5000000-0000-4000-8000-00000000000b', 'a4000000-0000-4000-8000-00000000000a', '00000000-0000-4000-8000-000000000001')
+on conflict do nothing;
+
+set local request.jwt.claims = '{"sub": "a4000000-0000-4000-8000-00000000000a", "role": "authenticated"}';
+set local role authenticated;
+do $$
+declare
+  failed boolean := false;
+begin
+  assert public.article_status('b5000000-0000-4000-8000-00000000000b'::uuid) = 'draft', 'co-authors read the status';
+  begin
+    update public.articles set created_by = 'a4000000-0000-4000-8000-00000000000a'
+     where id = 'b5000000-0000-4000-8000-00000000000b';
+  exception when insufficient_privilege then failed := true;
+  end;
+  assert failed, 'co-author cannot rewrite created_by';
+end;
+$$;
+reset role;
+do $$
+begin
+  assert (select created_by from public.articles where id = 'b5000000-0000-4000-8000-00000000000b')
+    = 'b4000000-0000-4000-8000-00000000000b', 'created_by unchanged';
+end;
+$$;
+\echo 'ok  created_by locked'
+
 rollback;
 \echo 'ALL 0004 CONTRIBUTOR TESTS PASSED'
