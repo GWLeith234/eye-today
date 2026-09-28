@@ -7,6 +7,9 @@ import { isReservedSectionSlug } from "@/lib/public/reserved";
 
 export const revalidate = 60;
 
+// The in-river ad sits after this many stories in The Latest.
+const IN_RIVER_AFTER = 5;
+
 function Rail({ title, href, cards }: { title: string; href: string; cards: ArticleCard[] }) {
   if (!cards.length) return null;
   return (
@@ -65,9 +68,11 @@ export default async function HomePage() {
             {latest.map((card, index) => (
               <div key={card.article_slug} className="flex flex-col gap-4">
                 <StoryCard card={card} variant="compact" />
-                {index === 4 ? <AdSlot name="in-river" /> : null}
+                {index === IN_RIVER_AFTER - 1 ? <AdSlot name="in-river" /> : null}
               </div>
             ))}
+            {/* Fewer stories than the ad's position: show it at the end of the list instead. */}
+            {latest.length < IN_RIVER_AFTER ? <AdSlot name="in-river" /> : null}
           </div>
         </section>
 
