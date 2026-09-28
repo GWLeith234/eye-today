@@ -5,6 +5,7 @@ import { ListPage } from "@/components/public/list-page";
 import { getSection, getSectionArticles, getSectionCount } from "@/lib/public/data";
 import { parsePage } from "@/lib/public/paging";
 import { isReservedSectionSlug } from "@/lib/public/reserved";
+import { SITE_NAME } from "@/lib/public/site";
 
 export const revalidate = 60;
 
@@ -15,7 +16,15 @@ async function load(slug: string) {
 
 export async function generateMetadata({ params }: PageProps<"/[section]">): Promise<Metadata> {
   const section = await load((await params).section);
-  return section ? { title: section.name, alternates: { canonical: `/${section.slug}` } } : {};
+  if (!section) return {};
+  const canonical = `/${section.slug}`;
+  const description = `${section.name} stories from ${SITE_NAME}.`;
+  return {
+    title: section.name,
+    description,
+    alternates: { canonical, types: { "application/rss+xml": `${canonical}/rss.xml` } },
+    openGraph: { type: "website", siteName: SITE_NAME, title: section.name, description, url: canonical },
+  };
 }
 
 export default async function SectionPage({ params, searchParams }: PageProps<"/[section]">) {
