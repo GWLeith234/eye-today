@@ -76,6 +76,29 @@ Dashboard steps for these (hosted): add a Turnstile widget in Cloudflare and set
 `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` on Railway; verify a sending domain in
 Resend and set `RESEND_API_KEY` + `RESEND_FROM`.
 
+## Public site
+
+- **/** — lead story + four secondary (curated at **/admin/homepage**, empty slots fill with the
+  newest live stories), The Latest, Most Read, Opinion and a rail per section. Ad slots are
+  placeholders labelled "Advertisement".
+- **/{section}/{slug}** — the canonical article URL: bylines linking to **/author/{slug}**, published
+  and updated times, hero with credit, share links (no SDKs), disclosures, the medical disclaimer,
+  related stories. Old **/articles/{slug}** links redirect here. "Sponsored" stories name the sponsor.
+- **/{section}**, **/tag/{slug}**, **/author/{slug}** — 20 per page, `?page=1..100`.
+- **/search?q=** — Postgres full-text search over live articles.
+- Static pages: /about, /contact, /advertise, /editorial-policy, /corrections, /privacy, /terms,
+  /newsletter and /support (signup and payments are not open yet).
+- Section slugs that match an app path (see `src/lib/public/reserved.ts`) are refused.
+- Views: the article page POSTs once to **/api/view**, which stores only
+  `sha256(VIEW_HASH_SALT:ip)` and counts one view per visitor per article per day. Always 204.
+- Caching: the homepage and article pages revalidate every 60 seconds; publishing, scheduling,
+  unpublishing, the review actions and the cron job also clear them straight away. The header
+  decides "Sign in" / "Account" in the browser so public pages carry no cookies.
+- Public reads go through `SECURITY DEFINER` functions in `0005_frontend.sql` that return live
+  articles only, with no emails or roles; anon still cannot read `profiles`.
+
+Hosted: set `VIEW_HASH_SALT` (and `SITE_URL` for absolute canonical/share URLs) on Railway.
+
 ## Auth and roles
 
 Roles rank `reader = supporter < contributor < editor < admin`. `src/proxy.ts` and the server
@@ -112,6 +135,7 @@ npx supabase db reset
 psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f supabase/tests/0002_rls.sql
 psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f supabase/tests/0003_cms.sql
 psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f supabase/tests/0004_contributors.sql
+psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f supabase/tests/0005_frontend.sql
 ```
 
 All schema changes go in new files under `supabase/migrations/`. Every table has RLS

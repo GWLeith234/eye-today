@@ -1,11 +1,11 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { type EditorContext, getEditorContext } from "@/lib/auth/editor";
 import { sendMail } from "@/lib/email/resend";
+import { revalidatePublic } from "@/lib/public/revalidate";
 
 const REVIEWABLE = ["submitted", "in_review"];
 
@@ -22,9 +22,9 @@ async function requireEditor() {
 
 // Moves the story only if it is still in one of `from`; returns its title, or null.
 async function transition(ctx: EditorContext, id: string, from: string[], patch: Record<string, unknown>) {
-  const { data, error } = await ctx.supabase.from("articles").update(patch).eq("id", id).in("status", from).select("title, slug");
+  const { data, error } = await ctx.supabase.from("articles").update(patch).eq("id", id).in("status", from).select("title, slug, sections(slug)");
   if (error || !data?.length) return null;
-  return data[0] as { title: string; slug: string };
+  return data[0] as unknown as { title: string; slug: string; sections: { slug: string } | null };
 }
 
 // Author emails the editor can read on profiles.
@@ -101,6 +101,7 @@ export async function approveAndSchedule(formData: FormData) {
 
   const moved = await transition(ctx, id, REVIEWABLE, { status: "scheduled", scheduled_for });
   if (!moved) back(id, { error: "moved" });
+  revalidatePublic({ section: moved.sections?.slug, slug: moved.slug });
   back(id, { done: "scheduled" });
 }
 
@@ -111,12 +112,12 @@ export async function publishNow(formData: FormData) {
 
   const moved = await transition(ctx, id.data, REVIEWABLE, { status: "published", published_at: new Date().toISOString() });
   if (!moved) back(id.data, { error: "moved" });
-  revalidatePath("/articles", "layout");
+  revalidatePublic({ section: moved.sections?.slug, slug: moved.slug });
 
   const mail = await sendMail({
     to: await authorEmails(ctx, id.data),
     subject: `Published: ${moved.title}`,
-    text: `Your story "${moved.title}" is now live on Eye Today at /articles/${moved.slug}.`,
+    text: `Your story "${moved.title}" is now live on Eye Today at /${moved.sections?.slug ?? "articles"}/${moved.slug}.`,
   });
   back(id.data, mail.ok ? { done: "published" } : { done: "published", warning: "mail" });
 }
