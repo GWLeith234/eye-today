@@ -49,12 +49,13 @@ update public.profiles set role = 'admin'
 update public.profiles set role = 'admin', site_id = '00000000-0000-4000-8000-0000000000f1'
  where id = 'c0000000-0000-4000-8000-00000000000c';
 
--- Drafts: A authors qa-draft-a, B authors qa-draft-b.
-insert into public.articles (id, site_id, section_id, slug, title, status) values
+-- Drafts: A authors and created qa-draft-a, B authors and created qa-draft-b
+-- (since 0004 a contributor edits only drafts they created).
+insert into public.articles (id, site_id, section_id, slug, title, status, created_by) values
   ('a1000000-0000-4000-8000-00000000000a', '00000000-0000-4000-8000-000000000001',
-   '00000000-0000-4000-8000-000000000101', 'qa-draft-a', 'Draft A', 'draft'),
+   '00000000-0000-4000-8000-000000000101', 'qa-draft-a', 'Draft A', 'draft', 'a0000000-0000-4000-8000-00000000000a'),
   ('b1000000-0000-4000-8000-00000000000b', '00000000-0000-4000-8000-000000000001',
-   '00000000-0000-4000-8000-000000000101', 'qa-draft-b', 'Draft B', 'draft');
+   '00000000-0000-4000-8000-000000000101', 'qa-draft-b', 'Draft B', 'draft', 'b0000000-0000-4000-8000-00000000000b');
 
 insert into public.article_authors (article_id, profile_id, site_id) values
   ('a1000000-0000-4000-8000-00000000000a', 'a0000000-0000-4000-8000-00000000000a', '00000000-0000-4000-8000-000000000001'),

@@ -26,7 +26,7 @@ Locally, sign-in emails land in the mail catcher that `npx supabase start` print
 
 ```bash
 npm run lint
-npm test            # node:test — HTML sanitizer
+npm test            # node:test — HTML sanitizer, mail fallback
 npm run typecheck   # next typegen && tsc --noEmit
 npm run build
 ```
@@ -58,6 +58,24 @@ Railway service in the same project for the cron:
 
 `POST /api/cron/publish` returns `{"published": n}`, or `401` without the right bearer token.
 
+## Contributors and editorial review
+
+- **/write-for-us** — public application form, protected by Cloudflare Turnstile (verified on the
+  server). The database allows one pending application per email and at most three per email per
+  24 hours; the form shows the same thank-you message either way.
+- **/admin/applications** — editors approve (invite + `grant_contributor`) or reject with a reason.
+- **/contribute** — contributors write drafts, keep a disclosure (required to submit), and see
+  editor notes. They can only save or submit their own drafts; the database refuses anything else.
+- **/admin/review** — the queue of submitted stories: start review, request changes (with a note),
+  approve & schedule, or publish.
+- Live articles show each author's name and disclosure (`article_bylines`), never their email.
+- Email (Resend) goes out on submit, changes requested and publish. If `RESEND_API_KEY` /
+  `RESEND_FROM` are missing or sending fails, the action still succeeds and shows a warning.
+
+Dashboard steps for these (hosted): add a Turnstile widget in Cloudflare and set
+`NEXT_PUBLIC_TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` on Railway; verify a sending domain in
+Resend and set `RESEND_API_KEY` + `RESEND_FROM`.
+
 ## Auth and roles
 
 Roles rank `reader = supporter < contributor < editor < admin`. `src/proxy.ts` and the server
@@ -76,7 +94,8 @@ In Supabase → Authentication:
    - `https://eye-today-web-production.up.railway.app/**`
    - `http://127.0.0.1:3000/auth/callback` (local dev against the hosted project)
 2. **Emails → Invite user**: replace the link with the one in `supabase/templates/invite.html`
-   (`{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=invite&next=/account`).
+   (`{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=invite&next=/contribute`).
+   `/contribute` sends each role on: contributors stay, editors get a link to /admin, readers go to /account.
    The default template uses URL fragments, which the server-side callback cannot read.
 3. **Sign In / Providers → Google** (optional): add the Google OAuth client ID and secret. In
    Google Cloud, the authorized redirect URI is `https://<project-ref>.supabase.co/auth/v1/callback`.
@@ -92,10 +111,11 @@ RLS checks (local stack; each file runs in one transaction and rolls back):
 npx supabase db reset
 psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f supabase/tests/0002_rls.sql
 psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f supabase/tests/0003_cms.sql
+psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f supabase/tests/0004_contributors.sql
 ```
 
 All schema changes go in new files under `supabase/migrations/`. Every table has RLS
 enabled and forced, and new objects get no `anon`/`authenticated` privileges by default.
 Visitors can read only `sections` and published articles. Signed-in users act through their own
 session (RLS applies). The service role (`src/lib/supabase/admin.ts`, server-only) is used only to
-send invites and by the scheduled-publish cron route.
+send invites (admin users and approved applications) and by the scheduled-publish cron route.

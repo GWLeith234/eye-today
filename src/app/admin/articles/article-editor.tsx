@@ -2,15 +2,22 @@
 
 import { NodeSelection } from "@tiptap/pm/state";
 import { EditorContent, useEditor } from "@tiptap/react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 
 import { editorExtensions } from "@/lib/editor/extensions";
 import { parseEmbedUrl } from "@/lib/editor/embed";
 import { mediaUrl } from "@/lib/media/url";
 import { slugify } from "@/lib/slug";
 
-import { restoreRevision, type SaveIntent, type SaveResult, saveArticle } from "./actions";
+import { saveContribution } from "@/app/contribute/actions";
+
+import { restoreRevision, type SaveIntent, saveArticle } from "./actions";
+
+type Outcome =
+  | { ok: true; id: string; status: string; warning?: string }
+  | { ok: false; error: string; field?: string };
 
 export type EditorArticle = {
   id?: string;
@@ -67,6 +74,7 @@ export function ArticleEditor({
   media,
   revisions,
   previewHref,
+  mode = "editor",
 }: {
   article: EditorArticle;
   sections: Option[];
@@ -75,13 +83,16 @@ export function ArticleEditor({
   media: MediaOption[];
   revisions: RevisionRow[];
   previewHref: string | null;
+  // "contributor": save/submit only, own story, no publishing, sponsorship, authors, hero, images or restore.
+  mode?: "editor" | "contributor";
 }) {
+  const isContributor = mode === "contributor";
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [form, setForm] = useState(article);
   const [slugTouched, setSlugTouched] = useState(Boolean(article.id));
   const [scheduleAt, setScheduleAt] = useState(toLocalInput(article.scheduled_for));
-  const [result, setResult] = useState<SaveResult | null>(null);
+  const [result, setResult] = useState<Outcome | null>(null);
   const [showRevisions, setShowRevisions] = useState(false);
   const [initial] = useState(() => initialContent(article));
   const [contentError, setContentError] = useState(false);
@@ -108,18 +119,40 @@ export function ArticleEditor({
     });
   }
 
-  const ready = Boolean(editor) && !contentError;
+  // A contributor can only edit a draft; anything already with the editors is read-only.
+  const locked = isContributor && form.status !== "draft";
+  const ready = Boolean(editor) && !contentError && !locked;
 
-  function submit(intent: SaveIntent) {
+  useEffect(() => {
+    editor?.setEditable(!locked);
+  }, [editor, locked]);
+
+  function submit(intent: SaveIntent | "submit") {
     if (!editor || contentError) return;
     if (hadBody && editor.isEmpty && !window.confirm("The body is empty. Saving will erase this article's existing text. Continue?")) {
       return;
     }
     setResult(null);
     startTransition(async () => {
-      let outcome: SaveResult;
+      let outcome: Outcome;
+      // ProseMirror attrs are null-prototype objects, which server actions
+      // cannot read; send a plain JSON copy.
+      const bodyJson = JSON.parse(JSON.stringify(editor.getJSON()));
       try {
-        outcome = await saveArticle({
+        outcome = isContributor
+          ? await saveContribution({
+              id: form.id,
+              intent: intent === "submit" ? "submit" : "save",
+              title: form.title,
+              dek: form.dek,
+              slug: form.slug,
+              section_id: form.section_id,
+              tag_ids: form.tag_ids,
+              seo_title: form.seo_title,
+              seo_description: form.seo_description,
+              body_json: bodyJson,
+            })
+          : await saveArticle({
         id: form.id,
         intent,
         title: form.title,
@@ -134,9 +167,7 @@ export function ArticleEditor({
         seo_title: form.seo_title,
         seo_description: form.seo_description,
         scheduled_for: scheduleAt ? new Date(scheduleAt).toISOString() : null,
-        // ProseMirror attrs are null-prototype objects, which server actions
-        // cannot read; send a plain JSON copy.
-        body_json: JSON.parse(JSON.stringify(editor.getJSON())),
+        body_json: bodyJson,
         });
       } catch {
         outcome = { ok: false, error: UNEXPECTED };
@@ -145,7 +176,7 @@ export function ArticleEditor({
       if (outcome.ok) {
         setForm((current) => ({ ...current, id: outcome.id, status: outcome.status }));
         setSlugTouched(true);
-        if (!form.id) router.replace(`/admin/articles/${outcome.id}`);
+        if (!form.id) router.replace(isContributor ? `/contribute/${outcome.id}` : `/admin/articles/${outcome.id}`);
         else router.refresh();
       }
     });
@@ -204,6 +235,12 @@ export function ArticleEditor({
     result && !result.ok && result.field === field ? (
       <span role="alert" className="text-xs text-red-600">
         {result.error}
+        {field === "disclosure" ? (
+          <>
+            {" "}
+            <Link href="/contribute/disclosure" className="underline">Add your disclosure</Link>
+          </>
+        ) : null}
       </span>
     ) : null;
 
@@ -240,12 +277,14 @@ export function ArticleEditor({
           <button type="button" className={tool} onClick={addLink}>Link</button>
           <button type="button" className={tool} onClick={addYoutube}>YouTube</button>
           <button type="button" className={tool} onClick={addEmbed}>X / Instagram</button>
-          <select aria-label="Insert image" className={tool} value="" onChange={(e) => addImage(e.target.value)}>
-            <option value="">Insert image…</option>
-            {media.map((m) => (
-              <option key={m.id} value={m.id}>{m.alt || m.storage_path}</option>
-            ))}
-          </select>
+          {!isContributor ? (
+            <select aria-label="Insert image" className={tool} value="" onChange={(e) => addImage(e.target.value)}>
+              <option value="">Insert image…</option>
+              {media.map((m) => (
+                <option key={m.id} value={m.id}>{m.alt || m.storage_path}</option>
+              ))}
+            </select>
+          ) : null}
           <button type="button" className={tool} onClick={() => editor?.chain().focus().undo().run()}>Undo</button>
           <button type="button" className={tool} onClick={() => editor?.chain().focus().redo().run()}>Redo</button>
         </div>
@@ -265,31 +304,48 @@ export function ArticleEditor({
         <EditorContent editor={editor} />
         {fieldError("body")}
 
-        <div className="flex flex-wrap items-end gap-2">
-          <button type="button" disabled={pending || !ready} onClick={() => submit("save")} className="rounded bg-foreground px-4 py-2 text-background disabled:opacity-50">
-            {form.id ? "Save" : "Save draft"}
-          </button>
-          <button type="button" disabled={pending || !ready} onClick={() => submit("publish")} className="rounded border px-4 py-2 disabled:opacity-50">
-            Publish now
-          </button>
-          <label className="flex flex-col gap-1 text-sm">
-            Schedule for
-            <input type="datetime-local" name="scheduled_for" value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)} className="rounded border px-2 py-1" />
-          </label>
-          <button type="button" disabled={pending || !ready || !scheduleAt} onClick={() => submit("schedule")} className="rounded border px-4 py-2 disabled:opacity-50">
-            Schedule
-          </button>
-          {form.status === "published" || form.status === "scheduled" ? (
-            <button type="button" disabled={pending || !ready} onClick={() => submit("unpublish")} className="rounded border px-4 py-2 disabled:opacity-50">
-              Unpublish
+        {isContributor ? (
+          <div className="flex flex-wrap items-end gap-2">
+            <button type="button" disabled={pending || !ready} onClick={() => submit("save")} className="rounded bg-foreground px-4 py-2 text-background disabled:opacity-50">
+              {form.id ? "Save" : "Save draft"}
             </button>
-          ) : null}
-          {fieldError("scheduled_for")}
-        </div>
+            <button type="button" disabled={pending || !ready} onClick={() => submit("submit")} className="rounded border px-4 py-2 disabled:opacity-50">
+              Submit for review
+            </button>
+            {fieldError("disclosure")}
+            {locked ? (
+              <p role="status" className="text-sm opacity-80">
+                This story is with the editors ({form.status}), so it can&apos;t be edited right now.
+              </p>
+            ) : null}
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-end gap-2">
+            <button type="button" disabled={pending || !ready} onClick={() => submit("save")} className="rounded bg-foreground px-4 py-2 text-background disabled:opacity-50">
+              {form.id ? "Save" : "Save draft"}
+            </button>
+            <button type="button" disabled={pending || !ready} onClick={() => submit("publish")} className="rounded border px-4 py-2 disabled:opacity-50">
+              Publish now
+            </button>
+            <label className="flex flex-col gap-1 text-sm">
+              Schedule for
+              <input type="datetime-local" name="scheduled_for" value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)} className="rounded border px-2 py-1" />
+            </label>
+            <button type="button" disabled={pending || !ready || !scheduleAt} onClick={() => submit("schedule")} className="rounded border px-4 py-2 disabled:opacity-50">
+              Schedule
+            </button>
+            {form.status === "published" || form.status === "scheduled" ? (
+              <button type="button" disabled={pending || !ready} onClick={() => submit("unpublish")} className="rounded border px-4 py-2 disabled:opacity-50">
+                Unpublish
+              </button>
+            ) : null}
+            {fieldError("scheduled_for")}
+          </div>
+        )}
 
         <p className="text-sm">
           Status: <span data-testid="status">{form.status}</span>
-          {form.id && previewHref ? (
+          {form.id && previewHref && !isContributor ? (
             <>
               {" · "}
               <a href={previewHref} target="_blank" rel="noreferrer" className="underline">Preview</a>
@@ -302,7 +358,12 @@ export function ArticleEditor({
             </>
           ) : null}
         </p>
-        {result?.ok ? <p role="status" className="text-sm text-green-700">Saved.</p> : null}
+        {result?.ok ? (
+          <p role="status" className="text-sm text-green-700">
+            {result.status === "submitted" ? "Submitted for review." : "Saved."}
+            {result.warning ? ` ${result.warning}` : ""}
+          </p>
+        ) : null}
         {result && !result.ok && !result.field ? <p role="alert" className="text-sm text-red-600">{result.error}</p> : null}
       </section>
 
@@ -342,6 +403,8 @@ export function ArticleEditor({
             </label>
           ))}
         </fieldset>
+        {!isContributor ? (
+        <>
         <fieldset className="flex flex-col gap-1">
           <legend>Authors</legend>
           {people.map((p) => (
@@ -362,6 +425,10 @@ export function ArticleEditor({
           {/* eslint-disable-next-line @next/next/no-img-element -- Supabase Storage URL */}
           {hero ? <img src={mediaUrl(hero.storage_path, { width: 400 })} alt={hero.alt ?? ""} className="rounded" /> : null}
         </label>
+        </>
+        ) : null}
+        {!isContributor ? (
+        <>
         <label className="flex gap-2">
           <input type="checkbox" name="is_sponsored" checked={form.is_sponsored} onChange={(e) => update("is_sponsored", e.target.checked)} />
           Sponsored
@@ -373,6 +440,8 @@ export function ArticleEditor({
           </label>
         ) : null}
         {fieldError("sponsor_name")}
+        </>
+        ) : null}
         <label className="flex flex-col gap-1">
           SEO title
           <input name="seo_title" value={form.seo_title} maxLength={120} onChange={(e) => update("seo_title", e.target.value)} className="rounded border px-2 py-1" />
@@ -382,7 +451,7 @@ export function ArticleEditor({
           <textarea name="seo_description" value={form.seo_description} maxLength={320} rows={3} onChange={(e) => update("seo_description", e.target.value)} className="rounded border px-2 py-1" />
         </label>
 
-        {form.id ? (
+        {form.id && !isContributor ? (
           <div className="flex flex-col gap-2 border-t pt-3">
             <button type="button" onClick={() => setShowRevisions((v) => !v)} className="self-start underline" aria-expanded={showRevisions}>
               Revisions ({revisions.length})
