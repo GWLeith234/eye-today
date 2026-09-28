@@ -14,7 +14,9 @@ export type ArticleViewData = {
 
 // Plain article rendering (no design yet). body_html is sanitized when saved;
 // it is sanitized again here in case a row was written outside the editor.
-export function ArticleView({ article }: { article: ArticleViewData }) {
+export type Byline = { display_name: string | null; disclosure: string | null };
+
+export function ArticleView({ article, bylines = [] }: { article: ArticleViewData; bylines?: Byline[] }) {
   const date = article.published_at ?? article.scheduled_for;
   return (
     <article className="mx-auto flex w-full max-w-2xl flex-col gap-4 p-8">
@@ -23,6 +25,19 @@ export function ArticleView({ article }: { article: ArticleViewData }) {
       ) : null}
       <h1 className="text-4xl font-bold">{article.title}</h1>
       {article.dek ? <p className="text-lg opacity-80">{article.dek}</p> : null}
+      {bylines.length ? (
+        <section aria-label="Authors" className="flex flex-col gap-1 border-y py-2 text-sm">
+          {bylines.map((byline, index) => (
+            <p key={index}>
+              {/* Plain text only: React escapes it; disclosures are never rendered as HTML. */}
+              <span className="font-semibold">By {byline.display_name ?? "Eye Today contributor"}</span>
+              <span className="block whitespace-pre-wrap opacity-80">
+                {byline.disclosure?.trim() ? `Disclosure: ${byline.disclosure}` : "No disclosure on file."}
+              </span>
+            </p>
+          ))}
+        </section>
+      ) : null}
       {date ? <time dateTime={date} className="text-sm opacity-60">{format(new Date(date), "d MMMM yyyy")}</time> : null}
       <div
         className="article-body flex flex-col gap-4"

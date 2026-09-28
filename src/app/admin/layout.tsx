@@ -4,6 +4,8 @@ import { requireArea } from "@/lib/auth/session";
 
 const NAV = [
   { href: "/admin/articles", label: "Articles" },
+  { href: "/admin/review", label: "Review" },
+  { href: "/admin/applications", label: "Applications" },
   { href: "/admin/media", label: "Media" },
   { href: "/admin/sections", label: "Sections" },
   { href: "/admin/tags", label: "Tags" },

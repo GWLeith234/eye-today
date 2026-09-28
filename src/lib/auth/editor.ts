@@ -29,3 +29,21 @@ export async function getEditorContext(): Promise<EditorContext | null> {
 
   return { supabase, userId: user.id, role: data.role };
 }
+
+// Same pattern for contributor-only actions.
+export async function getContributorContext(): Promise<EditorContext | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle<{ role: AppRole }>();
+  if (data?.role !== "contributor") return null;
+
+  return { supabase, userId: user.id, role: data.role };
+}

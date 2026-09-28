@@ -111,12 +111,13 @@ declare
 begin
   failed := false;
   begin
-    insert into public.articles (site_id, section_id, slug, title, status)
+    -- Since 0004 contributors may insert their own drafts, but never a published article.
+    insert into public.articles (site_id, section_id, slug, title, status, published_at)
     values ('00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000101',
-            'cms-by-contributor', 'Contributor article', 'draft');
+            'cms-by-contributor', 'Contributor article', 'published', now());
   exception when insufficient_privilege then failed := true;
   end;
-  assert failed, 'contributor cannot insert an article';
+  assert failed, 'contributor cannot insert a published article';
 
   failed := false;
   begin
