@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { getEditorContext } from "@/lib/auth/editor";
 import { renderArticleHtml } from "@/lib/editor/render";
+import { revalidatePublic } from "@/lib/public/revalidate";
 import { getSiteId } from "@/lib/site";
 import { SLUG_RE } from "@/lib/slug";
 
@@ -133,10 +134,16 @@ export async function saveArticle(input: unknown): Promise<SaveResult> {
   if (!siteId) return { ok: false, error: "Choose a section." };
 
   let currentStatus = "draft";
+  let previous: { section?: string | null; slug?: string | null } = {};
   if (data.id) {
-    const { data: existing } = await supabase.from("articles").select("status").eq("id", data.id).maybeSingle<{ status: string }>();
+    const { data: existing } = await supabase
+      .from("articles")
+      .select("status, slug, sections(slug)")
+      .eq("id", data.id)
+      .maybeSingle<{ status: string; slug: string; sections: { slug: string } | null }>();
     if (!existing) return { ok: false, error: "That article no longer exists." };
     currentStatus = existing.status;
+    previous = { section: existing.sections?.slug, slug: existing.slug };
   }
 
   const row: Record<string, unknown> = {
@@ -202,6 +209,12 @@ export async function saveArticle(input: unknown): Promise<SaveResult> {
     snapshot: snapshotOf(data),
   });
   if (revisionError) return { ok: false, error: "Saved, but the revision could not be recorded." };
+
+  // Drafts never reach the public site; anything that is or was live does.
+  if (currentStatus !== "draft" || row.status !== "draft") {
+    const { data: section } = await supabase.from("sections").select("slug").eq("id", data.section_id).maybeSingle<{ slug: string }>();
+    revalidatePublic(previous, { section: section?.slug, slug: data.slug });
+  }
 
   return { ok: true, id: articleId, status: String(row.status) };
 }
@@ -270,6 +283,11 @@ export async function restoreRevision(input: unknown): Promise<SaveResult> {
     snapshot: s,
   });
   if (revisionError) return { ok: false, error: "Restored, but the new revision could not be recorded." };
+
+  if (updated.status !== "draft") {
+    const { data: section } = await supabase.from("sections").select("slug").eq("id", s.section_id).maybeSingle<{ slug: string }>();
+    revalidatePublic({ section: section?.slug, slug: s.slug });
+  }
 
   return { ok: true, id: articleId, status: updated.status };
 }

@@ -1,6 +1,6 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 
-import { revalidatePath } from "next/cache";
+import { revalidateAllPublic } from "@/lib/public/revalidate";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +26,6 @@ export async function POST(request: Request) {
     return Response.json({ error: "publish_failed" }, { status: 500, headers });
   }
 
-  revalidatePath("/articles", "layout");
+  if (data) revalidateAllPublic();
   return Response.json({ published: data ?? 0 }, { headers });
 }

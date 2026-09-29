@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { apply } from "./actions";
 import { TurnstileWidget } from "./turnstile-widget";
 
-export const metadata: Metadata = { title: "Write for Eye Today" };
+export const metadata: Metadata = { title: "Write for us" };
 
 const ERRORS: Record<string, string> = {
   invalid: "Please fill in your name, a valid email and a short bio (each field has a length limit).",
@@ -19,15 +19,15 @@ export default async function WriteForUsPage({ searchParams }: PageProps<"/write
 
   if (params.submitted === "1") {
     return (
-      <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-4 p-8">
+      <div className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-4 p-8">
         <h1 className="text-3xl font-bold">Thank you</h1>
         <p role="status">We&apos;ve received your application. An editor will be in touch if it&apos;s a good fit.</p>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-4 p-8">
+    <div className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-4 p-8">
       <h1 className="text-3xl font-bold">Write for Eye Today</h1>
       <p>We publish reporting, research explainers and first-person stories about eye health. Tell us about yourself.</p>
       {error ? <p role="alert" className="rounded border border-red-600 p-3 text-sm">{error}</p> : null}
@@ -58,6 +58,6 @@ export default async function WriteForUsPage({ searchParams }: PageProps<"/write
           Send application
         </button>
       </form>
-    </main>
+    </div>
   );
 }

@@ -1,9 +1,11 @@
 import "server-only";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { getEditorContext } from "@/lib/auth/editor";
+import { isReservedSectionSlug } from "@/lib/public/reserved";
 import { getSiteId } from "@/lib/site";
 import { SLUG_RE, slugify } from "@/lib/slug";
 
@@ -26,6 +28,8 @@ export async function createTaxonomy(table: Table, formData: FormData) {
   if (!name.success) back(table, { error: "invalid_name" });
   const slug = slugify(String(formData.get("slug") || name.data));
   if (!SLUG_RE.test(slug)) back(table, { error: "invalid_slug" });
+  // Sections live at /<slug>, so they cannot take a path the app already uses.
+  if (table === "sections" && isReservedSectionSlug(slug)) back(table, { error: "reserved_slug" });
 
   const siteId = await getSiteId(ctx.supabase);
   if (!siteId) back(table, { error: "no_site" });
@@ -38,6 +42,8 @@ export async function createTaxonomy(table: Table, formData: FormData) {
 
   const { error } = await ctx.supabase.from(table).insert(row);
   if (error) back(table, { error: error.code === "23505" ? "duplicate_slug" : "save_failed" });
+  // Section names appear in the public header on every page.
+  revalidatePath("/", "layout");
   back(table, { saved: "created" });
 }
 
@@ -51,6 +57,7 @@ export async function renameTaxonomy(table: Table, formData: FormData) {
 
   const { data, error } = await ctx.supabase.from(table).update({ name: name.data }).eq("id", id.data).select("id");
   if (error || !data?.length) back(table, { error: "save_failed" });
+  revalidatePath("/", "layout");
   back(table, { saved: "renamed" });
 }
 
@@ -58,6 +65,7 @@ export const TAXONOMY_ERRORS: Record<string, string> = {
   invalid_name: "Names are required and up to 80 characters.",
   invalid_slug: "Slugs use lowercase letters, numbers and hyphens.",
   duplicate_slug: "That slug is already taken.",
+  reserved_slug: "That slug is used by a site page. Choose another.",
   no_site: "No site is set up yet.",
   save_failed: "That change could not be saved.",
 };
