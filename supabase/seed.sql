@@ -30,3 +30,11 @@ values (
   now() - interval '1 hour'
 )
 on conflict do nothing;
+
+-- Newsletter lists. 0008 seeds these for sites that already exist; on a fresh reset the
+-- site above is created after the migrations run, so seed them here too.
+insert into public.newsletter_lists (site_id, slug, name, description)
+values
+  ('00000000-0000-4000-8000-000000000001', 'daily', 'Daily Brief', 'The day''s stories, once a day.'),
+  ('00000000-0000-4000-8000-000000000001', 'weekly', 'Weekly Roundup', 'The week''s best reading, once a week.')
+on conflict (site_id, slug) do nothing;
