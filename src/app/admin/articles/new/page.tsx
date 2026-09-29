@@ -1,3 +1,4 @@
+import { isAssistantConfigured } from "@/lib/ai/claude";
 import { requireArea } from "@/lib/auth/session";
 
 import { ArticleEditor } from "../article-editor";
@@ -30,6 +31,7 @@ export default async function NewArticlePage() {
       {...lists}
       revisions={[]}
       previewHref={null}
+      aiConfigured={isAssistantConfigured()}
     />
   );
 }

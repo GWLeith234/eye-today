@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 
+import { isAssistantConfigured } from "@/lib/ai/claude";
 import { requireArea } from "@/lib/auth/session";
 import { mintPreviewToken } from "@/lib/preview-token";
 
@@ -76,6 +77,7 @@ export default async function EditArticlePage({ params }: PageProps<"/admin/arti
       {...lists}
       revisions={(revisions ?? []) as { id: string; created_at: string; title: string | null }[]}
       previewHref={token ? `/preview/${article.id}?token=${token}` : null}
+      aiConfigured={isAssistantConfigured()}
     />
   );
 }
