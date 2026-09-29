@@ -13,6 +13,8 @@ import { slugify } from "@/lib/slug";
 
 import { saveContribution } from "@/app/contribute/actions";
 
+import { AiPanel } from "./ai-panel";
+
 import { restoreRevision, type SaveIntent, saveArticle } from "./actions";
 
 type Outcome =
@@ -74,6 +76,7 @@ export function ArticleEditor({
   media,
   revisions,
   previewHref,
+  aiConfigured = false,
   mode = "editor",
 }: {
   article: EditorArticle;
@@ -83,6 +86,8 @@ export function ArticleEditor({
   media: MediaOption[];
   revisions: RevisionRow[];
   previewHref: string | null;
+  // Whether the server has an Anthropic key and model; the assistant panel says so when it does not.
+  aiConfigured?: boolean;
   // "contributor": save/submit only, own story, no publishing, sponsorship, authors, hero, images or restore.
   mode?: "editor" | "contributor";
 }) {
@@ -450,6 +455,21 @@ export function ArticleEditor({
           SEO description
           <textarea name="seo_description" value={form.seo_description} maxLength={320} rows={3} onChange={(e) => update("seo_description", e.target.value)} className="rounded border px-2 py-1" />
         </label>
+
+        {!isContributor ? (
+          <AiPanel
+            articleId={form.id}
+            configured={aiConfigured}
+            editor={editor}
+            tagIds={form.tag_ids}
+            disabled={pending || !ready}
+            onTitle={(value) => update("title", value)}
+            onDek={(value) => update("dek", value)}
+            onSeoTitle={(value) => update("seo_title", value)}
+            onSeoDescription={(value) => update("seo_description", value)}
+            onAddTags={(ids) => ids.forEach((id) => toggle("tag_ids", id))}
+          />
+        ) : null}
 
         {form.id && !isContributor ? (
           <div className="flex flex-col gap-2 border-t pt-3">
