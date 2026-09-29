@@ -30,3 +30,14 @@ values (
   now() - interval '1 hour'
 )
 on conflict do nothing;
+
+-- Ad slots. 0008 seeds these for sites that already exist; on a fresh reset the site above
+-- is created after the migrations run, so seed them here too.
+insert into public.ad_slots (site_id, key, name, width, height)
+values
+  ('00000000-0000-4000-8000-000000000001', 'leaderboard', 'Leaderboard', 728, 90),
+  ('00000000-0000-4000-8000-000000000001', 'bigbox-1', 'Big box 1', 300, 250),
+  ('00000000-0000-4000-8000-000000000001', 'bigbox-2', 'Big box 2', 300, 250),
+  ('00000000-0000-4000-8000-000000000001', 'in-river', 'In river', 640, 120),
+  ('00000000-0000-4000-8000-000000000001', 'in-article', 'In article', 640, 250)
+on conflict (site_id, key) do nothing;

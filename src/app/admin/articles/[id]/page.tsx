@@ -16,6 +16,7 @@ type ArticleRow = {
   hero_media_id: string | null;
   is_sponsored: boolean;
   sponsor_name: string | null;
+  sponsor_logo_media_id: string | null;
   seo_title: string | null;
   seo_description: string | null;
   status: string;
@@ -36,7 +37,7 @@ export default async function EditArticlePage({ params }: PageProps<"/admin/arti
     supabase
       .from("articles")
       .select(
-        "id, title, dek, slug, section_id, hero_media_id, is_sponsored, sponsor_name, seo_title, seo_description, status, scheduled_for, published_at, body_json, body_html, article_tags(tag_id), article_authors(profile_id, sort)",
+        "id, title, dek, slug, section_id, hero_media_id, is_sponsored, sponsor_name, sponsor_logo_media_id, seo_title, seo_description, status, scheduled_for, published_at, body_json, body_html, article_tags(tag_id), article_authors(profile_id, sort)",
       )
       .eq("id", id)
       .maybeSingle<ArticleRow>(),
@@ -65,6 +66,7 @@ export default async function EditArticlePage({ params }: PageProps<"/admin/arti
         hero_media_id: article.hero_media_id,
         is_sponsored: article.is_sponsored,
         sponsor_name: article.sponsor_name ?? "",
+        sponsor_logo_media_id: article.sponsor_logo_media_id,
         seo_title: article.seo_title ?? "",
         seo_description: article.seo_description ?? "",
         status: article.status,

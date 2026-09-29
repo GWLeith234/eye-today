@@ -36,6 +36,7 @@ const saveSchema = snapshotSchema.extend({
   intent: z.enum(["save", "schedule", "publish", "unpublish"]),
   is_sponsored: z.boolean(),
   sponsor_name: optionalText(120),
+  sponsor_logo_media_id: z.uuid().nullable().optional(),
   scheduled_for: z.iso.datetime({ offset: true }).nullable(),
   body_json: z.unknown(),
 });
@@ -154,6 +155,8 @@ export async function saveArticle(input: unknown): Promise<SaveResult> {
     hero_media_id: data.hero_media_id,
     is_sponsored: data.is_sponsored,
     sponsor_name: data.sponsor_name || null,
+    // Only a sponsored story carries a sponsor logo.
+    sponsor_logo_media_id: data.is_sponsored ? (data.sponsor_logo_media_id ?? null) : null,
     seo_title: data.seo_title || null,
     seo_description: data.seo_description || null,
     body_json: data.body_json,
