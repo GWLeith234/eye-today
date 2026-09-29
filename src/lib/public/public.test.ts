@@ -26,3 +26,24 @@ test("medical disclaimer text is exact", () => {
     "Information only — not medical advice. Ibogaine and psychedelics carry serious medical and legal risks.",
   );
 });
+
+test("feed text is XML-escaped and stripped of forbidden characters", async () => {
+  const { xmlEscape } = await import("./feeds");
+  assert.equal(xmlEscape(`Tom & "Jerry" <b>'s</b>\u0001`), "Tom &amp; &quot;Jerry&quot; &lt;b&gt;&apos;s&lt;/b&gt;");
+});
+
+test("absolute URLs only when SITE_URL is set", async () => {
+  const { absoluteUrl, publicDate } = await import("./site");
+  const saved = process.env.SITE_URL;
+  try {
+    delete process.env.SITE_URL;
+    assert.equal(absoluteUrl("/news/a"), "/news/a");
+    process.env.SITE_URL = "https://eye.example/";
+    assert.equal(absoluteUrl("/news/a"), "https://eye.example/news/a");
+  } finally {
+    if (saved === undefined) delete process.env.SITE_URL;
+    else process.env.SITE_URL = saved;
+  }
+  assert.equal(publicDate({ status: "scheduled", published_at: null, scheduled_for: "s" }), "s");
+  assert.equal(publicDate({ status: "published", published_at: "p", scheduled_for: "s" }), "p");
+});

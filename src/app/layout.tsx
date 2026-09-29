@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
+import { SITE_DESCRIPTION, SITE_NAME, siteOrigin } from "@/lib/public/site";
+
 import "./globals.css";
 
-const siteUrl = process.env.SITE_URL;
+const siteUrl = siteOrigin();
 
 export const metadata: Metadata = {
   // Absolute canonical and share URLs when the public origin is pinned.
   metadataBase: siteUrl ? new URL(siteUrl) : undefined,
-  title: { default: "Eye Today", template: "%s — Eye Today" },
-  description: "News, research and stories about eye health.",
+  title: { default: SITE_NAME, template: `%s — ${SITE_NAME}` },
+  description: SITE_DESCRIPTION,
+  alternates: { types: { "application/rss+xml": "/rss.xml" } },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

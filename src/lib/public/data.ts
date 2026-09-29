@@ -105,3 +105,28 @@ export async function getBylines(articleId: string) {
 export function articleHref(card: { section_slug: string; article_slug: string }) {
   return `/${card.section_slug}/${card.article_slug}`;
 }
+
+export type SearchResult = {
+  title: string;
+  dek: string | null;
+  article_slug: string;
+  section_slug: string;
+  section_name: string;
+  published_at: string | null;
+  is_sponsored: boolean;
+  snippet: string | null;
+};
+
+// Ranked full-text search over live articles (search_articles in 0006).
+export async function searchArticles(q: string, section: string | null, page: number): Promise<SearchResult[]> {
+  const supabase = client();
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("search_articles", { q, section_slug: section, page });
+  if (error) {
+    console.error("public read search_articles failed", error.code);
+    return [];
+  }
+  return (data ?? []) as SearchResult[];
+}
+
+export const searchCount = (q: string, section: string | null) => count("search_article_count", { q, section_slug: section });

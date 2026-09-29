@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 
 import { ShareRow } from "@/components/public/share-row";
 import { StoryCard } from "@/components/public/story-card";
@@ -12,6 +13,7 @@ import { mediaUrl } from "@/lib/media/url";
 import { getBylines, getRelated } from "@/lib/public/data";
 import { MEDICAL_DISCLAIMER } from "@/lib/public/disclaimer";
 import { isReservedSectionSlug } from "@/lib/public/reserved";
+import { SITE_DESCRIPTION, SITE_NAME, absoluteUrl, publicDate, siteOrigin } from "@/lib/public/site";
 import { createAnonClient } from "@/lib/supabase/anon";
 
 export const revalidate = 60;
@@ -28,6 +30,7 @@ type PublicArticle = {
   body_html: string | null;
   published_at: string | null;
   scheduled_for: string | null;
+  status: string;
   updated_at: string;
   is_sponsored: boolean;
   sponsor_name: string | null;
@@ -46,14 +49,15 @@ type PublicArticle = {
 
 // No status filter: RLS returns only published articles and scheduled ones whose time
 // has come; the hero is readable by anon only when it belongs to a live article.
-async function loadArticle(sectionSlug: string, slug: string) {
+// cache(): generateMetadata and the page share one query per request.
+const loadArticle = cache(async (sectionSlug: string, slug: string) => {
   if (isReservedSectionSlug(sectionSlug)) return null;
   const supabase = createAnonClient();
   if (!supabase) return null;
   const { data } = await supabase
     .from("articles")
     .select(
-      "id, title, dek, body_html, published_at, scheduled_for, updated_at, is_sponsored, sponsor_name, seo_title, seo_description, " +
+      "id, title, dek, body_html, published_at, scheduled_for, status, updated_at, is_sponsored, sponsor_name, seo_title, seo_description, " +
         "sections(slug, name), media(storage_path, alt, credit, caption, width, height)",
     )
     .eq("slug", slug)
@@ -61,16 +65,32 @@ async function loadArticle(sectionSlug: string, slug: string) {
     .maybeSingle<PublicArticle>();
   if (!data || data.sections?.slug !== sectionSlug) return null;
   return data;
-}
+});
+
+const describe = (article: PublicArticle) => article.seo_description || article.dek || SITE_DESCRIPTION;
 
 export async function generateMetadata({ params }: PageProps<"/[section]/[slug]">): Promise<Metadata> {
   const { section, slug } = await params;
   const article = await loadArticle(section, slug);
   if (!article) return {};
+  // Relative on purpose: metadataBase (SITE_URL) makes these absolute when set.
+  const canonical = `/${section}/${slug}`;
+  const title = article.seo_title || article.title;
+  const published = publicDate(article);
   return {
-    title: article.seo_title || article.title,
-    description: article.seo_description || article.dek || undefined,
-    alternates: { canonical: `/${section}/${slug}` },
+    title,
+    description: describe(article),
+    alternates: { canonical },
+    openGraph: {
+      type: "article",
+      siteName: SITE_NAME,
+      title,
+      description: describe(article),
+      url: canonical,
+      publishedTime: published ?? undefined,
+      modifiedTime: article.updated_at,
+      section: article.sections?.name,
+    },
   };
 }
 
@@ -88,18 +108,45 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
   if (!article || !article.sections) notFound();
 
   const [bylines, related] = await Promise.all([getBylines(article.id), getRelated(article.id)]);
-  const published = article.published_at ?? article.scheduled_for;
+  const published = publicDate(article);
   // Only show "Updated" when the edit came meaningfully after publication.
   const updated =
     published && new Date(article.updated_at).getTime() - new Date(published).getTime() > 60_000
       ? article.updated_at
       : null;
   const path = `/${article.sections.slug}/${slug}`;
-  const origin = process.env.SITE_URL?.replace(/\/+$/, "") || null;
+  const origin = siteOrigin();
   const hero = article.media;
+
+  // Structured data. Sponsored stories are Article, never NewsArticle. Disclosures
+  // stay plain text on the page and are not part of it.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": article.is_sponsored ? "Article" : "NewsArticle",
+    headline: article.title,
+    description: describe(article),
+    datePublished: published ? new Date(published).toISOString() : undefined,
+    dateModified: new Date(article.updated_at).toISOString(),
+    ...(origin ? { mainEntityOfPage: { "@type": "WebPage", "@id": `${origin}${path}` } } : {}),
+    author: bylines.length
+      ? bylines.map((byline) => ({
+          "@type": "Person",
+          name: byline.display_name ?? "Eye Today contributor",
+          ...(byline.author_slug ? { url: absoluteUrl(`/author/${byline.author_slug}`) } : {}),
+        }))
+      : [{ "@type": "Organization", name: SITE_NAME }],
+    publisher: { "@type": "Organization", name: SITE_NAME, ...(origin ? { url: origin } : {}) },
+    image: [hero ? mediaUrl(hero.storage_path, { width: 1600 }) : absoluteUrl(`${path}/opengraph-image`)],
+    articleSection: article.sections.name,
+  };
 
   return (
     <article className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-8">
+      <script
+        type="application/ld+json"
+        // JSON.stringify escapes quotes; escaping < keeps "</script>" in a title from closing the tag.
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+      />
       <p className="text-xs font-semibold uppercase tracking-widest">
         {article.is_sponsored ? <span className="mr-2 bg-ink px-1 py-0.5 text-paper">Sponsored</span> : null}
         <Link href={`/${article.sections.slug}`} className="text-accent hover:underline">

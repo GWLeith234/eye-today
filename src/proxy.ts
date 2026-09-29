@@ -2,6 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { type AppRole, areaFor, loginPath, redirectFor } from "@/lib/auth/access";
+import { isReservedSectionSlug } from "@/lib/public/reserved";
+import { SLUG_RE } from "@/lib/slug";
 import { getPublicSupabaseEnv } from "@/lib/supabase/env";
 
 export async function proxy(request: NextRequest) {
@@ -30,6 +32,7 @@ export async function proxy(request: NextRequest) {
 
   const { pathname, search } = request.nextUrl;
   let target: string | null = null;
+  let status = 307;
 
   const area = areaFor(pathname);
   if (area) {
@@ -48,10 +51,24 @@ export async function proxy(request: NextRequest) {
     target = "/account";
   }
 
+  // An article address it used to have: /<old section>/<old slug> -> its current path.
+  // The function answers null for current slugs, unknown paths and articles that
+  // are not live, so a normal article view costs one indexed lookup.
+  if (!target) {
+    const match = /^\/([^/]+)\/([^/]+)\/?$/.exec(pathname);
+    if (match && !isReservedSectionSlug(match[1]) && SLUG_RE.test(match[1]) && SLUG_RE.test(match[2])) {
+      const { data } = await supabase.rpc("article_slug_redirect", { section: match[1], slug: match[2] });
+      if (typeof data === "string" && data.startsWith("/") && data !== pathname) {
+        target = `${data}${search}`;
+        status = 308;
+      }
+    }
+  }
+
   if (!target) return response;
 
   // Carry any refreshed session cookies and no-store headers onto the redirect.
-  const redirect = NextResponse.redirect(new URL(target, request.url));
+  const redirect = NextResponse.redirect(new URL(target, request.url), status);
   for (const cookie of response.cookies.getAll()) redirect.cookies.set(cookie);
   for (const key of ["cache-control", "expires", "pragma"]) {
     const value = response.headers.get(key);

@@ -85,7 +85,8 @@ Resend and set `RESEND_API_KEY` + `RESEND_FROM`.
   and updated times, hero with credit, share links (no SDKs), disclosures, the medical disclaimer,
   related stories. Old **/articles/{slug}** links redirect here. "Sponsored" stories name the sponsor.
 - **/{section}**, **/tag/{slug}**, **/author/{slug}** — 20 per page, `?page=1..100`.
-- **/search?q=** — Postgres full-text search over live articles.
+- **/search?q=&section=** — ranked full-text search over live articles (`search_articles` in
+  `0006_seo.sql`): title matches outrank dek and body matches, with a highlighted snippet. noindex.
 - Static pages: /about, /contact, /advertise, /editorial-policy, /corrections, /privacy, /terms,
   /newsletter and /support (signup and payments are not open yet).
 - Section slugs that match an app path (see `src/lib/public/reserved.ts`) are refused.
@@ -98,6 +99,23 @@ Resend and set `RESEND_API_KEY` + `RESEND_FROM`.
   articles only, with no emails or roles; anon still cannot read `profiles`.
 
 Hosted: set `VIEW_HASH_SALT` (and `SITE_URL` for absolute canonical/share URLs) on Railway.
+
+## SEO
+
+- **/sitemap.xml** (home, sections, live articles, static pages), **/news-sitemap.xml** (editorial
+  stories from the last 48 hours; sponsored stories are left out), **/robots.txt**, **/rss.xml** and
+  **/{section}/rss.xml**. All list live articles only and refresh hourly; publishing, scheduling and
+  unpublishing also clear them straight away.
+- Article pages carry one JSON-LD block: `NewsArticle` for editorial stories, `Article` for
+  sponsored ones. Share cards are drawn by `opengraph-image.tsx`; the stable URL
+  `/{section}/{slug}/opengraph-image` serves the same image (Next names the file route with a hash
+  because of the `(public)` group).
+- Canonicals are relative and become absolute through `metadataBase` when `SITE_URL` is set. Set
+  `SITE_URL` in production: sitemaps, feeds and JSON-LD need absolute URLs to be valid.
+- Renaming an article's slug or moving it to another section keeps its old address: the proxy
+  answers `/{old section}/{old slug}` with a 308 to the current path (`slug_history`,
+  `article_slug_redirect`), and `/articles/{old slug}` redirects the same way. Only live articles
+  redirect, and a slug reused by another article belongs to that article.
 
 ## Auth and roles
 
@@ -136,6 +154,7 @@ psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f supabase/tests
 psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f supabase/tests/0003_cms.sql
 psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f supabase/tests/0004_contributors.sql
 psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f supabase/tests/0005_frontend.sql
+psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f supabase/tests/0006_seo.sql
 ```
 
 All schema changes go in new files under `supabase/migrations/`. Every table has RLS
