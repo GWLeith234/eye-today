@@ -8,6 +8,7 @@ import { cache } from "react";
 import { ShareRow } from "@/components/public/share-row";
 import { StoryCard } from "@/components/public/story-card";
 import { NewsletterForm } from "@/components/public/newsletter-form";
+import { SupportNote } from "@/components/public/support-note";
 import { ViewBeacon } from "@/components/public/view-beacon";
 import { sanitizeArticleHtml } from "@/lib/editor/sanitize";
 import { mediaUrl } from "@/lib/media/url";
@@ -244,6 +245,8 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
       <p role="note" className="border-l-4 border-accent bg-white/60 p-3 text-sm font-semibold">
         {MEDICAL_DISCLAIMER}
       </p>
+
+      <SupportNote />
 
       {related.length ? (
         <section aria-labelledby="related-heading" className="flex flex-col gap-4 border-t-2 border-ink pt-4">

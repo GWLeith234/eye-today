@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { AdSlot } from "@/components/public/ad-slot";
+import { SupporterHidden } from "@/components/public/supporter-hidden";
 import { StoryCard } from "@/components/public/story-card";
 import { type ArticleCard, getHomepage, getLatest, getMostRead, getSectionArticles, getSections } from "@/lib/public/data";
 import { isReservedSectionSlug } from "@/lib/public/reserved";
@@ -77,7 +78,9 @@ export default async function HomePage() {
         </section>
 
         <aside className="flex flex-col gap-6" aria-label="Most read and advertising">
-          <AdSlot name="bigbox-1" />
+          <SupporterHidden>
+            <AdSlot name="bigbox-1" />
+          </SupporterHidden>
           <section aria-labelledby="most-read" className="flex flex-col gap-3">
             <h2 id="most-read" className="border-b-2 border-ink pb-1 font-serif text-2xl font-bold">Most Read</h2>
             <ol className="flex list-decimal flex-col gap-3 pl-6 marker:font-serif marker:text-xl marker:font-bold">
@@ -88,7 +91,9 @@ export default async function HomePage() {
               ))}
             </ol>
           </section>
-          <AdSlot name="bigbox-2" />
+          <SupporterHidden>
+            <AdSlot name="bigbox-2" />
+          </SupporterHidden>
         </aside>
       </div>
 

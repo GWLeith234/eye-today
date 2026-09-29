@@ -104,7 +104,7 @@ export default async function AccountPage({ searchParams }: PageProps<"/account"
 
       <section className="flex flex-col gap-2">
         <h2 className="text-xl font-semibold">Membership</h2>
-        <p className="text-sm opacity-70">Membership options are coming soon.</p>
+        <Link href="/account/billing" className="text-sm underline">Billing and supporter membership</Link>
       </section>
     </main>
   );
