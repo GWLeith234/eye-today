@@ -26,9 +26,6 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders() }];
   },
-  async redirects() {
-    return [{ source: "/newsletters", destination: "/newsletter", permanent: false }];
-  },
 };
 
 function withOptionalSentry(config: NextConfig): NextConfig {
