@@ -29,6 +29,7 @@ export function revalidateAllPublic() {
   revalidatePath("/articles", "layout");
   revalidatePath("/[section]", "page");
   revalidatePath("/[section]/[slug]", "page");
-  revalidatePath("/[section]/rss.xml");
+  // A dynamic segment requires the type. Without it only /rss.xml (below) is cleared.
+  revalidatePath("/[section]/rss.xml", "page");
   revalidateFeeds();
 }

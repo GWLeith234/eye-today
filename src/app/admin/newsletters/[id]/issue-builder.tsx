@@ -38,7 +38,17 @@ const button = "rounded border px-3 py-1.5 text-sm disabled:opacity-40";
 function toLocalInput(iso: string | null) {
   if (!iso) return "";
   const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
   return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+}
+
+// datetime-local is a wall-clock value with no offset. Parsing it as an ISO string
+// is local in some engines and UTC in others, which schedules the issue hours early.
+function localInputToIso(value: string): string | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value);
+  if (!match) return null;
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), Number(match[4]), Number(match[5]), 0, 0);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
 export function IssueBuilder({
@@ -247,15 +257,20 @@ export function IssueBuilder({
               type="button"
               className={button}
               disabled={!scheduleAt}
-              onClick={() =>
+              onClick={() => {
+                const iso = localInputToIso(scheduleAt);
+                if (!iso) {
+                  setNote({ ok: false, text: "Pick a time in the future." });
+                  return;
+                }
                 run(
-                  () => saveThen(() => scheduleIssue(issue.id, new Date(scheduleAt).toISOString())) as Promise<{ ok: true } | Fail>,
+                  () => saveThen(() => scheduleIssue(issue.id, iso)) as Promise<{ ok: true } | Fail>,
                   () => {
                     router.refresh();
                     return "Scheduled.";
                   },
-                )
-              }
+                );
+              }}
             >
               Schedule
             </button>

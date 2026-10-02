@@ -1,4 +1,4 @@
--- 0008_ads.sql — advertising and sponsored content.
+-- 0010_ads.sql — advertising and sponsored content. Renamed from 0008_ads.sql.
 --
 -- ad_slots, ad_campaigns, ad_creatives and ad_events already exist (0001) with no client
 -- grants. Anon still cannot select any of them. Readers get ads only through the definer

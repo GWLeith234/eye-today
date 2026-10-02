@@ -31,10 +31,21 @@ export default async function HomepageAdminPage({ searchParams }: PageProps<"/ad
       .limit(200),
     supabase.from("homepage_slots").select("slot, position, article_id"),
   ]);
-  const options = (articles ?? []) as Option[];
-  const current = new Map(
-    ((slots ?? []) as { slot: string; position: number; article_id: string }[]).map((s) => [`${s.slot}:${s.position}`, s.article_id]),
-  );
+  const slotRows = (slots ?? []) as { slot: string; position: number; article_id: string }[];
+  // The menu is the latest 200 live stories. A slotted story older than that still has to
+  // be an option, or the select submits an empty value and the save clears the slot.
+  let options = (articles ?? []) as Option[];
+  const seen = new Set(options.map((article) => article.id));
+  const missing = [...new Set(slotRows.map((slot) => slot.article_id))].filter((id) => !seen.has(id));
+  if (missing.length) {
+    const { data: kept } = await supabase
+      .from("articles")
+      .select("id, title, status, published_at, scheduled_for")
+      .in("id", missing)
+      .in("status", ["published", "scheduled"]);
+    options = [...options, ...((kept ?? []) as Option[])];
+  }
+  const current = new Map(slotRows.map((s) => [`${s.slot}:${s.position}`, s.article_id]));
 
   return (
     <main className="flex max-w-2xl flex-col gap-4 p-8">

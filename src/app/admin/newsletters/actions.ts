@@ -36,13 +36,14 @@ type IssueRecord = {
   site_id: string;
   list_id: string;
   status: "draft" | "scheduled" | "sent";
+  story_ids: string[];
   newsletter_lists: { name: string; slug: string } | null;
 };
 
 async function loadIssue(ctx: EditorContext, id: string): Promise<IssueRecord | null> {
   const { data } = await ctx.supabase
     .from("newsletter_issues")
-    .select("id, site_id, list_id, status, newsletter_lists(name, slug)")
+    .select("id, site_id, list_id, status, story_ids, newsletter_lists(name, slug)")
     .eq("id", id)
     .maybeSingle();
   return (data as unknown as IssueRecord | null) ?? null;
@@ -210,11 +211,21 @@ export async function scheduleIssue(issueId: string, scheduledFor: string): Prom
   if (!issue) return { ok: false, error: NOT_FOUND };
   if (issue.status === "sent") return { ok: false, error: "A sent issue can't be scheduled." };
 
-  const { error } = await ctx.supabase
+  // The cron retries every due issue. One with no live stories never sends and blocks the queue.
+  const storyIds = issue.story_ids ?? [];
+  const stories = await liveStoriesById(ctx.supabase, storyIds);
+  if (stories.length === 0) return { ok: false, error: "Add at least one live story before scheduling." };
+  if (stories.length !== storyIds.length) return { ok: false, error: NOT_LIVE };
+
+  // A sent issue is invisible to the update policy, and that update reports no error.
+  // Require a row back so a lost race is not announced as scheduled.
+  const { data: updated, error } = await ctx.supabase
     .from("newsletter_issues")
     .update({ status: "scheduled", scheduled_for: when.data })
-    .eq("id", id.data);
-  if (error) return { ok: false, error: "The issue could not be scheduled." };
+    .eq("id", id.data)
+    .in("status", ["draft", "scheduled"])
+    .select("id");
+  if (error || !updated?.length) return { ok: false, error: "The issue could not be scheduled." };
   revalidatePath(`/admin/newsletters/${id.data}`);
   revalidatePath("/admin/newsletters");
   return { ok: true };
