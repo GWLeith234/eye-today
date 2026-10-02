@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { NewsletterForm } from "./newsletter-form";
+
 const LINKS = [
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
@@ -16,6 +18,10 @@ export function SiteFooter() {
     <footer className="mt-12 border-t-2 border-ink bg-paper">
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 text-sm">
         <p className="font-serif text-2xl font-bold">Eye Today</p>
+        <section aria-label="Newsletter" className="max-w-md">
+          <h2 className="mb-2 font-semibold">Get the newsletter</h2>
+          <NewsletterForm compact />
+        </section>
         <nav aria-label="Footer">
           <ul className="flex flex-wrap gap-x-5 gap-y-2">
             {LINKS.map((link) => (

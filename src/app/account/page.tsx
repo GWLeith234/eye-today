@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { requireArea } from "@/lib/auth/session";
 
 import { signOut, updateProfile, uploadAvatar } from "./actions";
@@ -97,7 +99,7 @@ export default async function AccountPage({ searchParams }: PageProps<"/account"
 
       <section className="flex flex-col gap-2">
         <h2 className="text-xl font-semibold">Newsletter</h2>
-        <p className="text-sm opacity-70">Newsletter preferences are coming soon.</p>
+        <Link href="/account/newsletters" className="text-sm underline">Manage your newsletter subscriptions</Link>
       </section>
 
       <section className="flex flex-col gap-2">

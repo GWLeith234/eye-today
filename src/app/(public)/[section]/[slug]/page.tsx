@@ -7,6 +7,7 @@ import { cache } from "react";
 
 import { ShareRow } from "@/components/public/share-row";
 import { StoryCard } from "@/components/public/story-card";
+import { NewsletterForm } from "@/components/public/newsletter-form";
 import { ViewBeacon } from "@/components/public/view-beacon";
 import { sanitizeArticleHtml } from "@/lib/editor/sanitize";
 import { mediaUrl } from "@/lib/media/url";
@@ -254,6 +255,11 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
           </div>
         </section>
       ) : null}
+
+      <section aria-label="Newsletter" className="flex flex-col gap-3 border-t-2 border-ink pt-4">
+        <h2 className="font-serif text-2xl font-bold">Get Eye Today by email</h2>
+        <NewsletterForm />
+      </section>
 
       <ViewBeacon articleId={article.id} />
     </article>
