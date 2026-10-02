@@ -30,3 +30,35 @@ values (
   now() - interval '1 hour'
 )
 on conflict do nothing;
+
+-- Newsletter lists. 0008 seeds these for sites that already exist; on a fresh reset the
+-- site above is created after the migrations run, so seed them here too.
+insert into public.newsletter_lists (site_id, slug, name, description)
+values
+  ('00000000-0000-4000-8000-000000000001', 'daily', 'Daily Brief', 'The day''s stories, once a day.'),
+  ('00000000-0000-4000-8000-000000000001', 'weekly', 'Weekly Roundup', 'The week''s best reading, once a week.')
+on conflict (site_id, slug) do nothing;
+
+-- Ad slots. 0010 seeds these for sites that already exist; on a fresh reset the site above
+-- is created after the migrations run, so seed them here too.
+insert into public.ad_slots (site_id, key, name, width, height)
+values
+  ('00000000-0000-4000-8000-000000000001', 'leaderboard', 'Leaderboard', 728, 90),
+  ('00000000-0000-4000-8000-000000000001', 'bigbox-1', 'Big box 1', 300, 250),
+  ('00000000-0000-4000-8000-000000000001', 'bigbox-2', 'Big box 2', 300, 250),
+  ('00000000-0000-4000-8000-000000000001', 'in-river', 'In river', 640, 120),
+  ('00000000-0000-4000-8000-000000000001', 'in-article', 'In article', 640, 250)
+on conflict (site_id, key) do nothing;
+
+-- Membership. 0009 seeds these for sites that already exist; on a fresh reset the site above is
+-- created after the migrations run, so seed them here too. Amounts are CAD cents.
+insert into public.newsletter_lists (site_id, slug, name, description)
+values ('00000000-0000-4000-8000-000000000001', 'supporters', 'Supporters newsletter', 'A note for readers who fund Eye Today.')
+on conflict (site_id, slug) do nothing;
+
+insert into public.membership_tiers (site_id, slug, name, description, price_cents, interval)
+values
+  ('00000000-0000-4000-8000-000000000001', 'monthly', 'Monthly supporter', 'Keeps reporting on addiction and recovery free for everyone to read.', 800, 'month'),
+  ('00000000-0000-4000-8000-000000000001', 'annual', 'Annual supporter', 'A full year of support, and two months free compared with monthly.', 8000, 'year'),
+  ('00000000-0000-4000-8000-000000000001', 'once', 'One-time gift', 'A single contribution toward the next investigation.', 2500, 'once')
+on conflict (site_id, slug) do nothing;

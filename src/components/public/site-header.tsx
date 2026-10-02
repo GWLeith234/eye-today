@@ -4,6 +4,7 @@ import { getSections } from "@/lib/public/data";
 import { isReservedSectionSlug } from "@/lib/public/reserved";
 
 import { AccountLink } from "./account-link";
+import { NewsletterForm } from "./newsletter-form";
 
 // Server component: every link is in the first HTML, no client-only menu. It reads no
 // cookies, so the pages around it can be cached; only the account link runs in the browser.
@@ -30,7 +31,16 @@ export async function SiteHeader() {
         </Link>
         <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
           <li><Link href="/search" className="hover:underline">Search</Link></li>
-          <li><Link href="/newsletter" className="hover:underline">Newsletter</Link></li>
+          <li>
+            {/* A native disclosure: the form is in the first HTML and needs no cookies. */}
+            <details className="relative">
+              <summary className="cursor-pointer hover:underline">Newsletter</summary>
+              <div className="absolute right-0 z-10 mt-2 w-72 border border-rule bg-paper p-3 shadow">
+                <NewsletterForm compact />
+                <Link href="/newsletter" className="mt-2 inline-block text-muted underline">About the newsletters</Link>
+              </div>
+            </details>
+          </li>
           <li><Link href="/support" className="hover:underline">Support us</Link></li>
           <li>
             <AccountLink />

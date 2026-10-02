@@ -32,6 +32,7 @@ export type EditorArticle = {
   hero_media_id: string | null;
   is_sponsored: boolean;
   sponsor_name: string;
+  sponsor_logo_media_id?: string | null;
   seo_title: string;
   seo_description: string;
   status: string;
@@ -169,6 +170,7 @@ export function ArticleEditor({
         hero_media_id: form.hero_media_id,
         is_sponsored: form.is_sponsored,
         sponsor_name: form.sponsor_name,
+        sponsor_logo_media_id: form.sponsor_logo_media_id ?? null,
         seo_title: form.seo_title,
         seo_description: form.seo_description,
         scheduled_for: scheduleAt ? new Date(scheduleAt).toISOString() : null,
@@ -442,6 +444,23 @@ export function ArticleEditor({
           <label className="flex flex-col gap-1">
             Sponsor name
             <input name="sponsor_name" value={form.sponsor_name} maxLength={120} onChange={(e) => update("sponsor_name", e.target.value)} className="rounded border px-2 py-1" />
+          </label>
+        ) : null}
+        {form.is_sponsored ? (
+          <label className="flex flex-col gap-1">
+            Sponsor logo
+            <select
+              name="sponsor_logo_media_id"
+              value={form.sponsor_logo_media_id ?? ""}
+              onChange={(e) => update("sponsor_logo_media_id", e.target.value || null)}
+              className="rounded border px-2 py-1"
+            >
+              <option value="">None</option>
+              {media.map((m) => (
+                <option key={m.id} value={m.id}>{m.alt || m.storage_path}</option>
+              ))}
+            </select>
+            <span className="text-xs opacity-70">Shown beside the sponsored-content line. Upload logos in Media first.</span>
           </label>
         ) : null}
         {fieldError("sponsor_name")}

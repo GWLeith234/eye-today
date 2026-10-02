@@ -18,6 +18,7 @@ const plain = (max: number) =>
 export const headlinesSchema = z.object({ headlines: z.array(plain(200)).min(1).max(5) });
 export const dekSchema = z.object({ dek: plain(400) });
 export const seoSchema = z.object({ seo_title: plain(120), seo_description: plain(320) });
+export const introSchema = z.object({ intro: plain(600) });
 export const tagsSchema = z.object({ slugs: z.array(z.string().trim().min(1).max(120)).max(30) });
 export const copyEditSchema = z.object({
   items: z.array(z.object({ quote: plain(500), suggestion: plain(500), reason: plain(300) })).max(20),

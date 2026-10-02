@@ -36,6 +36,9 @@ export function isAllowedIframeSrc(src: string | null | undefined): boolean {
   return typeof src === "string" && IFRAME_SRC.some((pattern) => pattern.test(src));
 }
 
+const EDITORIAL_REL = 'rel="noopener noreferrer nofollow"';
+const SPONSORED_REL = 'rel="sponsored noopener noreferrer"';
+
 DOMPurify.addHook("uponSanitizeElement", (node, data) => {
   if (data.tagName === "iframe" && !isAllowedIframeSrc((node as Element).getAttribute("src"))) {
     node.parentNode?.removeChild(node);
@@ -54,8 +57,9 @@ DOMPurify.addHook("afterSanitizeAttributes", (node) => {
   }
 });
 
-export function sanitizeArticleHtml(html: string): string {
-  return DOMPurify.sanitize(html, {
+// Sponsored stories mark outbound links rel="sponsored"; editorial ones keep nofollow.
+export function sanitizeArticleHtml(html: string, options?: { sponsored?: boolean }): string {
+  const clean = DOMPurify.sanitize(html, {
     ALLOWED_TAGS,
     ALLOWED_ATTR,
     ALLOW_DATA_ATTR: false,
@@ -63,4 +67,6 @@ export function sanitizeArticleHtml(html: string): string {
     FORBID_TAGS: ["script", "style"],
     ADD_ATTR: [],
   });
+  // Only inside <a …> tags, so article text that happens to contain the same words is untouched.
+  return options?.sponsored ? clean.replace(/<a\b[^>]*>/g, (tag) => tag.replace(EDITORIAL_REL, SPONSORED_REL)) : clean;
 }
