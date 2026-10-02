@@ -5,6 +5,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 
+import { AdSlot } from "@/components/public/ad-slot";
 import { ShareRow } from "@/components/public/share-row";
 import { StoryCard } from "@/components/public/story-card";
 import { NewsletterForm } from "@/components/public/newsletter-form";
@@ -46,6 +47,7 @@ type PublicArticle = {
     width: number | null;
     height: number | null;
   } | null;
+  sponsor_logo: { storage_path: string; alt: string | null } | null;
 };
 
 // No status filter: RLS returns only published articles and scheduled ones whose time
@@ -59,7 +61,8 @@ const loadArticle = cache(async (sectionSlug: string, slug: string) => {
     .from("articles")
     .select(
       "id, title, dek, body_html, published_at, scheduled_for, status, updated_at, is_sponsored, sponsor_name, seo_title, seo_description, " +
-        "sections(slug, name), media(storage_path, alt, credit, caption, width, height)",
+        "sections(slug, name), media:media!articles_hero_media_id_fkey(storage_path, alt, credit, caption, width, height), " +
+        "sponsor_logo:media!articles_sponsor_logo_media_id_fkey(storage_path, alt)",
     )
     .eq("slug", slug)
     .limit(1)
@@ -118,6 +121,7 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
   const path = `/${article.sections.slug}/${slug}`;
   const origin = siteOrigin();
   const hero = article.media;
+  const logo = article.is_sponsored ? article.sponsor_logo : null;
 
   // Structured data. Sponsored stories are Article, never NewsArticle. Disclosures
   // stay plain text on the page and are not part of it.
@@ -157,10 +161,21 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
       <h1 className="font-serif text-4xl font-bold leading-tight sm:text-5xl">{article.title}</h1>
       {article.dek ? <p className="text-xl text-muted">{article.dek}</p> : null}
       {article.is_sponsored ? (
-        <p className="border-l-4 border-ink pl-3 text-sm">
-          Sponsored content{article.sponsor_name ? <> paid for by <strong>{article.sponsor_name}</strong></> : null}.
-          Eye Today&rsquo;s newsroom did not write or edit it.
-        </p>
+        <div className="flex items-center gap-3 border-l-4 border-ink pl-3 text-sm">
+          {logo ? (
+            // eslint-disable-next-line @next/next/no-img-element -- sponsor logo from Supabase Storage, natural size
+            <img
+              src={mediaUrl(logo.storage_path, { width: 240 })}
+              alt={logo.alt || article.sponsor_name || "Sponsor logo"}
+              loading="lazy"
+              className="max-h-12 w-auto max-w-[8rem] shrink-0"
+            />
+          ) : null}
+          <p>
+            Sponsored content{article.sponsor_name ? <> paid for by <strong>{article.sponsor_name}</strong></> : null}.
+            Eye Today&rsquo;s newsroom did not write or edit it.
+          </p>
+        </div>
       ) : null}
 
       <div className="flex flex-col gap-1 border-y border-rule py-3 text-sm">
@@ -224,7 +239,9 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
       <ShareRow path={path} title={article.title} origin={origin} />
 
       {/* body_html is sanitized when saved and again here in case a row was written elsewhere. */}
-      <div className="article-body flex flex-col gap-4" dangerouslySetInnerHTML={{ __html: sanitizeArticleHtml(article.body_html ?? "") }} />
+      <div className="article-body flex flex-col gap-4" dangerouslySetInnerHTML={{ __html: sanitizeArticleHtml(article.body_html ?? "", { sponsored: article.is_sponsored }) }} />
+
+      <AdSlot name="in-article" />
 
       <section aria-label="Author disclosures" className="flex flex-col gap-2 rounded border border-rule bg-white/60 p-4 text-sm">
         <h2 className="font-semibold uppercase tracking-widest">Disclosure</h2>
