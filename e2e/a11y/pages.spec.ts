@@ -23,7 +23,14 @@ test("a section and an article have no serious or critical axe violations when t
   await page.goto("/");
   const hrefs = await page.locator("a[href]").evaluateAll((nodes) => nodes.map((node) => node.getAttribute("href") ?? ""));
   const article = hrefs.find((href) => /^\/[a-z0-9-]+\/[a-z0-9-]+$/.test(href));
-  const section = hrefs.find((href) => /^\/[a-z0-9-]+$/.test(href) && !["/search", "/newsletter", "/support", "/about", "/contact", "/advertise", "/disclaimer", "/privacy", "/terms"].includes(href));
+  const staticPaths = new Set([
+    "search", "newsletter", "newsletters", "support", "about", "contact", "advertise", "ad-policy",
+    "write-for-us", "editorial-policy", "corrections", "disclaimer", "privacy", "terms", "login", "account",
+  ]);
+  const section = hrefs.find((href) => {
+    const match = /^\/([a-z0-9-]+)$/.exec(href);
+    return Boolean(match && !staticPaths.has(match[1]));
+  });
   test.skip(!article && !section, "No published section or article on this site");
   if (section) {
     await page.goto(section);

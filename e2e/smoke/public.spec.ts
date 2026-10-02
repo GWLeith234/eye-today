@@ -37,8 +37,16 @@ test("robots, sitemap and rss respond", async ({ request }) => {
     const response = await request.get(path);
     expect(response.status(), path).toBe(200);
   }
-  expect(await (await request.get("/robots.txt")).text()).toContain("User-agent");
+  expect(await (await request.get("/robots.txt")).text()).toMatch(/user-agent/i);
   expect(await (await request.get("/sitemap.xml")).text()).toContain("/disclaimer");
+});
+
+test("legal pages omit the draft status and keep the publisher notes", async ({ request }) => {
+  const privacy = await (await request.get("/privacy")).text();
+  expect(privacy).not.toContain("draft-for-legal-review");
+  expect(privacy).toContain("PIPEDA");
+  expect(await (await request.get("/editorial-policy")).text()).toContain("TODO for the publisher");
+  expect(await (await request.get("/disclaimer")).text()).toContain("TODO for the publisher");
 });
 
 test("health reports the database when a real one is required", async ({ request }) => {
@@ -61,11 +69,28 @@ test("a published article shows the medical disclaimer", async ({ page }) => {
   await expect(page.getByText("Information only — not medical advice.")).toBeVisible();
 });
 
+test("report-only CSP does not flag public pages", async ({ page }) => {
+  await page.addInitScript(() => {
+    document.addEventListener("securitypolicyviolation", (event) => {
+      const record = window as unknown as { __csp?: string[] };
+      record.__csp = record.__csp ?? [];
+      record.__csp.push(`${event.effectiveDirective} ${event.blockedURI}`);
+    });
+  });
+  for (const path of ["/", "/privacy", "/editorial-policy", "/write-for-us", "/newsletter", "/support", "/search"]) {
+    await page.goto(path);
+    const violations = await page.evaluate(() => (window as unknown as { __csp?: string[] }).__csp ?? []);
+    expect(violations, path).toEqual([]);
+  }
+});
+
 test("security headers are present and CSP is report-only", async ({ request }) => {
   const headers = (await request.get("/")).headers();
   expect(headers["x-content-type-options"]).toBe("nosniff");
   expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
   expect(headers["x-frame-options"]).toBe("DENY");
   expect(headers["content-security-policy"]).toBeUndefined();
-  expect(headers["content-security-policy-report-only"]).toContain("default-src 'self'");
+  const reportOnly = headers["content-security-policy-report-only"];
+  expect(reportOnly).toContain("default-src 'self'");
+  expect(reportOnly?.split("default-src").length).toBe(2);
 });
