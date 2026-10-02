@@ -1,3 +1,8 @@
+---
+status: draft-for-legal-review
+updated: 2026-10-02
+---
+
 # Eye Today ad policy
 
 Editors check every creative against this page before approving it. A pending or rejected creative never serves.

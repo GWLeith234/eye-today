@@ -260,7 +260,8 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
       </section>
 
       <p role="note" className="border-l-4 border-accent bg-white/60 p-3 text-sm font-semibold">
-        {MEDICAL_DISCLAIMER}
+        {MEDICAL_DISCLAIMER}{" "}
+        <Link href="/disclaimer" className="underline">Read the full disclaimer</Link>
       </p>
 
       <SupportNote />

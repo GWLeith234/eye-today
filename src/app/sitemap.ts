@@ -9,7 +9,7 @@ export const revalidate = 3600;
 
 const STATIC_PAGES = [
   "/about", "/contact", "/advertise", "/write-for-us", "/editorial-policy",
-  "/corrections", "/privacy", "/terms", "/newsletter", "/support",
+  "/corrections", "/disclaimer", "/ad-policy", "/privacy", "/terms", "/newsletter", "/support",
 ];
 
 // Live articles only: the anon client never sees drafts or future schedules.

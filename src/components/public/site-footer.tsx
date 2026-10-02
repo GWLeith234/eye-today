@@ -6,9 +6,11 @@ const LINKS = [
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
   { href: "/advertise", label: "Advertise" },
+  { href: "/ad-policy", label: "Ad policy" },
   { href: "/write-for-us", label: "Write for us" },
   { href: "/editorial-policy", label: "Editorial policy" },
   { href: "/corrections", label: "Corrections" },
+  { href: "/disclaimer", label: "Disclaimer" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
 ];
@@ -31,7 +33,9 @@ export function SiteFooter() {
             ))}
           </ul>
         </nav>
-        <p className="text-muted">Information only — not medical advice.</p>
+        <p className="text-muted">
+          <Link href="/disclaimer" className="hover:underline">Information only — not medical advice.</Link>
+        </p>
       </div>
     </footer>
   );

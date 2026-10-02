@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { type AppRole, areaFor, loginPath, redirectFor } from "@/lib/auth/access";
+import { applySecurityHeaders } from "@/lib/http/security-headers";
 import { isReservedSectionSlug } from "@/lib/public/reserved";
 import { SLUG_RE } from "@/lib/slug";
 import { getPublicSupabaseEnv } from "@/lib/supabase/env";
@@ -74,6 +75,9 @@ export async function proxy(request: NextRequest) {
     const value = response.headers.get(key);
     if (value) redirect.headers.set(key, value);
   }
+  // next.config headers cover rendered pages. Redirects returned from the proxy
+  // need the same set, and only when the response does not already have them.
+  applySecurityHeaders(redirect.headers);
   return redirect;
 }
 

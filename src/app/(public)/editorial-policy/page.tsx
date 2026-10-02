@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
 
-import { StaticPage } from "@/components/public/static-page";
+import { ContentPage } from "@/components/public/content-page";
 
 export const metadata: Metadata = { title: "Editorial policy", alternates: { canonical: "/editorial-policy" } };
+export const dynamic = "force-static";
 
 export default function EditorialPolicyPage() {
-  return (
-    <StaticPage title="Editorial policy">
-      <p>Our reporters verify facts with primary sources, disclose conflicts of interest on every story, and keep advertising and sponsorship separate from editorial decisions. Nothing we publish is medical advice.</p>
-    </StaticPage>
-  );
+  return <ContentPage file="editorial-policy.md" title="Editorial policy" />;
 }

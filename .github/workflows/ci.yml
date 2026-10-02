@@ -27,3 +27,25 @@ jobs:
       - run: npx next typegen
       - run: npx tsc --noEmit
       - run: npm run build
+
+  # Read-only smoke, axe, and no-side-effect flows against a production build.
+  # `supabase start` is not used: this runner has no seeded auth users, and the
+  # site already builds against placeholder Supabase env. Email stays unconfigured
+  # (there is no EMAIL_PROVIDER flag), so newsletter signup cannot send. The full
+  # contributor and Stripe flows stay skipped unless E2E_FULL=1 on a seeded stack.
+  e2e:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_TELEMETRY_DISABLED: 1
+      NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: npx playwright test
