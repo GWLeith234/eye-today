@@ -1,8 +1,15 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import Link from "next/link";
+import { useEffect } from "react";
 
-export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_SENTRY_DSN) return;
+    Sentry.captureException(error);
+  }, [error]);
+
   return (
     <html lang="en">
       <body style={{ margin: 0, minHeight: "100vh", background: "#fbfaf7", color: "#1b1b1b", fontFamily: "Georgia, 'Times New Roman', serif" }}>
