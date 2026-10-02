@@ -3,6 +3,7 @@
 import type { Editor } from "@tiptap/react";
 import { useState, useTransition } from "react";
 
+import { chromeForNewRun, locateQuote } from "@/lib/ai/quotes";
 import type { Claims, CopyEdit, Dek, Headlines, Seo, Summary } from "@/lib/ai/schemas";
 
 import {
@@ -52,18 +53,13 @@ function blockTexts(editor: Editor): { start: number; text: string }[] {
   return blocks;
 }
 
-function count(haystack: string, needle: string) {
-  let n = 0;
-  for (let i = haystack.indexOf(needle); i !== -1; i = haystack.indexOf(needle, i + needle.length)) n += 1;
-  return n;
-}
-
-// Replace the quote only when the body has it exactly once. Returns false and changes nothing otherwise.
+// Replace the quote only when the body has one folded match. The original characters
+// (including a non-breaking space) are what get replaced; the suggestion is inserted as given.
 function replaceOnce(editor: Editor, quote: string, replacement: string): boolean {
-  if (!quote || count(editor.getText(), quote) !== 1) return false;
+  if (!locateQuote(editor.getText(), quote)) return false;
   const hits = blockTexts(editor).flatMap((b) => {
-    const at = b.text.indexOf(quote);
-    return at === -1 ? [] : [{ from: b.start + at, to: b.start + at + quote.length }];
+    const hit = locateQuote(b.text, quote);
+    return hit ? [{ from: b.start + hit.start, to: b.start + hit.end }] : [];
   });
   if (hits.length !== 1) return false;
   editor.view.dispatch(editor.state.tr.insertText(replacement, hits[0].from, hits[0].to));
@@ -105,9 +101,11 @@ export function AiPanel({
 
   function start(action: (id: string) => Promise<{ ok: false; error: string } | ({ ok: true; suggestionId: string; kind: Run["kind"]; output: unknown })>) {
     if (!articleId) return;
-    setError(null);
-    setNotes({});
-    setRun(null);
+    const fresh = chromeForNewRun();
+    setError(fresh.error);
+    setNotes(fresh.notes);
+    setRun(fresh.run);
+    setStamp(fresh.stamp);
     startTransition(async () => {
       try {
         const result = await action(articleId);

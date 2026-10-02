@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { quoteAppears } from "./quotes";
+
 // Model output shapes. The API does not enforce max length, so these run after every call.
 // No server-only import: the tests load this file directly.
 
@@ -56,5 +58,5 @@ export function filterTagSlugs(returned: readonly string[], siteTags: readonly S
 
 // Keep only copy-edit items whose quote appears in the text that was sent.
 export function keepQuotedItems<T extends { quote: string }>(items: readonly T[], sentText: string): T[] {
-  return items.filter((i) => sentText.includes(i.quote));
+  return items.filter((i) => quoteAppears(sentText, i.quote));
 }

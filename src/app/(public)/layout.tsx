@@ -1,3 +1,4 @@
+import { Plausible } from "@/components/public/plausible";
 import { SiteFooter } from "@/components/public/site-footer";
 import { SiteHeader } from "@/components/public/site-header";
 
@@ -9,6 +10,7 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
         {children}
       </main>
       <SiteFooter />
+      <Plausible />
     </>
   );
 }

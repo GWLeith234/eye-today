@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { loginPath } from "@/lib/auth/access";
 import { getSession } from "@/lib/auth/session";
+import { rateLimit } from "@/lib/http/rate-limit";
 import { runCheckout } from "@/lib/membership/checkout";
 import { type MembershipLike, nextRole } from "@/lib/membership/roles";
 import { getStripe } from "@/lib/membership/stripe";
@@ -13,6 +14,8 @@ import { getStripe } from "@/lib/membership/stripe";
 export async function startCheckout(formData: FormData) {
   const { supabase, user } = await getSession();
   if (!user) redirect(loginPath("/support"));
+
+  if (!rateLimit(`checkout:${user.id}`, 8, 10 * 60 * 1000)) redirect("/support?error=rate_limited");
 
   const stripe = getStripe();
   const outcome = stripe

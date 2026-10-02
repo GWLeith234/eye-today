@@ -4,7 +4,7 @@ import { checkoutConfigured, type Env, modeFor, tierForPrice } from "./prices";
 
 // No server-only import: the tests drive this with fakes. The action wires in the real Stripe client.
 
-export type CheckoutError = "not_configured" | "invalid_price" | "already_supporter" | "failed";
+export type CheckoutError = "not_configured" | "invalid_price" | "already_supporter" | "failed" | "rate_limited";
 export type CheckoutOutcome = { ok: true; url: string } | { ok: false; error: CheckoutError };
 
 export type CheckoutDeps = {
@@ -61,4 +61,5 @@ export const CHECKOUT_MESSAGES: Record<CheckoutError, string> = {
   invalid_price: "That option is not available.",
   already_supporter: "You are already a supporter. Use Manage billing to change or cancel.",
   failed: "We couldn't start checkout. Nothing was charged. Please try again.",
+  rate_limited: "Too many checkout attempts. Wait a few minutes and try again. Nothing was charged.",
 };

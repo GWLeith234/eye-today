@@ -44,7 +44,7 @@ export default async function HomePage() {
   if (!lead && latest.length === 0) {
     return (
       <div className="mx-auto w-full max-w-6xl px-4 py-16 text-center">
-        <p className="font-serif text-2xl">The first stories are on their way.</p>
+        <h1 className="font-serif text-2xl">The first stories are on their way.</h1>
       </div>
     );
   }

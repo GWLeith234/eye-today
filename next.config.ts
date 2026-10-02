@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+import { securityHeaders } from "./src/lib/http/security-headers";
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 // The optimizer refuses private addresses unless told otherwise. Allow that only
 // when the build points at a local Supabase stack, never for a hosted project.
@@ -21,6 +23,29 @@ const nextConfig: NextConfig = {
     // Avatar uploads are up to 2 MB plus multipart overhead.
     serverActions: { bodySizeLimit: "3mb" },
   },
+  async headers() {
+    return [{ source: "/:path*", headers: securityHeaders() }];
+  },
+  async redirects() {
+    return [{ source: "/newsletters", destination: "/newsletter", permanent: false }];
+  },
 };
 
-export default nextConfig;
+function withOptionalSentry(config: NextConfig): NextConfig {
+  const token = process.env.SENTRY_AUTH_TOKEN?.trim();
+  const org = process.env.SENTRY_ORG?.trim();
+  const project = process.env.SENTRY_PROJECT?.trim();
+  if (!token || !org || !project) return config;
+  // Loaded only when source maps should upload. A missing token must not change the build.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { withSentryConfig } = require("@sentry/nextjs/config") as typeof import("@sentry/nextjs/config");
+  return withSentryConfig(config, {
+    org,
+    project,
+    authToken: token,
+    silent: true,
+    telemetry: false,
+  });
+}
+
+export default withOptionalSentry(nextConfig);

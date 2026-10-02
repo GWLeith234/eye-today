@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import { z } from "zod";
 
+import { forwardedIp, rateLimit } from "@/lib/http/rate-limit";
 import { createAnonClient } from "@/lib/supabase/anon";
 
 export const dynamic = "force-dynamic";
@@ -28,7 +29,8 @@ export async function POST(request: Request) {
   if (!supabase) return done();
 
   // Only a salted hash of the first forwarded address is stored, never the IP.
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const ip = forwardedIp(request.headers.get("x-forwarded-for"));
+  if (!rateLimit(`view:${ip}`, 30, 60_000)) return done();
   const salt = process.env.VIEW_HASH_SALT || "eye-today-view";
   const ipHash = createHash("sha256").update(`${salt}:${ip}`).digest("hex");
 
