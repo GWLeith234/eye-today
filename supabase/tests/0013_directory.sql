@@ -11,7 +11,7 @@ begin;
 
 insert into auth.users (id, email) values
   ('d1200000-0000-4000-8000-0000000000e1', 'dir.editor@qa.test'),
-  ('d1200000-0000-4000-8000-0000000000r1', 'dir.reader@qa.test');
+  ('d1200000-0000-4000-8000-0000000000d1', 'dir.reader@qa.test');
 update public.profiles set role = 'editor' where id = 'd1200000-0000-4000-8000-0000000000e1';
 
 do $$
@@ -50,7 +50,7 @@ insert into public.directory_listings (
 
 insert into public.listing_submissions (id, site_id, contact_email, status, payload)
 values (
-  'd1200000-0000-4000-8000-0000000000s1',
+  'd1200000-0000-4000-8000-0000000000d2',
   '00000000-0000-4000-8000-000000000001',
   'hidden@qa.test',
   'pending',
@@ -161,7 +161,7 @@ $$;
 
 reset role;
 
-set local request.jwt.claims = '{"sub": "d1200000-0000-4000-8000-0000000000r1", "role": "authenticated"}';
+set local request.jwt.claims = '{"sub": "d1200000-0000-4000-8000-0000000000d1", "role": "authenticated"}';
 set local role authenticated;
 
 do $$
