@@ -58,8 +58,6 @@ export default async function HomePage() {
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-6">
-      <AdSlot name="leaderboard" />
-
       {lead ? <StoryCard card={lead} variant="lead" priority /> : null}
 
       {secondary.length ? (
@@ -69,6 +67,9 @@ export default async function HomePage() {
           ))}
         </div>
       ) : null}
+
+      {/* Empty until a creative arrives, so an unfilled slot adds no gap. */}
+      <AdSlot name="leaderboard" />
 
       <div className="grid gap-10 lg:grid-cols-3">
         <section aria-labelledby="latest" className="flex flex-col gap-4 lg:col-span-2">
