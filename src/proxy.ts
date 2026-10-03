@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { type AppRole, areaFor, loginPath, redirectFor } from "@/lib/auth/access";
+import { sessionCookieOptions } from "@/lib/auth/cookie-options";
 import { applySecurityHeaders } from "@/lib/http/security-headers";
 import { isReservedSectionSlug } from "@/lib/public/reserved";
 import { SLUG_RE } from "@/lib/slug";
@@ -23,6 +24,7 @@ export async function proxy(request: NextRequest) {
   if (!env) return response;
 
   const supabase = createServerClient(env.url, env.anonKey, {
+    cookieOptions: sessionCookieOptions(),
     cookies: {
       getAll() {
         return request.cookies.getAll();

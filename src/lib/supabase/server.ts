@@ -3,6 +3,8 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
+import { sessionCookieOptions } from "@/lib/auth/cookie-options";
+
 import { getPublicSupabaseEnv } from "./env";
 
 // User-scoped client for Server Components, Server Actions and Route Handlers.
@@ -15,6 +17,7 @@ export async function createClient() {
   const cookieStore = await cookies();
 
   return createServerClient(env.url, env.anonKey, {
+    cookieOptions: sessionCookieOptions(),
     cookies: {
       getAll() {
         return cookieStore.getAll();

@@ -10,6 +10,12 @@ const localSupabase = /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?(\/|$)/.test(sup
 const mediaPaths = ["/storage/v1/object/public/media/**", "/storage/v1/render/image/public/media/**"];
 
 const nextConfig: NextConfig = {
+  // Inlined into the server bundle. The test session route is compiled in only
+  // when a build is started with E2E_FULL=1. A Railway build leaves this empty,
+  // and setting the variable later at runtime cannot turn the route on.
+  env: {
+    E2E_FULL: process.env.E2E_FULL === "1" ? "1" : "",
+  },
   images: {
     remotePatterns: [
       ...mediaPaths.map((pathname) => ({ protocol: "https" as const, hostname: "*.supabase.co", pathname })),

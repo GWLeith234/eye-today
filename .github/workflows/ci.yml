@@ -28,24 +28,56 @@ jobs:
       - run: npx tsc --noEmit
       - run: npm run build
 
-  # Read-only smoke, axe, and no-side-effect flows against a production build.
-  # `supabase start` is not used: this runner has no seeded auth users, and the
-  # site already builds against placeholder Supabase env. Email stays unconfigured
-  # (there is no EMAIL_PROVIDER flag), so newsletter signup cannot send. The full
-  # contributor and Stripe flows stay skipped unless E2E_FULL=1 on a seeded stack.
+  # Smoke, axe, and the full journeys against a production build of a local
+  # Supabase stack. GoTrue has to be running (sessions call auth.getUser()), so
+  # this is `supabase start`, not a bare Postgres container. Studio, realtime and
+  # the other unused services are left off. E2E_FULL is set for this build only;
+  # the check job above leaves it unset, which is what Railway does too.
   e2e:
     runs-on: ubuntu-latest
     env:
       NEXT_TELEMETRY_DISABLED: 1
-      NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+      E2E_FULL: "1"
+      EMAIL_PROVIDER: mock
+      E2E_MAILBOX_PATH: ${{ github.workspace }}/tmp/mailbox.jsonl
+      E2E_STRIPE_LOG: ${{ github.workspace }}/tmp/stripe.jsonl
+      SITE_URL: http://127.0.0.1:3000
+      NEWSLETTER_POSTAL_ADDRESS: "123 Test Street, Test City"
+      NEWSLETTER_LINK_SECRET: e2e-link-secret
+      RESEND_FROM: "Eye Today <newsroom@example.com>"
+      STRIPE_SECRET_KEY: sk_test_e2e
+      STRIPE_WEBHOOK_SECRET: whsec_e2e
+      STRIPE_PRICE_MONTHLY: price_e2e_monthly
+      STRIPE_PRICE_ANNUAL: price_e2e_annual
+      STRIPE_PRICE_ONCE: price_e2e_once
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npm run build
-      - run: npx playwright test
+      - run: mkdir -p tmp
+      - run: bash scripts/e2e-database.sh supabase.env
+      - name: Build and test against the local stack
+        run: |
+          set -a
+          # shellcheck disable=SC1091
+          . ./supabase.env
+          set +a
+          API_URL="${API_URL:-${SUPABASE_URL:-}}"
+          ANON_KEY="${ANON_KEY:-${SUPABASE_ANON_KEY:-${PUBLISHABLE_KEY:-}}}"
+          SERVICE_ROLE_KEY="${SERVICE_ROLE_KEY:-${SUPABASE_SERVICE_ROLE_KEY:-${SECRET_KEY:-}}}"
+          if [ -z "${API_URL:-}" ] || [ -z "${ANON_KEY:-}" ] || [ -z "${SERVICE_ROLE_KEY:-}" ]; then
+            echo "supabase status did not print API_URL, ANON_KEY and SERVICE_ROLE_KEY" >&2
+            exit 1
+          fi
+          export NEXT_PUBLIC_SUPABASE_URL="$API_URL"
+          export NEXT_PUBLIC_SUPABASE_ANON_KEY="$ANON_KEY"
+          export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
+          npm run build
+          npx playwright test
