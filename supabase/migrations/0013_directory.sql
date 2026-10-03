@@ -280,21 +280,38 @@ grant select on table public.directory_categories to anon, authenticated;
 grant insert, update on table public.directory_categories to authenticated;
 
 -- verification_note is the editor's private check, not a public field.
--- A table-level select would expose it to the anon REST API, so anon is granted
--- every other column. Editors read the note through the authenticated grant.
+-- The published-listing policy covers anon and authenticated, and a signed-in
+-- reader uses authenticated, so neither role is granted this column.
+-- Editors read it through directory_editor_note.
 grant select (
   id, site_id, category_id, slug, name, country_code, region, city,
   services, languages, website, public_email, public_phone, description,
   logo_media_id, photo_media_ids, status, verification_level,
   relationship_disclosure, last_reviewed_at, search, created_at, updated_at
-) on table public.directory_listings to anon;
-grant select on table public.directory_listings to authenticated;
+) on table public.directory_listings to anon, authenticated;
 grant insert, update, delete on table public.directory_listings to authenticated;
 
 grant select on table public.country_legal_status to anon, authenticated;
 grant insert, update on table public.country_legal_status to authenticated;
 
 grant select, update on table public.listing_submissions to authenticated;
+
+-- Editors only. Security definer so the column grant above can stay closed.
+create function public.directory_editor_note(p_id uuid)
+returns text
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select l.verification_note
+    from public.directory_listings l
+   where l.id = p_id
+     and (select public.current_app_role()) in ('editor', 'admin');
+$$;
+
+revoke all on function public.directory_editor_note(uuid) from public, anon, authenticated;
+grant execute on function public.directory_editor_note(uuid) to authenticated;
 
 create policy "public reads visible categories"
   on public.directory_categories for select to anon, authenticated

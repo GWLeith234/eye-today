@@ -42,13 +42,18 @@ export default async function EditListingPage({ params, searchParams }: PageProp
   const query = await searchParams;
   const notice = query.saved === "1" ? "Saved." : query.created === "1" ? "Draft created from the submission. It is not public until you publish it." : undefined;
 
-  const [listingResult, categories, media] = await Promise.all([
-    supabase.from("directory_listings").select("*").eq("id", id).maybeSingle<ListingRow>(),
+  const [listingResult, noteResult, categories, media] = await Promise.all([
+    supabase
+      .from("directory_listings")
+      .select("id, name, slug, category_id, country_code, region, city, services, languages, website, public_email, public_phone, description, logo_media_id, photo_media_ids, verification_level, relationship_disclosure, last_reviewed_at, status")
+      .eq("id", id)
+      .maybeSingle<Omit<ListingRow, "verification_note">>(),
+    supabase.rpc("directory_editor_note", { p_id: id }),
     supabase.from("directory_categories").select("id, name").order("sort").returns<{ id: string; name: string }[]>(),
     supabase.from("media").select("id, storage_path, alt").order("created_at", { ascending: false }).limit(100).returns<{ id: string; storage_path: string; alt: string | null }[]>(),
   ]);
   const row = listingResult.data;
-  if (!row) notFound();
+  if (!row || noteResult.error || typeof noteResult.data !== "string") notFound();
 
   const level: VerificationLevel = isVerificationLevel(row.verification_level) ? row.verification_level : "listed";
   const listing: ListingFormValue = {
@@ -68,7 +73,7 @@ export default async function EditListingPage({ params, searchParams }: PageProp
     logo_media_id: row.logo_media_id ?? "",
     photo_ids: row.photo_media_ids ?? [],
     verification_level: level,
-    verification_note: row.verification_note,
+    verification_note: noteResult.data,
     relationship_disclosure: row.relationship_disclosure ?? "",
     last_reviewed_at: row.last_reviewed_at ? row.last_reviewed_at.slice(0, 10) : "",
     status: isStatus(row.status) ? row.status : "draft",

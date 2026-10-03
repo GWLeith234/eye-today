@@ -206,11 +206,20 @@ set local request.jwt.claims = '{"sub": "d1200000-0000-4000-8000-0000000000d1", 
 set local role authenticated;
 
 do $$
+declare
+  failed boolean := false;
 begin
   assert (select count(*) from public.listing_submissions) = 0,
     'a reader cannot read submissions';
   assert (select count(*) from public.directory_listings where slug = 'pending-retreat') = 0,
     'a reader cannot see a pending listing';
+  begin
+    perform verification_note from public.directory_listings where slug = 'alpha-retreat';
+  exception when insufficient_privilege then failed := true;
+  end;
+  assert failed, 'a reader cannot read verification_note';
+  assert public.directory_editor_note('d1200000-0000-4000-8000-0000000000a1') is null,
+    'a reader cannot read the editor note';
 end;
 $$;
 
@@ -225,6 +234,8 @@ begin
     'an editor can read submissions';
   assert (select count(*) from public.directory_listings where slug = 'pending-retreat') = 1,
     'an editor can see a pending listing';
+  assert public.directory_editor_note('d1200000-0000-4000-8000-0000000000a1') = 'Checked the public website.',
+    'an editor can read the verification note';
 end;
 $$;
 
