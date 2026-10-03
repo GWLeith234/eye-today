@@ -34,7 +34,8 @@ test("submit, request changes, resubmit and publish", async ({ browser }) => {
   await expect(contributor.page.getByRole("button", { name: "Submit for review" })).toBeEnabled();
   await contributor.page.getByRole("button", { name: "Submit for review" }).click();
   await expect(contributor.page).toHaveURL(/\/contribute\/[0-9a-f-]{36}/i);
-  await expect(contributor.page.getByText("Submitted for review.")).toBeVisible();
+  // The flash message lives in client state and is dropped by the navigation to the new id.
+  await expect(contributor.page.getByTestId("status")).toHaveText("submitted");
   const id = new URL(contributor.page.url()).pathname.split("/").pop() ?? "";
 
   await editor.page.goto(`/admin/review/${id}`);
@@ -48,7 +49,7 @@ test("submit, request changes, resubmit and publish", async ({ browser }) => {
   await expect(contributor.page.getByText("Loading editor…")).toHaveCount(0);
   await expect(contributor.page.getByRole("button", { name: "Submit for review" })).toBeEnabled();
   await contributor.page.getByRole("button", { name: "Submit for review" }).click();
-  await expect(contributor.page.getByText("Submitted for review.")).toBeVisible();
+  await expect(contributor.page.getByTestId("status")).toHaveText("submitted");
 
   await editor.page.goto(`/admin/review/${id}`);
   await editor.page.getByRole("button", { name: "Publish" }).click();
