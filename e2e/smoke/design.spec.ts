@@ -22,6 +22,29 @@ test("the mobile menu traps focus and Escape closes it", async ({ page }) => {
   await expect(menu).toBeFocused();
 });
 
+test("widening to desktop releases the menu scroll lock", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Menu" }).click();
+  await expect(page.getByRole("dialog", { name: "Sections" })).toBeVisible();
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect(page.getByRole("dialog", { name: "Sections" })).toHaveCount(0);
+  await expect(page.locator("body")).toHaveCSS("overflow", "visible");
+});
+
+test("the compact header does not flip back open just under the threshold", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 700 });
+  await page.goto("/");
+  const date = page.locator("header p").first();
+  await expect(date).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, 200));
+  await expect(date).toBeHidden();
+  await page.evaluate(() => window.scrollTo(0, 40));
+  await expect(date).toBeHidden();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(date).toBeVisible();
+});
+
 test("a link in the mobile menu closes it", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");

@@ -49,10 +49,25 @@ export function Masthead({ sections, dateLabel }: { sections: NavSection[]; date
   const titleId = useId();
 
   useEffect(() => {
-    const onScroll = () => setCompact(window.scrollY > 72);
+    // The compact header is shorter. A single threshold lets scroll anchoring
+    // drop back under it and flip the date row on and off. Stay compact until
+    // the reader is well above the point where the row collapsed.
+    const onScroll = () => {
+      const y = window.scrollY;
+      setCompact((current) => (current ? y > 16 : y > 72));
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const closeOnDesktop = () => {
+      if (desktop.matches) setMenuPath(null);
+    };
+    desktop.addEventListener("change", closeOnDesktop);
+    return () => desktop.removeEventListener("change", closeOnDesktop);
   }, []);
 
   useEffect(() => {
