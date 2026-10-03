@@ -2,12 +2,23 @@ import "server-only";
 
 import { Resend } from "resend";
 
+import { appendMockMail, isMockMail } from "./mock-mailbox";
+
 export type MailOutcome = { ok: true } | { ok: false; warning: string };
 
 // Sends one plain-text email per recipient (so addresses are never shared).
 // Callers send only after their database write has succeeded; a mail failure
 // never undoes that write, it becomes a warning in the action result.
 export async function sendMail({ to, subject, text }: { to: string[]; subject: string; text: string }): Promise<MailOutcome> {
+  const recipients = [...new Set(to.map((address) => address.trim().toLowerCase()).filter(Boolean))];
+  if (recipients.length === 0) return { ok: false, warning: "Saved, but there was nobody to email." };
+  const cleanSubject = subject.replace(/[\r\n]+/g, " ").trim().slice(0, 200);
+
+  if (isMockMail()) {
+    const wrote = recipients.every((recipient) => appendMockMail({ to: recipient, subject: cleanSubject, text }));
+    return wrote ? { ok: true } : { ok: false, warning: "Saved, but email notifications are not configured." };
+  }
+
   const key = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM;
   if (!key || !from) {
@@ -15,12 +26,7 @@ export async function sendMail({ to, subject, text }: { to: string[]; subject: s
     return { ok: false, warning: "Saved, but email notifications are not configured." };
   }
 
-  const recipients = [...new Set(to.map((address) => address.trim().toLowerCase()).filter(Boolean))];
-  if (recipients.length === 0) return { ok: false, warning: "Saved, but there was nobody to email." };
-
   // Titles are user-written; keep them from adding header lines.
-  const cleanSubject = subject.replace(/[\r\n]+/g, " ").trim().slice(0, 200);
-
   const resend = new Resend(key);
   let failures = 0;
   for (const recipient of recipients) {

@@ -2,23 +2,28 @@ import "server-only";
 
 import { Resend } from "resend";
 
+import { appendMockMail, isMockMail } from "@/lib/email/mock-mailbox";
+
 import { renderConfirm } from "./render";
 
 export const NOT_CONFIGURED = "Email is not configured.";
 const SEND_FAILED = "The email could not be sent.";
 
-type MailConfig = { apiKey: string; from: string; postalAddress: string; linkSecret: string; siteUrl: string };
+type MailConfig = { apiKey: string; from: string; postalAddress: string; linkSecret: string; siteUrl: string; mock: boolean };
 
 // Everything an issue needs: the sender, the postal address for the footer, the secret the
 // unsubscribe links derive from, and the absolute site URL the links point at.
+// EMAIL_PROVIDER=mock writes the message to a file instead of calling Resend, so the
+// confirm link can be read without a network call. Resend stays the default.
 export function mailConfig(): MailConfig | null {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  const from = process.env.RESEND_FROM?.trim();
+  const mock = isMockMail();
+  const apiKey = mock ? "mock" : process.env.RESEND_API_KEY?.trim();
+  const from = process.env.RESEND_FROM?.trim() || (mock ? "Eye Today <newsroom@example.com>" : "");
   const postalAddress = process.env.NEWSLETTER_POSTAL_ADDRESS?.trim();
   const linkSecret = process.env.NEWSLETTER_LINK_SECRET?.trim();
   const siteUrl = process.env.SITE_URL?.trim();
   if (!apiKey || !from || !postalAddress || !linkSecret || !siteUrl) return null;
-  return { apiKey, from, postalAddress, linkSecret, siteUrl };
+  return { apiKey, from, postalAddress, linkSecret, siteUrl, mock };
 }
 
 export const isMailConfigured = () => mailConfig() !== null;
@@ -32,6 +37,10 @@ type Payload = { to: string; subject: string; html: string; text: string; header
 
 // One recipient per call. Checks { data, error }; logs the error name only, never the address or body.
 async function send(cfg: MailConfig, payload: Payload): Promise<SendOutcome> {
+  if (cfg.mock) {
+    const wrote = appendMockMail({ to: payload.to, subject: oneLine(payload.subject), text: payload.text, html: payload.html });
+    return wrote ? { ok: true, providerId: "mock" } : { ok: false, error: NOT_CONFIGURED };
+  }
   const resend = new Resend(cfg.apiKey);
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
