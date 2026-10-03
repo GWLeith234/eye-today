@@ -119,7 +119,7 @@ test.describe("editorial loop", () => {
       await reader.goto(`/news/${slug}`);
       await expect(reader.getByRole("heading", { level: 1, name: title })).toBeVisible();
       await expect(reader.locator("main")).toContainText(revision);
-      await expect(reader.getByText("Information only — not medical advice.")).toBeVisible();
+      await expect(reader.getByRole("note").filter({ hasText: "Information only — not medical advice." })).toBeVisible();
 
       await reader.goto("/");
       await expect(reader.locator(`a[href="/news/${slug}"]`).first()).toBeVisible();

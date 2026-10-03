@@ -31,7 +31,7 @@ test.describe("reader journey on the seeded database", () => {
     await link.click();
     await expect(page).toHaveURL(/\/news\/welcome-to-eye-today$/);
     await expect(page.getByRole("heading", { level: 1, name: "Welcome to Eye Today" })).toBeVisible();
-    await expect(page.getByText("Information only — not medical advice.")).toBeVisible();
+    await expect(page.getByRole("note").filter({ hasText: "Information only — not medical advice." })).toBeVisible();
 
     await page.goto("/news");
     await expect(page.locator('a[href="/news/welcome-to-eye-today"]').first()).toBeVisible();

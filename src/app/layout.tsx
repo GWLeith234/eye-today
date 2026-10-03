@@ -8,7 +8,8 @@ import "./globals.css";
 // next/font downloads these at build time and serves them from our own origin: no runtime font requests.
 // Each exposes a CSS variable that globals.css maps to --font-display / --font-serif / --font-sans.
 const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces", display: "swap" });
-const sourceSerif = Source_Serif_4({ subsets: ["latin"], variable: "--font-source-serif", display: "swap", style: ["normal", "italic"] });
+// Only article bodies and standfirsts use it, so it is not preloaded on every page; swap + the size-matched fallback keep it from shifting text.
+const sourceSerif = Source_Serif_4({ subsets: ["latin"], variable: "--font-source-serif", display: "swap", style: ["normal", "italic"], preload: false });
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 
 const siteUrl = siteOrigin();

@@ -92,7 +92,7 @@ export async function StoryCard({
 
   if (variant === "compact") {
     return (
-      <article style={style} className="flex flex-col gap-1 border-t border-rule pt-3">
+      <article data-variant={variant} style={style} className="flex flex-col gap-1 border-t border-rule pt-3">
         <Kicker card={card} icon={icon} />
         <h3 className="font-display text-lg font-bold leading-snug">
           <Link href={href} className="hover:underline">{card.title}</Link>
@@ -104,7 +104,7 @@ export async function StoryCard({
 
   if (variant === "numbered") {
     return (
-      <article style={style} className="flex items-start gap-3 border-t border-rule pt-3">
+      <article data-variant={variant} style={style} className="flex items-start gap-3 border-t border-rule pt-3">
         <span aria-hidden="true" className="sec-text font-display text-4xl font-black leading-none">{rank}</span>
         <div className="flex min-w-0 flex-col gap-1">
           <Kicker card={card} icon={icon} />
@@ -118,7 +118,7 @@ export async function StoryCard({
 
   if (variant === "river") {
     return (
-      <article style={style} className="grid grid-cols-[7.5rem_1fr] gap-3 border-t border-rule pt-4 sm:grid-cols-[11rem_1fr] sm:gap-4">
+      <article data-variant={variant} style={style} className="grid grid-cols-[7.5rem_1fr] gap-3 border-t border-rule pt-4 sm:grid-cols-[11rem_1fr] sm:gap-4">
         <Link href={href} tabIndex={-1} aria-hidden="true" className="block">
           <CardImage card={card} variant="river" sizes="(min-width: 640px) 11rem, 7.5rem" />
         </Link>
@@ -136,7 +136,7 @@ export async function StoryCard({
 
   if (variant === "lead") {
     return (
-      <article style={style} className="relative isolate overflow-hidden bg-ink">
+      <article data-variant={variant} style={style} className="relative isolate overflow-hidden bg-ink">
         <Link href={href} tabIndex={-1} aria-hidden="true" className="block">
           <CardImage card={card} variant="lead" priority={priority} sizes="100vw" />
         </Link>
@@ -157,7 +157,7 @@ export async function StoryCard({
 
   const feature = variant === "feature";
   return (
-    <article style={style} className="flex flex-col gap-2">
+    <article data-variant={variant} style={style} className="flex flex-col gap-2">
       <Link href={href} tabIndex={-1} aria-hidden="true" className="block">
         <CardImage card={card} variant={variant} sizes={feature ? "(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" : "(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"} />
       </Link>

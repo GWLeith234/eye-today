@@ -66,7 +66,7 @@ test("a published article shows the medical disclaimer", async ({ page }) => {
   const article = hrefs.find((href) => /^\/[a-z0-9-]+\/[a-z0-9-]+$/.test(href));
   test.skip(!article, "No published article to open");
   await page.goto(article!);
-  await expect(page.getByText("Information only — not medical advice.")).toBeVisible();
+  await expect(page.getByRole("note").filter({ hasText: "Information only — not medical advice." })).toBeVisible();
 });
 
 test("report-only CSP does not flag public pages", async ({ page }) => {
