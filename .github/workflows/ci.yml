@@ -28,11 +28,9 @@ jobs:
       - run: npx tsc --noEmit
       - run: npm run build
 
-  # Read-only smoke, axe, and no-side-effect flows against a production build.
-  # `supabase start` is not used: this runner has no seeded auth users, and the
-  # site already builds against placeholder Supabase env. Email stays unconfigured
-  # (there is no EMAIL_PROVIDER flag), so newsletter signup cannot send. The full
-  # contributor and Stripe flows stay skipped unless E2E_FULL=1 on a seeded stack.
+  # Read-only smoke, axe, and no-side-effect flows against a production build with placeholder
+  # Supabase env. Email and Stripe stay unconfigured here, so the full journeys skip themselves;
+  # they run in the e2e-full job below.
   e2e:
     runs-on: ubuntu-latest
     env:
@@ -49,3 +47,67 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run build
       - run: npx playwright test
+
+  # The real journeys (editorial loop, newsletter double opt-in, ads, support checkout) against a
+  # local Supabase that has every migration and the seed applied. Email goes to a mock mailbox and
+  # Stripe to a recording double, both selected by E2E_FULL=1 in playwright.config.ts; nothing leaves
+  # the runner. Docs: docs/sprints/sprint-10b-e2e.md.
+  e2e-full:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_TELEMETRY_DISABLED: 1
+      E2E_FULL: 1
+      SITE_URL: http://127.0.0.1:3000
+      # Dummy values for a throwaway stack. The Stripe client is a double and webhooks are signed by
+      # the tests with this secret, so none of these is a real credential.
+      STRIPE_SECRET_KEY: e2e-mock-stripe-key
+      STRIPE_WEBHOOK_SECRET: e2e-mock-webhook-secret
+      STRIPE_PRICE_MONTHLY: price_e2e_monthly
+      STRIPE_PRICE_ANNUAL: price_e2e_annual
+      STRIPE_PRICE_ONCE: price_e2e_once
+      CRON_SECRET: e2e-cron-secret
+      NEWSLETTER_POSTAL_ADDRESS: "1 Test Street, Testville"
+      NEWSLETTER_LINK_SECRET: e2e-newsletter-link-secret
+      PREVIEW_SECRET: e2e-preview-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      # Applies supabase/migrations/* and supabase/seed.sql. The services the app never calls are left out.
+      - name: Start local Supabase
+        run: supabase start -x studio,realtime,imgproxy,edge-runtime,logflare,vector,supavisor,postgres-meta,mailpit
+      - name: Point the app and the tests at it
+        run: |
+          eval "$(supabase status -o env)"
+          echo "::add-mask::$ANON_KEY"
+          echo "::add-mask::$SERVICE_ROLE_KEY"
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+            echo "E2E_DATABASE_URL=$DB_URL"
+          } >> "$GITHUB_ENV"
+
+      # After the stack is up: NEXT_PUBLIC_SUPABASE_* are inlined at build time.
+      - run: npm run build
+      - run: npx playwright test --project=flows
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-full-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
+      - if: failure()
+        run: supabase status || true

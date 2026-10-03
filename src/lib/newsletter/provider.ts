@@ -1,6 +1,10 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
+
 import { Resend } from "resend";
+
+import { isMockMail, recordMockMail } from "@/lib/email/mock";
 
 import { renderConfirm } from "./render";
 
@@ -12,8 +16,10 @@ type MailConfig = { apiKey: string; from: string; postalAddress: string; linkSec
 // Everything an issue needs: the sender, the postal address for the footer, the secret the
 // unsubscribe links derive from, and the absolute site URL the links point at.
 export function mailConfig(): MailConfig | null {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  const from = process.env.RESEND_FROM?.trim();
+  // EMAIL_PROVIDER=mock (tests only) stands in for the Resend key and sender; the rest is still required.
+  const mock = isMockMail();
+  const apiKey = mock ? "mock" : process.env.RESEND_API_KEY?.trim();
+  const from = mock ? "Eye Today <mock@eyetoday.invalid>" : process.env.RESEND_FROM?.trim();
   const postalAddress = process.env.NEWSLETTER_POSTAL_ADDRESS?.trim();
   const linkSecret = process.env.NEWSLETTER_LINK_SECRET?.trim();
   const siteUrl = process.env.SITE_URL?.trim();
@@ -32,6 +38,10 @@ type Payload = { to: string; subject: string; html: string; text: string; header
 
 // One recipient per call. Checks { data, error }; logs the error name only, never the address or body.
 async function send(cfg: MailConfig, payload: Payload): Promise<SendOutcome> {
+  if (isMockMail()) {
+    recordMockMail({ to: payload.to, subject: oneLine(payload.subject), text: payload.text, html: payload.html, headers: payload.headers });
+    return { ok: true, providerId: `mock-${randomUUID()}` };
+  }
   const resend = new Resend(cfg.apiKey);
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
