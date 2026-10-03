@@ -24,7 +24,7 @@ export function AccountLink() {
         {signedIn ? "Account" : "Sign in"}
       </Link>
       {signedIn && role === "supporter" ? (
-        <span className="rounded bg-accent px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-paper">Supporter</span>
+        <span className="rounded bg-accent px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-ink">Supporter</span>
       ) : null}
     </span>
   );

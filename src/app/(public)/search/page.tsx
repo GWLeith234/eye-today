@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Pagination } from "@/components/public/pagination";
+import { sectionInkVar } from "@/lib/brand/palette";
 import { type SearchResult, articleHref, getSections, searchArticles, searchCount } from "@/lib/public/data";
 import { parsePage } from "@/lib/public/paging";
 import { isReservedSectionSlug } from "@/lib/public/reserved";
@@ -33,9 +34,9 @@ function Result({ result }: { result: SearchResult }) {
     <li className="flex flex-col gap-1 border-t border-rule pt-4">
       <p className="text-xs font-semibold uppercase tracking-widest">
         {result.is_sponsored ? <span className="mr-2 bg-ink px-1 py-0.5 text-paper">Sponsored</span> : null}
-        <span className="text-accent">{result.section_name}</span>
+        <span style={{ color: sectionInkVar(result.section_slug) }}>{result.section_name}</span>
       </p>
-      <h2 className="font-serif text-xl font-bold leading-snug">
+      <h2 className="font-display text-xl font-semibold leading-snug">
         <Link href={articleHref(result)} className="hover:underline">{result.title}</Link>
       </h2>
       {result.snippet ? <Snippet text={result.snippet} /> : null}
@@ -63,7 +64,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8">
-      <h1 className="font-serif text-4xl font-bold">Search</h1>
+      <h1 className="font-display text-4xl font-semibold">Search</h1>
       <form role="search" action="/search" className="flex flex-wrap items-end gap-2">
         <label className="flex min-w-48 flex-1 flex-col gap-1 text-sm font-semibold">
           Search Eye Today

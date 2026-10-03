@@ -6,9 +6,11 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 
 import { AdSlot } from "@/components/public/ad-slot";
+import { AuthorFace } from "@/components/public/author-face";
 import { ShareRow } from "@/components/public/share-row";
 import { StoryCard } from "@/components/public/story-card";
 import { NewsletterForm } from "@/components/public/newsletter-form";
+import { inkOnPaper, sectionPaint } from "@/lib/brand/palette";
 import { SupportNote } from "@/components/public/support-note";
 import { ViewBeacon } from "@/components/public/view-beacon";
 import { sanitizeArticleHtml } from "@/lib/editor/sanitize";
@@ -39,7 +41,7 @@ type PublicArticle = {
   sponsor_name: string | null;
   seo_title: string | null;
   seo_description: string | null;
-  sections: { slug: string; name: string } | null;
+  sections: { slug: string; name: string; color: string | null } | null;
   media: {
     storage_path: string;
     alt: string | null;
@@ -62,7 +64,7 @@ const loadArticle = cache(async (sectionSlug: string, slug: string) => {
     .from("articles")
     .select(
       "id, title, dek, body_html, published_at, scheduled_for, status, updated_at, is_sponsored, sponsor_name, seo_title, seo_description, " +
-        "sections(slug, name), media:media!articles_hero_media_id_fkey(storage_path, alt, credit, caption, width, height), " +
+        "sections(slug, name, color), media:media!articles_hero_media_id_fkey(storage_path, alt, credit, caption, width, height), " +
         "sponsor_logo:media!articles_sponsor_logo_media_id_fkey(storage_path, alt)",
     )
     .eq("slug", slug)
@@ -146,8 +148,10 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
     articleSection: article.sections.name,
   };
 
+  const tone = sectionPaint(article.sections.slug, article.sections.color);
+
   return (
-    <article className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-8">
+    <article className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
       <script
         type="application/ld+json"
         // JSON.stringify escapes quotes; escaping < keeps "</script>" in a title from closing the tag.
@@ -155,11 +159,11 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
       />
       <p className="text-xs font-semibold uppercase tracking-widest">
         {article.is_sponsored ? <span className="mr-2 bg-ink px-1 py-0.5 text-paper">Sponsored</span> : null}
-        <Link href={`/${article.sections.slug}`} className="text-accent hover:underline">
+        <Link href={`/${article.sections.slug}`} className="hover:underline" style={{ color: inkOnPaper(tone) }}>
           {article.sections.name}
         </Link>
       </p>
-      <h1 className="font-serif text-4xl font-bold leading-tight sm:text-5xl">{article.title}</h1>
+      <h1 className="max-w-3xl font-display text-4xl font-semibold leading-tight sm:text-6xl">{article.title}</h1>
       {article.dek ? <p className="text-xl text-muted">{article.dek}</p> : null}
       {article.is_sponsored ? (
         <div className="flex items-center gap-3 border-l-4 border-ink pl-3 text-sm">
@@ -179,23 +183,25 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-1 border-y border-rule py-3 text-sm">
+      <div className="flex max-w-3xl flex-col gap-3 border-y border-rule py-4 text-sm">
         {bylines.length ? (
-          <p className="font-semibold">
-            By{" "}
-            {bylines.map((byline, index) => (
-              <span key={index}>
-                {index > 0 ? (index === bylines.length - 1 ? " and " : ", ") : null}
-                {byline.author_slug ? (
-                  <Link href={`/author/${byline.author_slug}`} className="hover:underline">
-                    {byline.display_name ?? "Eye Today contributor"}
-                  </Link>
-                ) : (
-                  (byline.display_name ?? "Eye Today contributor")
-                )}
-              </span>
-            ))}
-          </p>
+          <ul className="flex flex-col gap-3">
+            {bylines.map((byline, index) => {
+              const name = byline.display_name ?? "Eye Today contributor";
+              return (
+                <li key={index} className="flex items-center gap-3">
+                  <AuthorFace name={name} url={byline.avatar_url} />
+                  <p className="font-semibold">
+                    {byline.author_slug ? (
+                      <Link href={`/author/${byline.author_slug}`} className="hover:underline">{name}</Link>
+                    ) : (
+                      name
+                    )}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
         ) : null}
         <p className="flex flex-wrap gap-x-3 text-muted">
           {published ? <Time value={published} label="Published" /> : null}
@@ -204,29 +210,17 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
       </div>
 
       {hero ? (
-        <figure className="flex flex-col gap-1">
-          {hero.width && hero.height ? (
+        <figure className="flex flex-col gap-2">
+          <div className="relative aspect-[3/2] w-full overflow-hidden bg-rule">
             <Image
               src={mediaUrl(hero.storage_path, { width: 1600 })}
               alt={hero.alt || ""}
-              width={hero.width}
-              height={hero.height}
-              sizes="(min-width: 768px) 48rem, 100vw"
+              fill
+              sizes="(min-width: 1024px) 64rem, 100vw"
               preload
-              className="h-auto w-full"
+              className="object-cover"
             />
-          ) : (
-            <div className="relative aspect-[3/2] w-full">
-              <Image
-                src={mediaUrl(hero.storage_path, { width: 1600 })}
-                alt={hero.alt || ""}
-                fill
-                sizes="(min-width: 768px) 48rem, 100vw"
-                preload
-                className="object-cover"
-              />
-            </div>
-          )}
+          </div>
           {hero.caption || hero.credit ? (
             <figcaption className="text-xs text-muted">
               {hero.caption}
@@ -240,11 +234,11 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
       <ShareRow path={path} title={article.title} origin={origin} />
 
       {/* body_html is sanitized when saved and again here in case a row was written elsewhere. */}
-      <div className="article-body flex flex-col gap-4" dangerouslySetInnerHTML={{ __html: sanitizeArticleHtml(article.body_html ?? "", { sponsored: article.is_sponsored }) }} />
+      <div className="article-body mx-auto flex w-full max-w-3xl flex-col gap-4" dangerouslySetInnerHTML={{ __html: sanitizeArticleHtml(article.body_html ?? "", { sponsored: article.is_sponsored }) }} />
 
       <AdSlot name="in-article" />
 
-      <section aria-label="Author disclosures" className="flex flex-col gap-2 rounded border border-rule bg-white/60 p-4 text-sm">
+      <section aria-label="Author disclosures" className="mx-auto flex w-full max-w-3xl flex-col gap-2 border border-rule border-l-4 bg-paper p-4 text-sm" style={{ borderLeftColor: tone }}>
         <h2 className="font-semibold uppercase tracking-widest">Disclosure</h2>
         {bylines.length ? (
           bylines.map((byline, index) => (
@@ -259,7 +253,7 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
         )}
       </section>
 
-      <p role="note" className="border-l-4 border-accent bg-white/60 p-3 text-sm font-semibold">
+      <p role="note" className="mx-auto w-full max-w-3xl border border-rule border-l-4 border-l-accent bg-paper p-4 text-sm font-semibold text-ink">
         {MEDICAL_DISCLAIMER}{" "}
         <Link href="/disclaimer" className="underline">Read the full disclaimer</Link>
       </p>
@@ -268,8 +262,8 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
 
       {related.length ? (
         <section aria-labelledby="related-heading" className="flex flex-col gap-4 border-t-2 border-ink pt-4">
-          <h2 id="related-heading" className="font-serif text-2xl font-bold">Related</h2>
-          <div className="grid gap-6 sm:grid-cols-2">
+          <h2 id="related-heading" className="font-display text-2xl font-semibold">Related</h2>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {related.map((card) => (
               <StoryCard key={`${card.section_slug}/${card.article_slug}`} card={card} />
             ))}
@@ -277,9 +271,13 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
         </section>
       ) : null}
 
-      <section aria-label="Newsletter" className="flex flex-col gap-3 border-t-2 border-ink pt-4">
-        <h2 className="font-serif text-2xl font-bold">Get Eye Today by email</h2>
-        <NewsletterForm />
+      <section aria-label="Newsletter" className="bg-brand px-4 py-6 text-paper">
+        <div className="mx-auto grid max-w-3xl items-center gap-4 md:grid-cols-2">
+          <h2 className="font-display text-2xl font-semibold">Get Eye Today by email</h2>
+          <div className="bg-paper p-4 text-ink">
+            <NewsletterForm compact />
+          </div>
+        </div>
       </section>
 
       <ViewBeacon articleId={article.id} />

@@ -58,7 +58,8 @@ jobs:
           cache: npm
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # A pinned release skips the GitHub "latest" lookup, which rate-limits the e2e job.
+          version: 2.119.0
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: mkdir -p tmp

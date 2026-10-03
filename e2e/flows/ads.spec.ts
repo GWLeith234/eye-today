@@ -36,6 +36,8 @@ test("an approved creative records an impression and a click", async ({ browser 
   await page.goto("/");
   const link = page.getByRole("link", { name: sponsor });
   await expect(link).toBeVisible();
+  // The leaderboard sits under the lead, so it may start below the fold.
+  await link.scrollIntoViewIfNeeded();
   await page.waitForTimeout(1500);
   const href = await link.getAttribute("href");
   expect(href).toMatch(/^\/api\/ads\/click\/[0-9a-f-]{36}$/i);

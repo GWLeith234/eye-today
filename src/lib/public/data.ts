@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cache } from "react";
+
 import { createAnonClient } from "@/lib/supabase/anon";
 
 import { PAGE_SIZE } from "./paging";
@@ -25,7 +27,27 @@ export type ArticleCard = {
 
 export type HomepageCard = ArticleCard & { slot: "lead" | "secondary"; slot_position: number };
 
-export type Section = { id: string; name: string; slug: string; sort: number };
+export type Section = {
+  id: string;
+  name: string;
+  slug: string;
+  sort: number;
+  color: string | null;
+  icon: string | null;
+};
+
+export type PublicByline = {
+  display_name: string | null;
+  disclosure: string | null;
+  author_slug: string | null;
+  avatar_url: string | null;
+};
+
+export type AuthorFace = {
+  article_slug: string;
+  display_name: string | null;
+  avatar_url: string | null;
+};
 
 function client() {
   return createAnonClient();
@@ -49,17 +71,17 @@ async function count(fn: string, args: Record<string, unknown>): Promise<number>
   return typeof data === "number" ? data : 0;
 }
 
-export async function getSections(): Promise<Section[]> {
+export const getSections = cache(async (): Promise<Section[]> => {
   const supabase = client();
   if (!supabase) return [];
-  const { data } = await supabase.from("sections").select("id, name, slug, sort").order("sort").order("name");
+  const { data } = await supabase.from("sections").select("id, name, slug, sort, color, icon").order("sort").order("name");
   return (data ?? []) as Section[];
-}
+});
 
 export async function getSection(slug: string): Promise<Section | null> {
   const supabase = client();
   if (!supabase) return null;
-  const { data } = await supabase.from("sections").select("id, name, slug, sort").eq("slug", slug).maybeSingle<Section>();
+  const { data } = await supabase.from("sections").select("id, name, slug, sort, color, icon").eq("slug", slug).maybeSingle<Section>();
   return data;
 }
 
@@ -95,11 +117,23 @@ export async function getAuthor(slug: string) {
 
 export const getRelated = (articleId: string) => cards("related_articles", { article: articleId });
 
-export async function getBylines(articleId: string) {
+export async function getBylines(articleId: string): Promise<PublicByline[]> {
   const supabase = client();
   if (!supabase) return [];
   const { data } = await supabase.rpc("article_public_bylines", { article: articleId });
-  return (data ?? []) as { display_name: string | null; disclosure: string | null; author_slug: string | null }[];
+  return (data ?? []) as PublicByline[];
+}
+
+/** First author of each live story in a section. One query for the opinion rail. */
+export async function getSectionFaces(slug: string, lim = 4): Promise<AuthorFace[]> {
+  const supabase = client();
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("section_author_faces", { section_slug: slug, lim });
+  if (error) {
+    console.error("public read section_author_faces failed", error.code);
+    return [];
+  }
+  return (data ?? []) as AuthorFace[];
 }
 
 export function articleHref(card: { section_slug: string; article_slug: string }) {

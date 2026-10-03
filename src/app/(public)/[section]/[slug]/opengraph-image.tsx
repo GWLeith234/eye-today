@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { ImageResponse } from "next/og";
 
+import { sectionPaint } from "@/lib/brand/palette";
 import { isReservedSectionSlug } from "@/lib/public/reserved";
 import { SITE_NAME } from "@/lib/public/site";
 import { createAnonClient } from "@/lib/supabase/anon";
@@ -19,13 +20,14 @@ export default async function Image({ params }: { params: Promise<{ section: str
   if (!supabase) notFound();
   const { data: article } = await supabase
     .from("articles")
-    .select("title, is_sponsored, sections(slug, name)")
+    .select("title, is_sponsored, sections(slug, name, color)")
     .eq("slug", slug)
     .limit(1)
-    .maybeSingle<{ title: string; is_sponsored: boolean; sections: { slug: string; name: string } | null }>();
+    .maybeSingle<{ title: string; is_sponsored: boolean; sections: { slug: string; name: string; color: string | null } | null }>();
   if (!article?.sections || article.sections.slug !== section) notFound();
 
   const title = article.title.length > 140 ? `${article.title.slice(0, 139)}…` : article.title;
+  const band = sectionPaint(article.sections.slug, article.sections.color);
   return new ImageResponse(
     (
       <div
@@ -36,16 +38,21 @@ export default async function Image({ params }: { params: Promise<{ section: str
           flexDirection: "column",
           justifyContent: "space-between",
           padding: "64px 72px",
-          background: "#fbfaf7",
-          color: "#1b1b1b",
-          borderTop: "16px solid #1d5c86",
+          background: "#FAF8F3",
+          color: "#14201B",
+          borderTop: `16px solid ${band}`,
         }}
       >
-        <div style={{ display: "flex", fontSize: 32, fontWeight: 700, letterSpacing: 4, textTransform: "uppercase", color: "#1d5c86" }}>
+        <div style={{ display: "flex", fontSize: 32, fontWeight: 700, letterSpacing: 4, textTransform: "uppercase", color: band }}>
           {article.is_sponsored ? `Sponsored · ${article.sections.name}` : article.sections.name}
         </div>
         <div style={{ display: "flex", fontSize: title.length > 80 ? 56 : 72, fontWeight: 700, lineHeight: 1.1 }}>{title}</div>
-        <div style={{ display: "flex", fontSize: 40, fontWeight: 700, borderTop: "2px solid #1b1b1b", paddingTop: 24 }}>{SITE_NAME}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, borderTop: "2px solid #14201B", paddingTop: 24 }}>
+          <div style={{ width: 48, height: 48, borderRadius: 24, border: "3px solid #14201B", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: 16, height: 16, borderRadius: 8, background: "#14201B", display: "flex" }} />
+          </div>
+          <div style={{ display: "flex", fontSize: 40, fontWeight: 700 }}>{SITE_NAME}</div>
+        </div>
       </div>
     ),
     size,

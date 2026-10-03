@@ -44,7 +44,7 @@ test("submit, request changes, resubmit and publish", async ({ browser }) => {
   await expect(editor.page.getByText("Changes requested.")).toBeVisible();
 
   await contributor.page.goto("/contribute");
-  await expect(contributor.page.getByText("Please name the clinic.")).toBeVisible();
+  await expect(contributor.page.getByRole("listitem").filter({ hasText: title }).getByText("Please name the clinic.")).toBeVisible();
   await contributor.page.getByRole("link", { name: title }).click();
   await expect(contributor.page.getByText("Loading editor…")).toHaveCount(0);
   await expect(contributor.page.getByRole("button", { name: "Submit for review" })).toBeEnabled();
