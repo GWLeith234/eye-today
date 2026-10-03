@@ -469,7 +469,9 @@ as $$
     left join public.media m on m.id = l.logo_media_id
    order by match.rank desc, l.name asc, l.id
    limit 24
-   offset (pg_catalog.greatest(1, pg_catalog.least(coalesce(directory_search.page, 1), 100)) - 1) * 24;
+   -- least/greatest are parser forms. Schema-qualifying them looks up
+   -- pg_catalog.least(integer, integer), which does not exist.
+   offset (greatest(1, least(coalesce(directory_search.page, 1), 100)) - 1) * 24;
 $$;
 
 create function public.directory_search_count(
