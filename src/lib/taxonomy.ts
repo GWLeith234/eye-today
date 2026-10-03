@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+import { HEX } from "@/lib/brand/palette";
 import { getEditorContext } from "@/lib/auth/editor";
 import { isReservedSectionSlug } from "@/lib/public/reserved";
 import { getSiteId } from "@/lib/site";
@@ -15,6 +16,15 @@ import { SLUG_RE, slugify } from "@/lib/slug";
 type Table = "sections" | "tags";
 
 const nameSchema = z.string().trim().min(1).max(80);
+const ICON_NAME = /^[a-z0-9-]{1,32}$/;
+
+function readBrand(formData: FormData): { ok: true; color: string | null; icon: string | null } | { ok: false; error: "invalid_color" | "invalid_icon" } {
+  const colorRaw = String(formData.get("color") ?? "").trim();
+  const iconRaw = String(formData.get("icon") ?? "").trim();
+  if (colorRaw && !HEX.test(colorRaw)) return { ok: false, error: "invalid_color" };
+  if (iconRaw && !ICON_NAME.test(iconRaw)) return { ok: false, error: "invalid_icon" };
+  return { ok: true, color: colorRaw ? colorRaw.toUpperCase() : null, icon: iconRaw || null };
+}
 
 function back(table: Table, query: Record<string, string>): never {
   redirect(`/admin/${table}?${new URLSearchParams(query).toString()}`);
@@ -38,6 +48,10 @@ export async function createTaxonomy(table: Table, formData: FormData) {
   if (table === "sections") {
     const sort = Number(formData.get("sort") ?? 0);
     row.sort = Number.isFinite(sort) ? Math.trunc(sort) : 0;
+    const brand = readBrand(formData);
+    if (!brand.ok) back(table, { error: brand.error });
+    row.color = brand.color;
+    row.icon = brand.icon;
   }
 
   const { error } = await ctx.supabase.from(table).insert(row);
@@ -55,10 +69,18 @@ export async function renameTaxonomy(table: Table, formData: FormData) {
   const name = nameSchema.safeParse(formData.get("name"));
   if (!id.success || !name.success) back(table, { error: "invalid_name" });
 
-  const { data, error } = await ctx.supabase.from(table).update({ name: name.data }).eq("id", id.data).select("id");
+  const patch: Record<string, unknown> = { name: name.data };
+  if (table === "sections") {
+    const brand = readBrand(formData);
+    if (!brand.ok) back(table, { error: brand.error });
+    patch.color = brand.color;
+    patch.icon = brand.icon;
+  }
+
+  const { data, error } = await ctx.supabase.from(table).update(patch).eq("id", id.data).select("id");
   if (error || !data?.length) back(table, { error: "save_failed" });
   revalidatePath("/", "layout");
-  back(table, { saved: "renamed" });
+  back(table, { saved: table === "sections" ? "saved" : "renamed" });
 }
 
 export const TAXONOMY_ERRORS: Record<string, string> = {
@@ -68,4 +90,6 @@ export const TAXONOMY_ERRORS: Record<string, string> = {
   reserved_slug: "That slug is used by a site page. Choose another.",
   no_site: "No site is set up yet.",
   save_failed: "That change could not be saved.",
+  invalid_color: "Colours are a hex value like #1E5B4A, or left blank.",
+  invalid_icon: "Icons use a short name: letters, numbers and hyphens.",
 };

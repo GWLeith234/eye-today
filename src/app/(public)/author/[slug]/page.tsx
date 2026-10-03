@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { ListPage } from "@/components/public/list-page";
+import { BRAND } from "@/lib/brand/palette";
 import { getAuthor, getAuthorArticles, getAuthorCount } from "@/lib/public/data";
 import { parsePage } from "@/lib/public/paging";
 import { SITE_NAME } from "@/lib/public/site";
@@ -52,6 +53,7 @@ export default async function AuthorPage({ params, searchParams }: PageProps<"/a
       page={page}
       total={total}
       basePath={`/author/${author.slug}`}
+      tone={BRAND}
     />
   );
 }

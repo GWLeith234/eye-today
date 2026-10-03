@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { ListPage } from "@/components/public/list-page";
+import { BRAND } from "@/lib/brand/palette";
 import { getTagArticles, getTagCount } from "@/lib/public/data";
 import { parsePage } from "@/lib/public/paging";
 import { createAnonClient } from "@/lib/supabase/anon";
@@ -25,5 +26,5 @@ export default async function TagPage({ params, searchParams }: PageProps<"/tag/
   if (!tag) notFound();
   const page = parsePage((await searchParams).page);
   const [cards, total] = await Promise.all([getTagArticles(tag.slug, page), getTagCount(tag.slug)]);
-  return <ListPage title={tag.name} cards={cards} page={page} total={total} basePath={`/tag/${tag.slug}`} />;
+  return <ListPage title={tag.name} cards={cards} page={page} total={total} basePath={`/tag/${tag.slug}`} tone={BRAND} />;
 }

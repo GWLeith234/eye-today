@@ -76,7 +76,7 @@ export function AdSlot({ name }: { name: AdSlotName }) {
         </a>
       ) : ad.html ? (
         <div
-          className="ad-html text-sm [&_a]:text-accent [&_a]:underline"
+          className="ad-html text-sm [&_a]:text-brand [&_a]:underline"
           // Sanitized twice: when it was saved and again by /api/ads/serve.
           dangerouslySetInnerHTML={{ __html: ad.html }}
         />
