@@ -16,15 +16,15 @@ declare global {
 
 // Renders Cloudflare Turnstile; it adds a hidden `cf-turnstile-response` input
 // to the surrounding form. The site key is the only Turnstile value in the browser.
-export function TurnstileWidget({ siteKey }: { siteKey: string }) {
+export function TurnstileWidget({ siteKey, action = "write_for_us" }: { siteKey: string; action?: string }) {
   const container = useRef<HTMLDivElement>(null);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     if (!loaded || !container.current || !window.turnstile) return;
-    const id = window.turnstile.render(container.current, { sitekey: siteKey, action: "write_for_us" });
+    const id = window.turnstile.render(container.current, { sitekey: siteKey, action });
     return () => window.turnstile?.remove(id);
-  }, [loaded, siteKey]);
+  }, [loaded, siteKey, action]);
 
   return (
     <>
