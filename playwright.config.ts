@@ -5,11 +5,14 @@ const external = Boolean(process.env.BASE_URL);
 
 // BASE_URL points the read-only smoke project at a deployed site and skips the
 // local server. Flow tests are not included in that mode: they submit forms.
+const full = process.env.E2E_FULL === "1";
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
+  timeout: full ? 120_000 : 30_000,
   reporter: process.env.CI ? "github" : "list",
   use: { baseURL, trace: "on-first-retry" },
   projects: [
@@ -27,6 +30,6 @@ export default defineConfig({
         command: "npm run start -- --port 3000",
         url: "http://127.0.0.1:3000/",
         reuseExistingServer: !process.env.CI,
-        timeout: 120_000,
+        timeout: full ? 180_000 : 120_000,
       },
 });
