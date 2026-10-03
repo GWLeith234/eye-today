@@ -8,6 +8,16 @@ import { SLUG_RE } from "@/lib/slug";
 import { getPublicSupabaseEnv } from "@/lib/supabase/env";
 
 export async function proxy(request: NextRequest) {
+  const { pathname, search } = request.nextUrl;
+
+  // next.config redirects() do not receive headers(). Railway forwards whatever
+  // Next sends, so this redirect is issued here and carries the security set.
+  if (pathname === "/newsletters") {
+    const redirect = NextResponse.redirect(new URL(`/newsletter${search}`, request.url), 307);
+    applySecurityHeaders(redirect.headers);
+    return redirect;
+  }
+
   let response = NextResponse.next({ request });
   const env = getPublicSupabaseEnv();
   if (!env) return response;
@@ -31,7 +41,6 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname, search } = request.nextUrl;
   let target: string | null = null;
   let status = 307;
 

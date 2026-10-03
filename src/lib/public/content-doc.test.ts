@@ -30,6 +30,16 @@ test("legal markdown drops front matter, scripts and unsafe links", () => {
   assert.match(doc.html, /TODO for the publisher/);
 });
 
+test("CRLF front matter is stripped and its status is not rendered", () => {
+  const doc = renderContentMarkdown(
+    ["---", "status: draft-for-legal-review", "updated: 2026-10-02", "---", "", "Visible body."].join("\r\n"),
+  );
+  assert.equal(doc.status, "draft-for-legal-review");
+  assert.equal(doc.updated, "2026-10-02");
+  assert.ok(!doc.html.includes("draft-for-legal-review"));
+  assert.match(doc.html, /Visible body/);
+});
+
 test("a missing front matter still renders the body", () => {
   const doc = renderContentMarkdown("## Heading\n\n- One\n- Two");
   assert.equal(doc.status, null);

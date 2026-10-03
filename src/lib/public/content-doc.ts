@@ -157,8 +157,10 @@ function markdownToHtml(source: string): string {
 }
 
 // Front matter is metadata for reviewers. It is never copied into the HTML.
+// Line endings are normalised first: detection looks for "---\n", so a CRLF
+// file would otherwise keep "status: draft-for-legal-review" in the body.
 export function renderContentMarkdown(raw: string): ContentDoc {
-  let body = raw.replace(/^\uFEFF/, "");
+  let body = raw.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
   let status: string | null = null;
   let updated: string | null = null;
   if (body.startsWith("---\n")) {
