@@ -25,7 +25,7 @@ test("submit, request changes, resubmit and publish", async ({ browser }) => {
   await expect(contributor.page.getByText("Disclosure saved.")).toBeVisible();
 
   await contributor.page.goto("/contribute/new");
-  await contributor.page.getByLabel("Title").fill(title);
+  await contributor.page.getByRole("textbox", { name: "Title", exact: true }).fill(title);
   await contributor.page.getByLabel("Slug").fill(slug);
   await contributor.page.getByLabel("Section").selectOption({ label: "News" });
   await expect(contributor.page.getByText("Loading editor…")).toHaveCount(0);
