@@ -12,6 +12,10 @@
 
 # testing
 /coverage
+/test-results/
+/playwright-report/
+/tmp/
+supabase.env
 
 # next.js
 /.next/
