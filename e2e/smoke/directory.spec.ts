@@ -28,6 +28,13 @@ test("directory search fits a phone", async ({ page }) => {
   expect(box?.x ?? 0).toBeGreaterThanOrEqual(0);
 });
 
+test("a listing page shows the medical disclaimer", async ({ page }) => {
+  const response = await page.goto("/directory/listing/zed-clinic");
+  expect(response?.status()).toBe(200);
+  await expect(page.getByRole("heading", { name: "Zed Clinic" })).toBeVisible();
+  await expect(page.getByRole("note")).toContainText("Information only — not medical advice.");
+});
+
 test("an unknown listing or country code is a 404", async ({ page }) => {
   expect((await page.goto("/directory/listing/not-a-real-listing"))?.status()).toBe(404);
   expect((await page.goto("/directory/not-a-country"))?.status()).toBe(404);

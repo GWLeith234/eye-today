@@ -46,7 +46,7 @@ test("submit a listing, approve it as verified, and keep the submission private"
   });
   expect(await draft.json()).toEqual([]);
 
-  await editor.page.getByLabel("Verification").selectOption("verified");
+  await editor.page.getByRole("combobox", { name: "Verification", exact: true }).selectOption("verified");
   await editor.page.getByLabel("Verification note").fill("Checked the operator website.");
   await editor.page.getByLabel("Status").selectOption("published");
   await editor.page.getByRole("button", { name: "Save listing" }).click();

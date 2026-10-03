@@ -90,6 +90,12 @@ begin
     'anon cannot see a pending listing';
   assert (select count(*) from public.directory_listings where slug = 'alpha-retreat') = 1,
     'anon can see a published listing';
+  failed := false;
+  begin
+    perform verification_note from public.directory_listings where slug = 'alpha-retreat';
+  exception when insufficient_privilege then failed := true;
+  end;
+  assert failed, 'anon cannot read verification_note';
   assert (select count(*) from public.directory_legal('MX')) = 0,
     'anon cannot see a draft legal-status page';
   assert (
@@ -156,6 +162,41 @@ begin
   exception when others then failed := sqlerrm = 'invalid submission';
   end;
   assert failed, 'unknown category is refused';
+end;
+$$;
+
+reset role;
+
+-- Under the site-wide cap a new address still goes through.
+set local request.jwt.claims = '{"role": "anon"}';
+set local role anon;
+select public.submit_directory_listing(
+  'Under Cap', 'treatment-clinic', 'MX', null, null, null, null, null, null, null, 'Under', 'under-cap@qa.test'
+);
+
+reset role;
+
+insert into public.listing_submissions (site_id, contact_email, status, payload)
+select '00000000-0000-4000-8000-000000000001',
+       'flood-' || g || '@qa.test',
+       'pending',
+       '{"name":"Flood"}'::jsonb
+  from generate_series(1, 100) as g;
+
+set local request.jwt.claims = '{"role": "anon"}';
+set local role anon;
+
+do $$
+declare
+  failed boolean := false;
+begin
+  begin
+    perform public.submit_directory_listing(
+      'Over Cap', 'treatment-clinic', 'MX', null, null, null, null, null, null, null, 'Over', 'over-cap@qa.test'
+    );
+  exception when others then failed := sqlerrm = 'too many submissions';
+  end;
+  assert failed, 'a fresh email is refused once 100 submissions exist in 24 hours';
 end;
 $$;
 

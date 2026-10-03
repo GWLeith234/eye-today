@@ -224,6 +224,15 @@ begin
     raise exception 'too many submissions' using errcode = 'P0001';
   end if;
 
+  -- One cap for the whole site. Rotating the contact email must not flood the queue.
+  select count(*) into recent
+    from public.listing_submissions s
+   where s.site_id = site
+     and s.created_at > pg_catalog.now() - interval '24 hours';
+  if recent >= 100 then
+    raise exception 'too many submissions' using errcode = 'P0001';
+  end if;
+
   insert into public.listing_submissions (site_id, contact_email, status, payload)
   values (
     site,
@@ -270,7 +279,16 @@ revoke all on table public.listing_submissions from anon, authenticated;
 grant select on table public.directory_categories to anon, authenticated;
 grant insert, update on table public.directory_categories to authenticated;
 
-grant select on table public.directory_listings to anon, authenticated;
+-- verification_note is the editor's private check, not a public field.
+-- A table-level select would expose it to the anon REST API, so anon is granted
+-- every other column. Editors read the note through the authenticated grant.
+grant select (
+  id, site_id, category_id, slug, name, country_code, region, city,
+  services, languages, website, public_email, public_phone, description,
+  logo_media_id, photo_media_ids, status, verification_level,
+  relationship_disclosure, last_reviewed_at, search, created_at, updated_at
+) on table public.directory_listings to anon;
+grant select on table public.directory_listings to authenticated;
 grant insert, update, delete on table public.directory_listings to authenticated;
 
 grant select on table public.country_legal_status to anon, authenticated;

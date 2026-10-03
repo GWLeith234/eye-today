@@ -1,3 +1,5 @@
+export const UNREVIEWED_SUBMISSION_NOTE = "Created from a public submission. Not yet reviewed.";
+
 export const VERIFICATION_LEVELS = ["listed", "verified", "medically_supervised"] as const;
 export type VerificationLevel = (typeof VERIFICATION_LEVELS)[number];
 

@@ -8,10 +8,11 @@ import { LONG_TOKENS, callClaude } from "@/lib/ai/claude";
 import { PROMPT } from "@/lib/ai/prompts/claims";
 import { claimsSchema } from "@/lib/ai/schemas";
 import { loginPath } from "@/lib/auth/access";
-import { getEditorContext } from "@/lib/auth/editor";
+import { getEditorContext, type EditorContext } from "@/lib/auth/editor";
+import { publishVerificationError } from "@/lib/directory/publish";
 import { splitTags } from "@/lib/directory/query";
 import { parseSourceLines } from "@/lib/directory/sources";
-import { LISTING_STATUSES, VERIFICATION_LEVELS } from "@/lib/directory/types";
+import { LISTING_STATUSES, UNREVIEWED_SUBMISSION_NOTE, VERIFICATION_LEVELS } from "@/lib/directory/types";
 import { rateLimit } from "@/lib/http/rate-limit";
 import { sanitizeLegalHtml } from "@/lib/public/content-doc";
 import { getSiteId } from "@/lib/site";
@@ -48,10 +49,14 @@ function blank(value: string): string | null {
   return trimmed ? trimmed : null;
 }
 
-function refreshListing(country: string, slug: string) {
+function refreshListing(country: string, slug: string, previous?: { country_code: string; slug: string } | null) {
   revalidatePath("/directory");
   revalidatePath(`/directory/${country.toLowerCase()}`);
   revalidatePath(`/directory/listing/${slug}`);
+  if (previous && previous.slug !== slug) revalidatePath(`/directory/listing/${previous.slug}`);
+  if (previous && previous.country_code.toUpperCase() !== country.toUpperCase()) {
+    revalidatePath(`/directory/${previous.country_code.toLowerCase()}`);
+  }
   revalidatePath("/sitemap.xml");
 }
 
@@ -86,6 +91,8 @@ export async function saveListing(_state: SaveState, formData: FormData): Promis
   if (parsed.data.status === "published" && parsed.data.description.trim().length === 0) {
     return { error: "A published listing needs a description." };
   }
+  const unverified = publishVerificationError(parsed.data.status, parsed.data.verification_level, parsed.data.verification_note);
+  if (unverified) return { error: unverified };
 
   const photos = formData
     .getAll("photos")
@@ -128,6 +135,15 @@ export async function saveListing(_state: SaveState, formData: FormData): Promis
   };
 
   const id = parsed.data.id;
+  let previous: { slug: string; country_code: string } | null = null;
+  if (id) {
+    const prior = await ctx.supabase
+      .from("directory_listings")
+      .select("slug, country_code")
+      .eq("id", id)
+      .maybeSingle<{ slug: string; country_code: string }>();
+    previous = prior.data;
+  }
   const result = id
     ? await ctx.supabase.from("directory_listings").update(row).eq("id", id).select("id").maybeSingle<{ id: string }>()
     : await ctx.supabase.from("directory_listings").insert(row).select("id").maybeSingle<{ id: string }>();
@@ -138,7 +154,7 @@ export async function saveListing(_state: SaveState, formData: FormData): Promis
     return { error: "The listing could not be saved." };
   }
 
-  refreshListing(row.country_code, row.slug);
+  refreshListing(row.country_code, row.slug, previous);
   redirect(`/admin/directory/${result.data.id}?saved=1`);
 }
 
@@ -165,25 +181,35 @@ function textField(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
+async function releaseSubmission(supabase: EditorContext["supabase"], id: string) {
+  await supabase.from("listing_submissions").update({ status: "pending", reviewed_by: null }).eq("id", id).eq("status", "accepted");
+}
+
 export async function acceptSubmission(formData: FormData) {
   const ctx = await getEditorContext();
   if (!ctx) redirect(loginPath("/admin/directory"));
   const id = String(formData.get("id") ?? "");
   if (!z.uuid().safeParse(id).success) redirect("/admin/directory?error=invalid");
 
-  const { data: submission } = await ctx.supabase
+  // Claim the pending row first so a second click cannot create another listing.
+  const { data: submission, error: claimError } = await ctx.supabase
     .from("listing_submissions")
-    .select("id, status, payload, site_id")
+    .update({ status: "accepted", reviewed_by: ctx.userId })
     .eq("id", id)
-    .maybeSingle<{ id: string; status: string; payload: Record<string, unknown> | null; site_id: string }>();
-  if (!submission) redirect("/admin/directory?error=not_found");
-  if (submission.status !== "pending") redirect("/admin/directory?error=not_pending");
+    .eq("status", "pending")
+    .select("id, payload, site_id")
+    .maybeSingle<{ id: string; payload: Record<string, unknown> | null; site_id: string }>();
+  if (claimError) redirect("/admin/directory?error=save_failed");
+  if (!submission) redirect("/admin/directory?error=not_pending");
 
   const payload = submission.payload ?? {};
   const name = textField(payload.name).trim().slice(0, 160);
   const categorySlug = textField(payload.category_slug);
   const country = textField(payload.country_code).toUpperCase();
-  if (!name || !/^[A-Z]{2}$/.test(country)) redirect("/admin/directory?error=invalid");
+  if (!name || !/^[A-Z]{2}$/.test(country)) {
+    await releaseSubmission(ctx.supabase, submission.id);
+    redirect("/admin/directory?error=invalid");
+  }
 
   const { data: category } = await ctx.supabase
     .from("directory_categories")
@@ -191,7 +217,10 @@ export async function acceptSubmission(formData: FormData) {
     .eq("site_id", submission.site_id)
     .eq("slug", categorySlug)
     .maybeSingle<{ id: string }>();
-  if (!category) redirect("/admin/directory?error=no_category");
+  if (!category) {
+    await releaseSubmission(ctx.supabase, submission.id);
+    redirect("/admin/directory?error=no_category");
+  }
 
   const base = (slugify(name) || "listing").slice(0, 100);
   let slug = base;
@@ -225,21 +254,25 @@ export async function acceptSubmission(formData: FormData) {
       description: textField(payload.description).replace(/[<>]/g, ""),
       status: "draft",
       verification_level: "listed",
-      verification_note: "Created from a public submission. Not yet reviewed.",
+      verification_note: UNREVIEWED_SUBMISSION_NOTE,
     })
     .select("id")
     .maybeSingle<{ id: string }>();
   if (error || !created) {
     console.error("directory accept failed", error?.code);
+    await releaseSubmission(ctx.supabase, submission.id);
     redirect("/admin/directory?error=save_failed");
   }
 
-  const { error: reviewError } = await ctx.supabase
+  const { error: linkError } = await ctx.supabase
     .from("listing_submissions")
-    .update({ status: "accepted", listing_id: created.id, reviewed_by: ctx.userId })
+    .update({ listing_id: created.id })
     .eq("id", submission.id)
-    .eq("status", "pending");
-  if (reviewError) console.error("directory accept review failed", reviewError.code);
+    .eq("status", "accepted");
+  if (linkError) {
+    console.error("directory accept link failed", linkError.code);
+    redirect("/admin/directory?error=save_failed");
+  }
 
   revalidatePath("/admin/directory");
   redirect(`/admin/directory/${created.id}?created=1`);

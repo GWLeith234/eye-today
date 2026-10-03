@@ -98,3 +98,27 @@ values
   ('00000000-0000-4000-8000-000000000001', 'NZ', '', '', '[]'::jsonb, 'draft'),
   ('00000000-0000-4000-8000-000000000001', 'GB', '', '', '[]'::jsonb, 'draft')
 on conflict (site_id, country_code) do nothing;
+
+-- One published listing so the public listing page can be opened in local checks.
+-- NZ keeps it out of the MX search assertions in supabase/tests/0013_directory.sql.
+insert into public.directory_listings (
+  id, site_id, category_id, slug, name, country_code, city, services, description,
+  status, verification_level, verification_note
+)
+select
+  '00000000-0000-4000-8000-000000000301',
+  '00000000-0000-4000-8000-000000000001',
+  c.id,
+  'zed-clinic',
+  'Zed Clinic',
+  'NZ',
+  'Wellington',
+  array['retreat'],
+  'A seeded clinic so the listing page can be opened.',
+  'published',
+  'listed',
+  'Seeded for local checks.'
+from public.directory_categories c
+where c.site_id = '00000000-0000-4000-8000-000000000001'
+  and c.slug = 'treatment-clinic'
+on conflict (id) do nothing;
