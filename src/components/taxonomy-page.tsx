@@ -1,6 +1,6 @@
 import { TAXONOMY_ERRORS } from "@/lib/taxonomy";
 
-type Row = { id: string; name: string; slug: string; sort?: number };
+export type Row = { id: string; name: string; slug: string; sort?: number; color?: string | null; icon?: string | null };
 
 export function TaxonomyPage({
   title,
@@ -9,6 +9,7 @@ export function TaxonomyPage({
   create,
   rename,
   withSort = false,
+  extra,
 }: {
   title: string;
   rows: Row[];
@@ -16,9 +17,11 @@ export function TaxonomyPage({
   create: (formData: FormData) => Promise<void>;
   rename: (formData: FormData) => Promise<void>;
   withSort?: boolean;
+  // An extra column, for edits that are not a rename (a section's colour and icon).
+  extra?: { header: string; cell: (row: Row) => React.ReactNode };
 }) {
   const error = typeof params.error === "string" ? TAXONOMY_ERRORS[params.error] : undefined;
-  const saved = params.saved === "created" ? "Created." : params.saved === "renamed" ? "Renamed." : undefined;
+  const saved = params.saved === "created" ? "Created." : params.saved === "renamed" ? "Renamed." : params.saved === "style" ? "Colour and icon saved." : undefined;
 
   return (
     <main className="flex flex-col gap-6 p-6">
@@ -51,6 +54,7 @@ export function TaxonomyPage({
           <tr>
             <th className="py-1">Name</th>
             <th className="py-1">Slug</th>
+            {extra ? <th className="py-1">{extra.header}</th> : null}
           </tr>
         </thead>
         <tbody>
@@ -66,6 +70,7 @@ export function TaxonomyPage({
                 </form>
               </td>
               <td className="py-1 font-mono text-xs">{row.slug}</td>
+              {extra ? <td className="py-1">{extra.cell(row)}</td> : null}
             </tr>
           ))}
         </tbody>

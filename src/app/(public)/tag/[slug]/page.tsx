@@ -25,5 +25,5 @@ export default async function TagPage({ params, searchParams }: PageProps<"/tag/
   if (!tag) notFound();
   const page = parsePage((await searchParams).page);
   const [cards, total] = await Promise.all([getTagArticles(tag.slug, page), getTagCount(tag.slug)]);
-  return <ListPage title={tag.name} cards={cards} page={page} total={total} basePath={`/tag/${tag.slug}`} />;
+  return <ListPage title={tag.name} band={{ label: "Tag" }} cards={cards} page={page} total={total} basePath={`/tag/${tag.slug}`} />;
 }

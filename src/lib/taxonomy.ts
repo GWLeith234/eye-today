@@ -67,5 +67,7 @@ export const TAXONOMY_ERRORS: Record<string, string> = {
   duplicate_slug: "That slug is already taken.",
   reserved_slug: "That slug is used by a site page. Choose another.",
   no_site: "No site is set up yet.",
+  invalid_color: "Use a colour like #1E5B4A, and pick an icon from the list.",
+  color_contrast: "That colour is too light to read on the page (text needs 4.5:1 against the page background). Pick a darker one.",
   save_failed: "That change could not be saved.",
 };

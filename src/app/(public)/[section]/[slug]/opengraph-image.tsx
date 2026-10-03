@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { ImageResponse } from "next/og";
 
+import { BRAND_HEX } from "@/lib/design/brand";
+import { isHexColor } from "@/lib/design/contrast";
 import { isReservedSectionSlug } from "@/lib/public/reserved";
 import { SITE_NAME } from "@/lib/public/site";
 import { createAnonClient } from "@/lib/supabase/anon";
@@ -19,12 +21,13 @@ export default async function Image({ params }: { params: Promise<{ section: str
   if (!supabase) notFound();
   const { data: article } = await supabase
     .from("articles")
-    .select("title, is_sponsored, sections(slug, name)")
+    .select("title, is_sponsored, sections(slug, name, color)")
     .eq("slug", slug)
     .limit(1)
-    .maybeSingle<{ title: string; is_sponsored: boolean; sections: { slug: string; name: string } | null }>();
+    .maybeSingle<{ title: string; is_sponsored: boolean; sections: { slug: string; name: string; color?: string | null } | null }>();
   if (!article?.sections || article.sections.slug !== section) notFound();
 
+  const accent = isHexColor(article.sections.color) ? article.sections.color : BRAND_HEX.brand;
   const title = article.title.length > 140 ? `${article.title.slice(0, 139)}…` : article.title;
   return new ImageResponse(
     (
@@ -36,16 +39,25 @@ export default async function Image({ params }: { params: Promise<{ section: str
           flexDirection: "column",
           justifyContent: "space-between",
           padding: "64px 72px",
-          background: "#fbfaf7",
-          color: "#1b1b1b",
-          borderTop: "16px solid #1d5c86",
+          background: BRAND_HEX.paper,
+          color: BRAND_HEX.ink,
+          borderTop: `16px solid ${accent}`,
         }}
       >
-        <div style={{ display: "flex", fontSize: 32, fontWeight: 700, letterSpacing: 4, textTransform: "uppercase", color: "#1d5c86" }}>
+        <div style={{ display: "flex", fontSize: 32, fontWeight: 700, letterSpacing: 4, textTransform: "uppercase", color: accent }}>
           {article.is_sponsored ? `Sponsored · ${article.sections.name}` : article.sections.name}
         </div>
         <div style={{ display: "flex", fontSize: title.length > 80 ? 56 : 72, fontWeight: 700, lineHeight: 1.1 }}>{title}</div>
-        <div style={{ display: "flex", fontSize: 40, fontWeight: 700, borderTop: "2px solid #1b1b1b", paddingTop: 24 }}>{SITE_NAME}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 20, fontSize: 40, fontWeight: 700, borderTop: `2px solid ${BRAND_HEX.ink}`, paddingTop: 24 }}>
+          <svg width="56" height="56" viewBox="0 0 40 40">
+            <circle cx="20" cy="20" r="18" fill="none" stroke={BRAND_HEX.brand} strokeWidth="3" />
+            <circle cx="20" cy="20" r="12" fill={BRAND_HEX.brand} />
+            <circle cx="20" cy="20" r="8" fill="none" stroke={BRAND_HEX.accent} strokeWidth="2" />
+            <circle cx="20" cy="20" r="4.5" fill={BRAND_HEX.ink} />
+            <circle cx="24.5" cy="15.5" r="2" fill={BRAND_HEX.paper} />
+          </svg>
+          {SITE_NAME}
+        </div>
       </div>
     ),
     size,

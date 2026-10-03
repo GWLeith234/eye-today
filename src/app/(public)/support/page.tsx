@@ -54,7 +54,7 @@ export default async function SupportPage({ searchParams }: PageProps<"/support"
         <ul className="grid gap-4 sm:grid-cols-3">
           {tiers.map((tier) => (
             <li key={tier.slug} className="flex flex-col gap-2 border border-rule bg-white/60 p-4">
-              <h2 className="font-serif text-xl font-bold">{tier.name}</h2>
+              <h2 className="font-display text-xl font-bold">{tier.name}</h2>
               <p className="text-2xl font-semibold">
                 {cad(tier.price_cents)} <span className="text-sm font-normal text-muted">{CADENCE[tier.slug]}</span>
               </p>

@@ -12,7 +12,7 @@ export async function NotFoundView() {
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-10">
-      <h1 className="font-serif text-4xl font-bold">Page not found</h1>
+      <h1 className="font-display text-4xl font-bold">Page not found</h1>
       <p className="text-lg">That address is not on Eye Today. Try a search, or start from the front page.</p>
       <form action="/search" method="get" role="search" className="flex flex-wrap items-end gap-2">
         <label htmlFor="not-found-q" className="flex min-w-48 flex-1 flex-col gap-1 text-sm font-semibold">
@@ -23,7 +23,7 @@ export async function NotFoundView() {
       </form>
       {latest.length ? (
         <section aria-labelledby="not-found-latest" className="flex flex-col gap-2">
-          <h2 id="not-found-latest" className="font-serif text-2xl font-bold">Latest stories</h2>
+          <h2 id="not-found-latest" className="font-display text-2xl font-bold">Latest stories</h2>
           <ul className="flex flex-col gap-2">
             {latest.map((card) => (
               <li key={articleHref(card)}>

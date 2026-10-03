@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cache } from "react";
+
 import { createAnonClient } from "@/lib/supabase/anon";
 
 import { PAGE_SIZE } from "./paging";
@@ -25,7 +27,7 @@ export type ArticleCard = {
 
 export type HomepageCard = ArticleCard & { slot: "lead" | "secondary"; slot_position: number };
 
-export type Section = { id: string; name: string; slug: string; sort: number };
+export type Section = { id: string; name: string; slug: string; sort: number; color: string | null; icon: string | null };
 
 function client() {
   return createAnonClient();
@@ -49,18 +51,20 @@ async function count(fn: string, args: Record<string, unknown>): Promise<number>
   return typeof data === "number" ? data : 0;
 }
 
-export async function getSections(): Promise<Section[]> {
+// color and icon arrive with migration 0012. Until it is applied the wider select fails, so fall back to
+// the original columns and the site keeps its navigation (sections then use their token colours).
+// cache(): the header, the cards and the page share one query per request.
+export const getSections = cache(async (): Promise<Section[]> => {
   const supabase = client();
   if (!supabase) return [];
-  const { data } = await supabase.from("sections").select("id, name, slug, sort").order("sort").order("name");
-  return (data ?? []) as Section[];
-}
+  const wide = await supabase.from("sections").select("id, name, slug, sort, color, icon").order("sort").order("name");
+  if (!wide.error) return (wide.data ?? []) as Section[];
+  const narrow = await supabase.from("sections").select("id, name, slug, sort").order("sort").order("name");
+  return ((narrow.data ?? []) as Omit<Section, "color" | "icon">[]).map((row) => ({ ...row, color: null, icon: null }));
+});
 
 export async function getSection(slug: string): Promise<Section | null> {
-  const supabase = client();
-  if (!supabase) return null;
-  const { data } = await supabase.from("sections").select("id, name, slug, sort").eq("slug", slug).maybeSingle<Section>();
-  return data;
+  return (await getSections()).find((section) => section.slug === slug) ?? null;
 }
 
 export async function getHomepage(): Promise<HomepageCard[]> {
@@ -89,7 +93,7 @@ export async function getAuthor(slug: string) {
   const supabase = client();
   if (!supabase) return null;
   const { data } = await supabase.rpc("author_public", { author_slug: slug });
-  const rows = (data ?? []) as { display_name: string | null; bio: string | null; disclosure: string | null; slug: string }[];
+  const rows = (data ?? []) as { display_name: string | null; bio: string | null; disclosure: string | null; slug: string; avatar_url?: string | null }[];
   return rows[0] ?? null;
 }
 
@@ -99,7 +103,18 @@ export async function getBylines(articleId: string) {
   const supabase = client();
   if (!supabase) return [];
   const { data } = await supabase.rpc("article_public_bylines", { article: articleId });
-  return (data ?? []) as { display_name: string | null; disclosure: string | null; author_slug: string | null }[];
+  return (data ?? []) as { display_name: string | null; disclosure: string | null; author_slug: string | null; avatar_url?: string | null }[];
+}
+
+export type CardAuthor = { article_slug: string; author_slug: string | null; display_name: string | null; avatar_url: string | null };
+
+// The first author and photo of a few stories in one section, in one call (the Opinion rail).
+export async function getCardAuthors(sectionSlug: string, articleSlugs: string[]): Promise<CardAuthor[]> {
+  const supabase = client();
+  if (!supabase || articleSlugs.length === 0) return [];
+  const { data, error } = await supabase.rpc("card_authors", { section_slug: sectionSlug, article_slugs: articleSlugs });
+  if (error) return [];
+  return (data ?? []) as CardAuthor[];
 }
 
 export function articleHref(card: { section_slug: string; article_slug: string }) {

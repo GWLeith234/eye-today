@@ -1,10 +1,10 @@
-// The site's paper, ink and accent (src/app/globals.css). Email clients ignore CSS variables.
+// The site's brand tokens (src/app/globals.css). Email clients ignore CSS variables, so the values are repeated.
 export const COLORS = {
-  paper: "#fbfaf7",
-  ink: "#1b1b1b",
-  muted: "#5c5c5c",
-  rule: "#dcd8cf",
-  accent: "#1d5c86",
+  paper: "#faf8f3",
+  ink: "#14201b",
+  muted: "#5b625e",
+  rule: "#e3ded3",
+  accent: "#1e5b4a",
 };
 
 export const SERIF = 'Georgia, "Times New Roman", serif';

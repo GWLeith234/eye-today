@@ -6,14 +6,16 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 
 import { AdSlot } from "@/components/public/ad-slot";
+import { Avatar } from "@/components/public/avatar";
 import { ShareRow } from "@/components/public/share-row";
 import { StoryCard } from "@/components/public/story-card";
 import { NewsletterForm } from "@/components/public/newsletter-form";
 import { SupportNote } from "@/components/public/support-note";
 import { ViewBeacon } from "@/components/public/view-beacon";
+import { sectionStyle } from "@/lib/design/section";
 import { sanitizeArticleHtml } from "@/lib/editor/sanitize";
 import { mediaUrl } from "@/lib/media/url";
-import { getBylines, getRelated } from "@/lib/public/data";
+import { getBylines, getRelated, getSections } from "@/lib/public/data";
 import { MEDICAL_DISCLAIMER } from "@/lib/public/disclaimer";
 import { isReservedSectionSlug } from "@/lib/public/reserved";
 import { SITE_DESCRIPTION, SITE_NAME, absoluteUrl, publicDate, siteOrigin } from "@/lib/public/site";
@@ -112,7 +114,8 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
   const article = await loadArticle(section, slug);
   if (!article || !article.sections) notFound();
 
-  const [bylines, related] = await Promise.all([getBylines(article.id), getRelated(article.id)]);
+  const [bylines, related, sections] = await Promise.all([getBylines(article.id), getRelated(article.id), getSections()]);
+  const sectionRow = sections.find((row) => row.slug === article.sections?.slug);
   const published = publicDate(article);
   // Only show "Updated" when the edit came meaningfully after publication.
   const updated =
@@ -146,72 +149,83 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
     articleSection: article.sections.name,
   };
 
+  const names = (byline: (typeof bylines)[number]) => byline.display_name ?? "Eye Today contributor";
+
   return (
-    <article className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-8">
+    <article style={sectionStyle(article.sections.slug, sectionRow?.color)} className="flex w-full flex-col">
       <script
         type="application/ld+json"
         // JSON.stringify escapes quotes; escaping < keeps "</script>" in a title from closing the tag.
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
       />
-      <p className="text-xs font-semibold uppercase tracking-widest">
-        {article.is_sponsored ? <span className="mr-2 bg-ink px-1 py-0.5 text-paper">Sponsored</span> : null}
-        <Link href={`/${article.sections.slug}`} className="text-accent hover:underline">
-          {article.sections.name}
-        </Link>
-      </p>
-      <h1 className="font-serif text-4xl font-bold leading-tight sm:text-5xl">{article.title}</h1>
-      {article.dek ? <p className="text-xl text-muted">{article.dek}</p> : null}
-      {article.is_sponsored ? (
-        <div className="flex items-center gap-3 border-l-4 border-ink pl-3 text-sm">
-          {logo ? (
-            // eslint-disable-next-line @next/next/no-img-element -- sponsor logo from Supabase Storage, natural size
-            <img
-              src={mediaUrl(logo.storage_path, { width: 240 })}
-              alt={logo.alt || article.sponsor_name || "Sponsor logo"}
-              loading="lazy"
-              className="max-h-12 w-auto max-w-[8rem] shrink-0"
-            />
+
+      <header className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 pb-6 pt-8">
+        <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest">
+          {article.is_sponsored ? <span className="bg-ink px-1.5 py-0.5 text-paper">Sponsored</span> : null}
+          <Link href={`/${article.sections.slug}`} className="sec-bg px-2 py-1 hover:brightness-110">
+            {article.sections.name}
+          </Link>
+        </p>
+        <h1 className="font-display text-4xl font-black leading-[1.1] sm:text-5xl lg:text-6xl">{article.title}</h1>
+        {article.dek ? <p className="max-w-3xl font-serif text-xl text-muted sm:text-2xl">{article.dek}</p> : null}
+
+        {article.is_sponsored ? (
+          <div className="flex items-center gap-3 border-l-4 border-ink pl-3 text-sm">
+            {logo ? (
+              // eslint-disable-next-line @next/next/no-img-element -- sponsor logo from Supabase Storage, natural size
+              <img
+                src={mediaUrl(logo.storage_path, { width: 240 })}
+                alt={logo.alt || article.sponsor_name || "Sponsor logo"}
+                loading="lazy"
+                className="max-h-12 w-auto max-w-[8rem] shrink-0"
+              />
+            ) : null}
+            <p>
+              Sponsored content{article.sponsor_name ? <> paid for by <strong>{article.sponsor_name}</strong></> : null}.
+              Eye Today&rsquo;s newsroom did not write or edit it.
+            </p>
+          </div>
+        ) : null}
+
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 border-y border-rule py-3 text-sm">
+          {bylines.length ? (
+            <div className="flex items-center gap-3">
+              <span className="flex -space-x-2">
+                {bylines.slice(0, 3).map((byline, index) => (
+                  <span key={index} className="rounded-full ring-2 ring-paper"><Avatar url={byline.avatar_url} name={byline.display_name} size={44} /></span>
+                ))}
+              </span>
+              <p className="font-bold">
+                By{" "}
+                {bylines.map((byline, index) => (
+                  <span key={index}>
+                    {index > 0 ? (index === bylines.length - 1 ? " and " : ", ") : null}
+                    {byline.author_slug ? (
+                      <Link href={`/author/${byline.author_slug}`} className="hover:underline">{names(byline)}</Link>
+                    ) : (
+                      names(byline)
+                    )}
+                  </span>
+                ))}
+              </p>
+            </div>
           ) : null}
-          <p>
-            Sponsored content{article.sponsor_name ? <> paid for by <strong>{article.sponsor_name}</strong></> : null}.
-            Eye Today&rsquo;s newsroom did not write or edit it.
+          <p className="flex flex-wrap gap-x-3 text-muted">
+            {published ? <Time value={published} label="Published" /> : null}
+            {updated ? <Time value={updated} label="Updated" /> : null}
           </p>
         </div>
-      ) : null}
-
-      <div className="flex flex-col gap-1 border-y border-rule py-3 text-sm">
-        {bylines.length ? (
-          <p className="font-semibold">
-            By{" "}
-            {bylines.map((byline, index) => (
-              <span key={index}>
-                {index > 0 ? (index === bylines.length - 1 ? " and " : ", ") : null}
-                {byline.author_slug ? (
-                  <Link href={`/author/${byline.author_slug}`} className="hover:underline">
-                    {byline.display_name ?? "Eye Today contributor"}
-                  </Link>
-                ) : (
-                  (byline.display_name ?? "Eye Today contributor")
-                )}
-              </span>
-            ))}
-          </p>
-        ) : null}
-        <p className="flex flex-wrap gap-x-3 text-muted">
-          {published ? <Time value={published} label="Published" /> : null}
-          {updated ? <Time value={updated} label="Updated" /> : null}
-        </p>
-      </div>
+      </header>
 
       {hero ? (
-        <figure className="flex flex-col gap-1">
+        <figure className="mx-auto flex w-full max-w-5xl flex-col gap-2 px-0 sm:px-4">
           {hero.width && hero.height ? (
             <Image
               src={mediaUrl(hero.storage_path, { width: 1600 })}
               alt={hero.alt || ""}
               width={hero.width}
               height={hero.height}
-              sizes="(min-width: 768px) 48rem, 100vw"
+              sizes="(min-width: 1024px) 64rem, 100vw"
               preload
               className="h-auto w-full"
             />
@@ -221,65 +235,80 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
                 src={mediaUrl(hero.storage_path, { width: 1600 })}
                 alt={hero.alt || ""}
                 fill
-                sizes="(min-width: 768px) 48rem, 100vw"
+                sizes="(min-width: 1024px) 64rem, 100vw"
                 preload
                 className="object-cover"
               />
             </div>
           )}
           {hero.caption || hero.credit ? (
-            <figcaption className="text-xs text-muted">
+            <figcaption className="px-4 text-xs text-muted sm:px-0">
               {hero.caption}
               {hero.caption && hero.credit ? " " : null}
-              {hero.credit ? <span>Photo: {hero.credit}</span> : null}
+              {hero.credit ? <span className="font-semibold">Photo: {hero.credit}</span> : null}
             </figcaption>
           ) : null}
         </figure>
       ) : null}
 
-      <ShareRow path={path} title={article.title} origin={origin} />
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
+        <ShareRow path={path} title={article.title} origin={origin} />
 
-      {/* body_html is sanitized when saved and again here in case a row was written elsewhere. */}
-      <div className="article-body flex flex-col gap-4" dangerouslySetInnerHTML={{ __html: sanitizeArticleHtml(article.body_html ?? "", { sponsored: article.is_sponsored }) }} />
+        {/* body_html is sanitized when saved and again here in case a row was written elsewhere. */}
+        <div className="article-body flex flex-col gap-4" dangerouslySetInnerHTML={{ __html: sanitizeArticleHtml(article.body_html ?? "", { sponsored: article.is_sponsored }) }} />
 
-      <AdSlot name="in-article" />
+        <AdSlot name="in-article" />
 
-      <section aria-label="Author disclosures" className="flex flex-col gap-2 rounded border border-rule bg-white/60 p-4 text-sm">
-        <h2 className="font-semibold uppercase tracking-widest">Disclosure</h2>
-        {bylines.length ? (
-          bylines.map((byline, index) => (
-            <p key={index} className="whitespace-pre-wrap">
-              {/* Plain text only: React escapes it; disclosures are never rendered as HTML. */}
-              <span className="font-semibold">{byline.display_name ?? "Eye Today contributor"}: </span>
-              {byline.disclosure?.trim() ? byline.disclosure : "No disclosure on file."}
-            </p>
-          ))
-        ) : (
-          <p>No disclosure on file.</p>
-        )}
-      </section>
+        <section aria-label="Author disclosures" className="flex flex-col gap-3 border-l-4 sec-rule bg-white p-5 text-sm shadow-sm">
+          <h2 className="sec-text text-xs font-bold uppercase tracking-widest">Disclosure</h2>
+          {bylines.length ? (
+            bylines.map((byline, index) => (
+              <div key={index} className="flex gap-3">
+                <Avatar url={byline.avatar_url} name={byline.display_name} size={36} />
+                <p className="whitespace-pre-wrap">
+                  {/* Plain text only: React escapes it; disclosures are never rendered as HTML. */}
+                  <span className="font-bold">{names(byline)}: </span>
+                  {byline.disclosure?.trim() ? byline.disclosure : "No disclosure on file."}
+                </p>
+              </div>
+            ))
+          ) : (
+            <p>No disclosure on file.</p>
+          )}
+        </section>
 
-      <p role="note" className="border-l-4 border-accent bg-white/60 p-3 text-sm font-semibold">
-        {MEDICAL_DISCLAIMER}{" "}
-        <Link href="/disclaimer" className="underline">Read the full disclaimer</Link>
-      </p>
+        <p role="note" className="flex gap-3 border-l-4 border-accent bg-white p-4 text-sm font-semibold shadow-sm">
+          <span aria-hidden="true" className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-black text-ink">i</span>
+          <span>
+            {MEDICAL_DISCLAIMER}{" "}
+            <Link href="/disclaimer" className="underline">Read the full disclaimer</Link>
+          </span>
+        </p>
 
-      <SupportNote />
+        <SupportNote />
+      </div>
 
       {related.length ? (
-        <section aria-labelledby="related-heading" className="flex flex-col gap-4 border-t-2 border-ink pt-4">
-          <h2 id="related-heading" className="font-serif text-2xl font-bold">Related</h2>
-          <div className="grid gap-6 sm:grid-cols-2">
+        <section aria-labelledby="related-heading" className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-8">
+          <h2 id="related-heading" className="border-b-2 border-ink pb-2 font-display text-2xl font-black">Related stories</h2>
+          <div className="grid gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
             {related.map((card) => (
-              <StoryCard key={`${card.section_slug}/${card.article_slug}`} card={card} />
+              <StoryCard key={`${card.section_slug}/${card.article_slug}`} card={card} variant="standard" />
             ))}
           </div>
         </section>
       ) : null}
 
-      <section aria-label="Newsletter" className="flex flex-col gap-3 border-t-2 border-ink pt-4">
-        <h2 className="font-serif text-2xl font-bold">Get Eye Today by email</h2>
-        <NewsletterForm />
+      <section aria-labelledby="article-newsletter" className="mx-auto w-full max-w-4xl px-4 pb-4">
+        <div className="grid gap-5 bg-brand p-6 text-paper sm:grid-cols-2 sm:items-center sm:p-8">
+          <div className="flex flex-col gap-2">
+            <h2 id="article-newsletter" className="font-display text-2xl font-black">Get Eye Today by email</h2>
+            <p>Stories like this one, in the Daily Brief or the Weekly Roundup.</p>
+          </div>
+          <div className="rounded bg-paper p-4 text-ink">
+            <NewsletterForm compact />
+          </div>
+        </div>
       </section>
 
       <ViewBeacon articleId={article.id} />

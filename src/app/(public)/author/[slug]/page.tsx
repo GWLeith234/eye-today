@@ -39,11 +39,12 @@ export default async function AuthorPage({ params, searchParams }: PageProps<"/a
   return (
     <ListPage
       title={author.display_name ?? "Eye Today contributor"}
+      band={{ label: "Author", avatarUrl: author.avatar_url ?? null }}
       intro={
         <div className="flex flex-col gap-3">
           {author.bio ? <p className="whitespace-pre-wrap text-lg">{author.bio}</p> : null}
-          <section aria-label="Disclosure" className="border border-rule bg-white/60 p-3 text-sm">
-            <h2 className="font-semibold">Disclosure</h2>
+          <section aria-label="Disclosure" className="max-w-3xl border-l-4 border-brand bg-white p-4 text-sm">
+            <h2 className="mb-1 text-xs font-bold uppercase tracking-widest text-brand">Disclosure</h2>
             <p className="whitespace-pre-wrap">{author.disclosure?.trim() || "No disclosure on file."}</p>
           </section>
         </div>

@@ -20,11 +20,11 @@ export function AccountLink() {
   }, []);
   return (
     <span className="inline-flex items-center gap-2">
-      <Link href={signedIn ? "/account" : "/login"} className="rounded border border-ink px-2 py-0.5 hover:bg-ink hover:text-paper">
+      <Link href={signedIn ? "/account" : "/login"} className="rounded border border-ink px-2.5 py-1 hover:bg-ink hover:text-paper">
         {signedIn ? "Account" : "Sign in"}
       </Link>
       {signedIn && role === "supporter" ? (
-        <span className="rounded bg-accent px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-paper">Supporter</span>
+        <span className="rounded bg-accent px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-ink">Supporter</span>
       ) : null}
     </span>
   );

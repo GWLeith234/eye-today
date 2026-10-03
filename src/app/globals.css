@@ -1,38 +1,92 @@
 @import "tailwindcss";
 
-/* Neutral placeholder palette; swap values for the Eye Today brand later. */
+/* Brand tokens. This block is the only place a colour or font is chosen: change a value here and the
+   whole site follows. src/lib/design/tokens.test.ts reads it and fails if a text/background pair stops
+   meeting WCAG AA (4.5:1). Amber is for fills and rules, never for text on paper (it is 2.5:1 there). */
 @theme {
-  --color-paper: #fbfaf7;
-  --color-ink: #1b1b1b;
-  --color-muted: #5c5c5c;
-  --color-rule: #dcd8cf;
-  --color-accent: #1d5c86;
+  --color-paper: #faf8f3;
+  --color-ink: #14201b;
+  --color-brand: #1e5b4a;
+  --color-accent: #d98e2b;
+  --color-rule: #e3ded3;
+  --color-muted: #5b625e;
+
+  /* One colour per section. Sections store their own in the database; these are the fallbacks and the defaults. */
+  --color-sec-news: #1e5b4a;
+  --color-sec-research-science: #2f6fa3;
+  --color-sec-policy-law: #6b4c9a;
+  --color-sec-treatment-clinics: #a9472f;
+  --color-sec-stories: #966810;
+  --color-sec-opinion: #3f3f46;
 
   /* Older admin screens use background/foreground. */
-  --color-background: #fbfaf7;
-  --color-foreground: #1b1b1b;
+  --color-background: var(--color-paper);
+  --color-foreground: var(--color-ink);
+}
 
-  /* System fonts only: no remote font requests. */
-  --font-serif: ui-serif, Georgia, "Times New Roman", serif;
-  --font-sans: ui-sans-serif, system-ui, sans-serif;
+/* next/font (src/app/layout.tsx) defines --font-fraunces, --font-source-serif and --font-inter on <html>.
+   The stacks are plain variables so plain CSS and inline SVG can use them as well as the utilities. */
+:root {
+  --stack-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --stack-serif: var(--font-source-serif), Georgia, "Times New Roman", serif;
+  --stack-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+@theme inline {
+  --font-display: var(--stack-display);
+  --font-serif: var(--stack-serif);
+  --font-sans: var(--stack-sans);
+}
+
+html {
+  scroll-padding-top: 4.5rem;
 }
 
 body {
   background: var(--color-paper);
   color: var(--color-ink);
-  font-family: var(--font-sans);
+  font-family: var(--stack-sans);
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+/* A section's colour, set as --sec on a wrapper (see src/lib/design/section.ts). */
+.sec-text { color: var(--sec, var(--color-brand)); }
+.sec-bg { background-color: var(--sec, var(--color-brand)); color: var(--color-paper); }
+.sec-rule { border-color: var(--sec, var(--color-brand)); }
+
+/* Mobile menu: a native <dialog>, so focus is trapped and Esc closes it without script. */
+dialog.menu-panel {
+  margin: 0 0 0 auto;
+  height: 100dvh;
+  max-height: 100dvh;
+  width: min(22rem, 88vw);
+  border: 0;
+  padding: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  transform: translateX(100%);
+  transition: transform 0.2s ease-out;
+}
+dialog.menu-panel[open] { transform: translateX(0); }
+dialog.menu-panel::backdrop { background: rgb(20 32 27 / 0.55); }
+@media (prefers-reduced-motion: reduce) {
+  dialog.menu-panel { transition: none; }
 }
 
 /* Stored article HTML (sanitized). */
 .article-body {
-  font-family: var(--font-serif);
-  font-size: 1.125rem;
-  line-height: 1.7;
+  font-family: var(--stack-serif);
+  font-size: 1.1875rem;
+  line-height: 1.75;
 }
+.article-body h2, .article-body h3, .article-body h4 { font-family: var(--stack-display); }
 .article-body h2 { font-size: 1.6rem; font-weight: 700; line-height: 1.25; margin-top: 1.5rem; }
 .article-body h3 { font-size: 1.3rem; font-weight: 700; line-height: 1.3; margin-top: 1.25rem; }
 .article-body h4 { font-size: 1.1rem; font-weight: 700; margin-top: 1rem; }
-.article-body a { color: var(--color-accent); text-decoration: underline; }
+.article-body a { color: var(--sec, var(--color-brand)); text-decoration: underline; }
 .article-body ul { list-style: disc; padding-left: 1.5rem; }
 .article-body ol { list-style: decimal; padding-left: 1.5rem; }
 .article-body blockquote { border-left: 3px solid var(--color-rule); padding-left: 1rem; color: var(--color-muted); }
@@ -50,10 +104,10 @@ body {
 .article-body figure.embed iframe { width: 100%; }
 
 .content-doc > * + * { margin-top: 1rem; }
-.content-doc h2 { font-family: var(--font-serif); font-size: 1.5rem; font-weight: 700; line-height: 1.25; margin-top: 1.75rem; }
+.content-doc h2 { font-family: var(--stack-display); font-size: 1.5rem; font-weight: 700; line-height: 1.25; margin-top: 1.75rem; }
 .content-doc h3 { font-size: 1.2rem; font-weight: 700; margin-top: 1.25rem; }
 .content-doc h4 { font-size: 1.05rem; font-weight: 700; margin-top: 1rem; }
-.content-doc a { color: var(--color-accent); text-decoration: underline; }
+.content-doc a { color: var(--color-brand); text-decoration: underline; }
 .content-doc ul { list-style: disc; padding-left: 1.25rem; }
 .content-doc ol { list-style: decimal; padding-left: 1.25rem; }
-.content-doc blockquote { border-left: 3px solid var(--color-accent); padding-left: 1rem; }
+.content-doc blockquote { border-left: 3px solid var(--color-brand); padding-left: 1rem; }

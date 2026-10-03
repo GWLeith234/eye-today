@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
+import { Fraunces, Inter, Source_Serif_4 } from "next/font/google";
+
 import { SITE_DESCRIPTION, SITE_NAME, siteOrigin } from "@/lib/public/site";
 
 import "./globals.css";
+
+// next/font downloads these at build time and serves them from our own origin: no runtime font requests.
+// Each exposes a CSS variable that globals.css maps to --font-display / --font-serif / --font-sans.
+const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces", display: "swap" });
+const sourceSerif = Source_Serif_4({ subsets: ["latin"], variable: "--font-source-serif", display: "swap", style: ["normal", "italic"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 
 const siteUrl = siteOrigin();
 
@@ -15,7 +23,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className="h-full antialiased">
+    <html lang="en" className={`${fraunces.variable} ${sourceSerif.variable} ${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
