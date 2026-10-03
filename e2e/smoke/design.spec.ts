@@ -22,6 +22,17 @@ test("the mobile menu traps focus and Escape closes it", async ({ page }) => {
   await expect(menu).toBeFocused();
 });
 
+test("a link in the mobile menu closes it", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Menu" }).click();
+  const dialog = page.getByRole("dialog", { name: "Sections" });
+  await dialog.getByRole("link", { name: "Newsletter" }).click();
+  await expect(page).toHaveURL(/\/newsletter$/);
+  await expect(dialog).toHaveCount(0);
+  await expect(page.locator("body")).toHaveCSS("overflow", "visible");
+});
+
 test("a cover with stories shows the lead, the latest and fallback art", async ({ page }) => {
   await page.goto("/");
   const empty = await page.getByRole("heading", { name: "The first stories are on their way." }).count();

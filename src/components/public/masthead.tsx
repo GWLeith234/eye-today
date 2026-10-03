@@ -39,7 +39,11 @@ function SectionLink({ section, active }: { section: NavSection; active: boolean
 export function Masthead({ sections, dateLabel }: { sections: NavSection[]; dateLabel: string }) {
   const path = usePathname();
   const [compact, setCompact] = useState(false);
-  const [open, setOpen] = useState(false);
+  // The path the menu was opened on. A client navigation changes `path`, so the
+  // overlay, focus trap and scroll lock drop without an effect.
+  const [menuPath, setMenuPath] = useState<string | null>(null);
+  const open = menuPath === path;
+  const closeMenu = () => setMenuPath(null);
   const menuButton = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -60,7 +64,7 @@ export function Masthead({ sections, dateLabel }: { sections: NavSection[]; date
     first?.focus();
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setOpen(false);
+        closeMenu();
         menuButton.current?.focus();
         return;
       }
@@ -126,7 +130,7 @@ export function Masthead({ sections, dateLabel }: { sections: NavSection[]; date
             className="rounded border border-ink px-2 py-1 font-semibold lg:hidden"
             aria-expanded={open}
             aria-controls="site-menu"
-            onClick={() => setOpen(true)}
+            onClick={() => setMenuPath(path)}
           >
             Menu
           </button>
@@ -134,18 +138,18 @@ export function Masthead({ sections, dateLabel }: { sections: NavSection[]; date
       </div>
       {open ? (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <button type="button" aria-label="Close menu" tabIndex={-1} className="absolute inset-0 cursor-default bg-ink/40" onClick={() => setOpen(false)} />
+          <button type="button" aria-label="Close menu" tabIndex={-1} className="absolute inset-0 cursor-default bg-ink/40" onClick={closeMenu} />
           <div
             id="site-menu"
             ref={panel}
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            className="absolute inset-y-0 right-0 flex w-[min(100%,20rem)] flex-col gap-4 overflow-y-auto bg-paper p-4 shadow-xl"
+            className="absolute inset-y-0 right-0 z-10 flex w-[min(100%,20rem)] flex-col gap-4 overflow-y-auto bg-paper p-4 shadow-xl"
           >
             <div className="flex items-center justify-between">
               <h2 id={titleId} className="font-display text-xl font-semibold">Sections</h2>
-              <button type="button" className="rounded border border-ink px-2 py-1 text-sm font-semibold" onClick={() => { setOpen(false); menuButton.current?.focus(); }}>
+              <button type="button" className="rounded border border-ink px-2 py-1 text-sm font-semibold" onClick={() => { closeMenu(); menuButton.current?.focus(); }}>
                 Close
               </button>
             </div>
