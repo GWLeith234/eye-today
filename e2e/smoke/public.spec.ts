@@ -15,6 +15,7 @@ const PAGES = [
   "/newsletter",
   "/support",
   "/search",
+  "/directory/how-we-verify",
 ];
 
 test("public pages return 200", async ({ request }) => {
@@ -78,7 +79,7 @@ test("report-only CSP does not flag public pages", async ({ page }) => {
       record.__csp.push(`${event.effectiveDirective} ${event.blockedURI}`);
     });
   });
-  for (const path of ["/", "/privacy", "/editorial-policy", "/write-for-us", "/newsletter", "/support", "/search"]) {
+  for (const path of ["/", "/privacy", "/editorial-policy", "/write-for-us", "/newsletter", "/support", "/search", "/directory"]) {
     await page.goto(path);
     const violations = await page.evaluate(() => (window as unknown as { __csp?: string[] }).__csp ?? []);
     expect(violations, path).toEqual([]);

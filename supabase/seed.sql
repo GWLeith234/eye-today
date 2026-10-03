@@ -70,3 +70,55 @@ values
   ('00000000-0000-4000-8000-000000000001', 'annual', 'Annual supporter', 'A full year of support, and two months free compared with monthly.', 8000, 'year'),
   ('00000000-0000-4000-8000-000000000001', 'once', 'One-time gift', 'A single contribution toward the next investigation.', 2500, 'once')
 on conflict (site_id, slug) do nothing;
+
+-- Directory. 0013 seeds these for sites that already exist; on a fresh reset the site
+-- above is created after the migrations run, so seed them here too. Legal rows are
+-- empty drafts: do not write a summary.
+insert into public.directory_categories (site_id, slug, name, sort)
+values
+  ('00000000-0000-4000-8000-000000000001', 'treatment-clinic', 'Treatment clinic / retreat', 10),
+  ('00000000-0000-4000-8000-000000000001', 'medical-practitioner', 'Medical practitioner', 20),
+  ('00000000-0000-4000-8000-000000000001', 'integration-coach', 'Integration coach / therapist', 30),
+  ('00000000-0000-4000-8000-000000000001', 'harm-reduction', 'Harm-reduction service', 40),
+  ('00000000-0000-4000-8000-000000000001', 'peer-support', 'Peer support group', 50),
+  ('00000000-0000-4000-8000-000000000001', 'research-organisation', 'Research organisation', 60),
+  ('00000000-0000-4000-8000-000000000001', 'advocacy-group', 'Advocacy group', 70)
+on conflict (site_id, slug) do nothing;
+
+insert into public.country_legal_status (site_id, country_code, title, summary_html, sources, status)
+values
+  ('00000000-0000-4000-8000-000000000001', 'MX', '', '', '[]'::jsonb, 'draft'),
+  ('00000000-0000-4000-8000-000000000001', 'CR', '', '', '[]'::jsonb, 'draft'),
+  ('00000000-0000-4000-8000-000000000001', 'PT', '', '', '[]'::jsonb, 'draft'),
+  ('00000000-0000-4000-8000-000000000001', 'NL', '', '', '[]'::jsonb, 'draft'),
+  ('00000000-0000-4000-8000-000000000001', 'BR', '', '', '[]'::jsonb, 'draft'),
+  ('00000000-0000-4000-8000-000000000001', 'CA', '', '', '[]'::jsonb, 'draft'),
+  ('00000000-0000-4000-8000-000000000001', 'US', '', '', '[]'::jsonb, 'draft'),
+  ('00000000-0000-4000-8000-000000000001', 'ZA', '', '', '[]'::jsonb, 'draft'),
+  ('00000000-0000-4000-8000-000000000001', 'NZ', '', '', '[]'::jsonb, 'draft'),
+  ('00000000-0000-4000-8000-000000000001', 'GB', '', '', '[]'::jsonb, 'draft')
+on conflict (site_id, country_code) do nothing;
+
+-- One published listing so the public listing page can be opened in local checks.
+-- NZ keeps it out of the MX search assertions in supabase/tests/0013_directory.sql.
+insert into public.directory_listings (
+  id, site_id, category_id, slug, name, country_code, city, services, description,
+  status, verification_level, verification_note
+)
+select
+  '00000000-0000-4000-8000-000000000301',
+  '00000000-0000-4000-8000-000000000001',
+  c.id,
+  'zed-clinic',
+  'Zed Clinic',
+  'NZ',
+  'Wellington',
+  array['retreat'],
+  'A seeded clinic so the listing page can be opened.',
+  'published',
+  'listed',
+  'Seeded for local checks.'
+from public.directory_categories c
+where c.site_id = '00000000-0000-4000-8000-000000000001'
+  and c.slug = 'treatment-clinic'
+on conflict (id) do nothing;

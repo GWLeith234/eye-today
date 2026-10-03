@@ -10,6 +10,7 @@ import { SectionIcon } from "./section-icon";
 import { Wordmark } from "./wordmark";
 
 const ABOUT = [
+  { href: "/directory", label: "Directory" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
   { href: "/write-for-us", label: "Write for us" },

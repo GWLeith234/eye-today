@@ -26,6 +26,7 @@ test("a section and an article have no serious or critical axe violations when t
   const staticPaths = new Set([
     "search", "newsletter", "newsletters", "support", "about", "contact", "advertise", "ad-policy",
     "write-for-us", "editorial-policy", "corrections", "disclaimer", "privacy", "terms", "login", "account",
+    "directory",
   ]);
   const section = hrefs.find((href) => {
     const match = /^\/([a-z0-9-]+)$/.exec(href);

@@ -50,6 +50,9 @@ jobs:
       STRIPE_PRICE_MONTHLY: price_e2e_monthly
       STRIPE_PRICE_ANNUAL: price_e2e_annual
       STRIPE_PRICE_ONCE: price_e2e_once
+      # Cloudflare's published always-pass test keys. They are not a production secret.
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+      TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
