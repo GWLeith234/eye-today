@@ -14,11 +14,14 @@ import { MapContainer, TileLayer, useMap } from "react-leaflet";
 
 export type MapPin = { slug: string; name: string; lat: number; lng: number };
 
+// A bundled image import is an object with a src, or (depending on the bundler) the URL itself.
+const url = (image: unknown): string => (typeof image === "string" ? image : (image as { src: string }).src);
+
 // The default pin, from the leaflet package itself (bundled by Next, not fetched from a CDN).
 const icon = L.icon({
-  iconUrl: markerIcon.src,
-  iconRetinaUrl: marker2x.src,
-  shadowUrl: markerShadow.src,
+  iconUrl: url(markerIcon),
+  iconRetinaUrl: url(marker2x),
+  shadowUrl: url(markerShadow),
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],

@@ -39,3 +39,15 @@ export async function waitForStripeSession(): Promise<StripeLine> {
   }
   throw new Error("No checkout session was recorded");
 }
+
+// Every checkout session the Stripe double recorded. Other tests share the log, so look for the
+// one you caused (by price) instead of taking the last line.
+export function readStripeSessions(): StripeLine[] {
+  const path = process.env.E2E_STRIPE_LOG;
+  if (!path) throw new Error("E2E_STRIPE_LOG is not set");
+  try {
+    return readFileSync(path, "utf8").split("\n").filter(Boolean).map((line) => JSON.parse(line) as StripeLine);
+  } catch {
+    return [];
+  }
+}

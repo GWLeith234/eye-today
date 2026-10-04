@@ -96,7 +96,7 @@ export async function confirmClaim(formData: FormData) {
     p_code: normalizeClaimCode(String(formData.get("code") ?? "")),
   });
   // One answer for a wrong code, an expired one and anything else.
-  if (error || data !== true) redirect(claimUrl(slug, { error: "bad_code" }));
+  if (error || data !== true) redirect(claimUrl(slug, { error: "bad_code", sent: "1" }));
   redirect("/account/listings?claimed=1");
 }
 

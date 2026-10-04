@@ -19,3 +19,16 @@ Depends on PR #13 (Sprint 12): `supabase/migrations/0013_directory.sql` is on `m
 ## Env (server only)
 
 `STRIPE_PRICE_FEATURED_MONTHLY`, `STRIPE_PRICE_FEATURED_ANNUAL`. With either price id, `STRIPE_SECRET_KEY` or `SITE_URL` missing, featured checkout is not offered.
+
+## Verification status
+
+Run: `npm run lint`, `npm run typecheck`, `npm test` (111), `npm run build`. `supabase/tests/0013_directory.sql` and `supabase/tests/0014_directory_claims.sql` on a local Postgres 16 with every migration and the seed applied (claims, code expiry, owner edits, featured page-1 and page-2 ordering, lapsed and cancelled features, reports, article links, anon access to the new tables). The map, the view toggle, the Featured label and the relationship note in a real browser against a stand-in data server (this found and fixed a marker-icon import that crashed the map).
+
+Not run: the Supabase stack itself and `e2e/flows/directory-claims.spec.ts` (claim → propose → approve; featured checkout and webhook replay; map vs list). They need `supabase start` and first run in CI.
+
+## Decisions to know about
+
+- **One service-role call in the claims flow.** `set_listing_claim_code` stores the hash of a code the server made. It is executable only by the service role. If a signed-in user could call it, they could choose the hash and skip the email proof. Everything else uses the user-scoped client.
+- `leaflet` is pinned to 1.9.4. `react-leaflet` is 5.x and `leaflet.markercluster` 1.5.x.
+- A fourth featured match on a page-1 search ranks organically and is not labelled, so a page never shows more than three Featured cards.
+- Owners can propose `name`, `country_code`, `region`, `city`, `services`, `languages`, `website`, `public_email`, `public_phone` and `description`. Slug, category, logo and photos stay with editors.
