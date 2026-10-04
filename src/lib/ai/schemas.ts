@@ -29,6 +29,10 @@ export const CLAIM_KINDS = ["medical", "legal", "statistic"] as const;
 export const claimsSchema = z.object({
   items: z.array(z.object({ sentence: plain(500), kind: z.enum(CLAIM_KINDS), reason: plain(300) })).max(20),
 });
+export const COMMENT_FLAG_KINDS = ["abuse", "medical_advice", "dosing", "sourcing"] as const;
+export const commentScreenSchema = z.object({
+  flags: z.array(z.object({ kind: z.enum(COMMENT_FLAG_KINDS), reason: plain(300) })).max(10),
+});
 export const summarySchema = z.object({ points: z.array(plain(200)).min(1).max(5) });
 
 export type Headlines = z.infer<typeof headlinesSchema>;
@@ -36,6 +40,7 @@ export type Dek = z.infer<typeof dekSchema>;
 export type Seo = z.infer<typeof seoSchema>;
 export type CopyEdit = z.infer<typeof copyEditSchema>;
 export type Claims = z.infer<typeof claimsSchema>;
+export type CommentScreen = z.infer<typeof commentScreenSchema>;
 export type Summary = z.infer<typeof summarySchema>;
 
 export type SiteTag = { id: string; slug: string; name: string };
