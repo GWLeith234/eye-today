@@ -29,6 +29,8 @@ type ListingRow = {
   relationship_disclosure: string | null;
   last_reviewed_at: string | null;
   status: string;
+  lat: number | null;
+  lng: number | null;
 };
 
 function isStatus(value: string): value is ListingStatus {
@@ -45,7 +47,7 @@ export default async function EditListingPage({ params, searchParams }: PageProp
   const [listingResult, noteResult, categories, media] = await Promise.all([
     supabase
       .from("directory_listings")
-      .select("id, name, slug, category_id, country_code, region, city, services, languages, website, public_email, public_phone, description, logo_media_id, photo_media_ids, verification_level, relationship_disclosure, last_reviewed_at, status")
+      .select("id, name, slug, category_id, country_code, region, city, services, languages, website, public_email, public_phone, description, logo_media_id, photo_media_ids, verification_level, relationship_disclosure, last_reviewed_at, status, lat, lng")
       .eq("id", id)
       .maybeSingle<Omit<ListingRow, "verification_note">>(),
     supabase.rpc("directory_editor_note", { p_id: id }),
@@ -77,6 +79,8 @@ export default async function EditListingPage({ params, searchParams }: PageProp
     relationship_disclosure: row.relationship_disclosure ?? "",
     last_reviewed_at: row.last_reviewed_at ? row.last_reviewed_at.slice(0, 10) : "",
     status: isStatus(row.status) ? row.status : "draft",
+    lat: row.lat === null ? "" : String(row.lat),
+    lng: row.lng === null ? "" : String(row.lng),
   };
 
   return (

@@ -30,6 +30,8 @@ export default async function NewListingPage() {
     relationship_disclosure: "",
     last_reviewed_at: "",
     status: "draft",
+    lat: "",
+    lng: "",
   };
 
   return (
