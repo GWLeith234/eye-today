@@ -25,6 +25,7 @@ type Issue = {
   preheader: string;
   intro: string;
   storyIds: string[];
+  includeDirectory: boolean;
   status: "draft" | "scheduled" | "sent";
   scheduledFor: string | null;
   sentAt: string | null;
@@ -72,6 +73,7 @@ export function IssueBuilder({
   const [preheader, setPreheader] = useState(issue.preheader);
   const [intro, setIntro] = useState(issue.intro);
   const [storyIds, setStoryIds] = useState(issue.storyIds);
+  const [includeDirectory, setIncludeDirectory] = useState(issue.includeDirectory);
   const [scheduleAt, setScheduleAt] = useState(toLocalInput(issue.scheduledFor));
   const [testTo, setTestTo] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
@@ -80,7 +82,7 @@ export function IssueBuilder({
   const sent = issue.status === "sent";
   const byId = new Map(stories.map((s) => [s.id, s]));
   const unselected = stories.filter((s) => s.live && !storyIds.includes(s.id));
-  const payload = { id: issue.id, subject, preheader, intro, story_ids: storyIds };
+  const payload = { id: issue.id, subject, preheader, intro, story_ids: storyIds, include_directory: includeDirectory };
 
   function run<T extends { ok: boolean }>(work: () => Promise<T>, done: (result: Extract<T, { ok: true }>) => string | void) {
     setNote(null);
@@ -143,6 +145,13 @@ export function IssueBuilder({
       ) : null}
 
       <fieldset disabled={sent || pending} className="flex flex-col gap-4">
+        <label className="flex items-start gap-2 text-sm">
+          <input type="checkbox" checked={includeDirectory} onChange={(e) => setIncludeDirectory(e.target.checked)} className="mt-1" />
+          <span>
+            Add &ldquo;New in the directory&rdquo;
+            <span className="block opacity-70">Lists published directory listings created in the last 7 days, with the medical disclaimer. Left out when there are none.</span>
+          </span>
+        </label>
         <label className="flex flex-col gap-1 text-sm">
           Subject
           <input value={subject} maxLength={150} onChange={(e) => setSubject(e.target.value)} className="rounded border px-3 py-2 text-base" />
