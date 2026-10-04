@@ -18,6 +18,9 @@ const NOTICES: Record<string, string> = {
   featured: "Thank you. Your listing is featured as soon as the payment is confirmed.",
 };
 
+// Read outside the component body: render must not call impure functions directly.
+const nowMs = () => Date.now();
+
 const when = (value: string | null) =>
   value ? new Intl.DateTimeFormat("en-CA", { dateStyle: "long", timeZone: "UTC" }).format(new Date(value)) : "";
 
@@ -39,7 +42,7 @@ export default async function AccountListingsPage({ searchParams }: PageProps<"/
   ]);
   const listings = (owned ?? []).flatMap((row) => (row.directory_listings ? [row.directory_listings] : []));
   const offered = featuredOffered(process.env);
-  const now = Date.now();
+  const now = nowMs();
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-8">
