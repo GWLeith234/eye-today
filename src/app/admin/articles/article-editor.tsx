@@ -31,6 +31,7 @@ export type EditorArticle = {
   author_ids: string[];
   hero_media_id: string | null;
   is_sponsored: boolean;
+  comments_enabled: boolean;
   sponsor_name: string;
   sponsor_logo_media_id?: string | null;
   seo_title: string;
@@ -169,6 +170,7 @@ export function ArticleEditor({
         author_ids: form.author_ids,
         hero_media_id: form.hero_media_id,
         is_sponsored: form.is_sponsored,
+        comments_enabled: form.comments_enabled,
         sponsor_name: form.sponsor_name,
         sponsor_logo_media_id: form.sponsor_logo_media_id ?? null,
         seo_title: form.seo_title,
@@ -436,6 +438,10 @@ export function ArticleEditor({
         ) : null}
         {!isContributor ? (
         <>
+        <label className="flex gap-2">
+          <input type="checkbox" name="comments_enabled" checked={form.comments_enabled} onChange={(e) => update("comments_enabled", e.target.checked)} />
+          Allow reader comments (also needs the site-wide switch on Comments)
+        </label>
         <label className="flex gap-2">
           <input type="checkbox" name="is_sponsored" checked={form.is_sponsored} onChange={(e) => update("is_sponsored", e.target.checked)} />
           Sponsored

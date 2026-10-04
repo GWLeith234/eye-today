@@ -19,6 +19,7 @@ export default async function NewArticlePage() {
         author_ids: [user.id],
         hero_media_id: null,
         is_sponsored: false,
+        comments_enabled: false,
         sponsor_name: "",
         seo_title: "",
         seo_description: "",

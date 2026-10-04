@@ -24,6 +24,7 @@ const LEGAL = [
   { href: "/disclaimer", label: "Disclaimer" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
+  { href: "/community-guidelines", label: "Community guidelines" },
 ];
 
 export function SiteFooter({ sections }: { sections: Section[] }) {

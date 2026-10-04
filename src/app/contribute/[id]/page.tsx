@@ -79,6 +79,7 @@ export default async function EditContributionPage({ params }: PageProps<"/contr
           author_ids: [user.id],
           hero_media_id: null,
           is_sponsored: false,
+          comments_enabled: false,
           sponsor_name: "",
           seo_title: article.seo_title ?? "",
           seo_description: article.seo_description ?? "",
