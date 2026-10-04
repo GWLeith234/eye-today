@@ -58,6 +58,7 @@ test("submit a listing, approve it as verified, and keep the submission private"
   await expect(card.getByTestId("verification-badge")).toHaveText("Verified");
   await expect(card.getByRole("link", { name: "Legal status in Mexico" })).toBeVisible();
   await card.getByRole("link", { name, exact: true }).click();
+  await expect(page).toHaveURL(/\/directory\/listing\//);
   await expect(page.getByRole("heading", { name })).toBeVisible();
   await expect(page.getByRole("note")).toContainText("Information only — not medical advice.");
   await expect(page.getByRole("link", { name: "Legal status in Mexico" })).toBeVisible();
