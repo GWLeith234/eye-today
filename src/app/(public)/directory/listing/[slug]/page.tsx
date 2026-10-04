@@ -8,7 +8,7 @@ import { VerificationBadge } from "@/components/public/listing-card";
 import { StoryList } from "@/components/public/story-card";
 import { countryName } from "@/lib/directory/countries";
 import { listingJsonLd } from "@/lib/directory/jsonld";
-import { getDirectoryListing, getRelatedStories } from "@/lib/directory/public";
+import { getDirectoryListing, getListingStories } from "@/lib/directory/public";
 import { mediaUrl } from "@/lib/media/url";
 import { absoluteUrl } from "@/lib/public/site";
 import { SLUG_RE } from "@/lib/slug";
@@ -58,8 +58,10 @@ export default async function ListingPage({ params }: PageProps<"/directory/list
     public_phone: listing.public_phone,
     logoUrl: listing.logo_storage_path ? mediaUrl(listing.logo_storage_path, { width: 800 }) : null,
     pageUrl: pageUrl.startsWith("http") ? pageUrl : null,
+    lat: listing.lat,
+    lng: listing.lng,
   });
-  const related = await getRelatedStories(listing.services ?? []);
+  const related = await getListingStories(listing.id, listing.services ?? []);
   const when = reviewed(listing.last_reviewed_at);
   const place = [listing.city, listing.region, countryName(listing.country_code)].filter(Boolean).join(", ");
   const photos = (listing.photo_paths ?? []).map((path, index) => ({
@@ -73,6 +75,7 @@ export default async function ListingPage({ params }: PageProps<"/directory/list
       <article className="flex flex-col gap-4">
         <p className="flex flex-wrap items-center gap-2 text-sm">
           <Link href={`/directory?category=${listing.category_slug}`} className="font-semibold hover:underline">{listing.category_name}</Link>
+          {listing.featured ? <span data-testid="featured-badge" className="bg-accent px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-ink">Featured</span> : null}
           <VerificationBadge level={listing.verification_level} />
         </p>
         <h1 className="font-serif text-4xl font-bold">{listing.name}</h1>
@@ -123,6 +126,10 @@ export default async function ListingPage({ params }: PageProps<"/directory/list
         </p>
         <p>
           <Link href="/directory/how-we-verify" className="text-sm underline">What this verification level means</Link>
+        </p>
+        <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+          <Link href={`/account/listings/claim/${listing.slug}`} className="underline">Claim this listing</Link>
+          <Link href={`/directory/listing/${listing.slug}/report`} className="underline">Report a problem</Link>
         </p>
         {listing.relationship_disclosure ? (
           <p className="border border-rule p-3 text-sm">

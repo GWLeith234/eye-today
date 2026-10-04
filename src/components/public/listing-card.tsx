@@ -24,7 +24,7 @@ export function VerificationBadge({ level }: { level: string }) {
 export function ListingCardView({ card }: { card: ListingCard }) {
   const tone = CATEGORY_TONE[card.category_slug] ?? "bg-accent";
   return (
-    <article className="flex gap-3 border-t border-rule py-4">
+    <article data-testid="listing-card" className="flex gap-3 border-t border-rule py-4">
       {card.logo_storage_path ? (
         <div className="relative h-16 w-16 shrink-0">
           <Image
@@ -40,6 +40,9 @@ export function ListingCardView({ card }: { card: ListingCard }) {
       )}
       <div className="flex min-w-0 flex-col gap-1">
         <p className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide">
+          {card.featured ? (
+            <span data-testid="featured-badge" className="bg-accent px-1.5 py-0.5 text-ink">Featured</span>
+          ) : null}
           <span className={`inline-block h-2.5 w-2.5 ${tone}`} aria-hidden="true" />
           <span>{card.category_name}</span>
           <VerificationBadge level={card.verification_level} />
@@ -49,6 +52,12 @@ export function ListingCardView({ card }: { card: ListingCard }) {
         </h2>
         <p className="text-sm text-muted">{place(card)}</p>
         {card.description ? <p className="text-sm">{card.description}</p> : null}
+        {card.relationship_disclosure ? (
+          <p className="text-sm">
+            <span className="font-semibold">Publisher relationship: </span>
+            {card.relationship_disclosure}
+          </p>
+        ) : null}
         <Link href={`/directory/${card.country_code.toLowerCase()}`} className="text-sm text-accent hover:underline">
           Legal status in {countryName(card.country_code)}
         </Link>

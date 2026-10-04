@@ -13,6 +13,8 @@ export type ListingJsonInput = {
   public_phone: string | null;
   logoUrl: string | null;
   pageUrl: string | null;
+  lat?: number | null;
+  lng?: number | null;
 };
 
 // Only fields we store. Clinic categories are MedicalClinic; every other
@@ -39,5 +41,8 @@ export function listingJsonLd(listing: ListingJsonInput): Record<string, unknown
   if (listing.public_email) data.email = listing.public_email;
   if (listing.public_phone) data.telephone = listing.public_phone;
   if (listing.logoUrl) data.image = listing.logoUrl;
+  if (typeof listing.lat === "number" && typeof listing.lng === "number") {
+    data.geo = { "@type": "GeoCoordinates", latitude: listing.lat, longitude: listing.lng };
+  }
   return data;
 }
