@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { forwardedIp, rateLimit } from "@/lib/http/rate-limit";
+import { verifyTurnstile } from "@/lib/http/turnstile";
 import { SLUG_RE } from "@/lib/slug";
 import { createAnonClient } from "@/lib/supabase/anon";
 
@@ -22,22 +23,6 @@ const submissionSchema = z.object({
   description: z.string().trim().max(2000),
   contact_email: z.email().max(254),
 });
-
-async function verifyTurnstile(secret: string, token: string, remoteip: string | null) {
-  const body = new URLSearchParams({ secret, response: token });
-  if (remoteip) body.set("remoteip", remoteip);
-  try {
-    const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-      method: "POST",
-      body,
-      signal: AbortSignal.timeout(8000),
-    });
-    const result = (await response.json()) as { success?: boolean };
-    return result.success === true;
-  } catch {
-    return false;
-  }
-}
 
 export async function submitListing(formData: FormData) {
   const secret = process.env.TURNSTILE_SECRET_KEY;

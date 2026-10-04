@@ -29,3 +29,14 @@ Every creative has one category: clinic, research, advocacy, events or other.
 ## Reviewing
 
 Approve only when the destination page and the creative both meet this policy. Reject anything you are unsure about; the advertiser can send a new creative.
+
+## Featured listings
+
+A directory listing can be featured: its owner pays for a monthly or annual subscription, and the listing is pinned near the top of the matching directory results with the word "Featured" on its card. This is paid placement, and it is always labelled.
+
+- Featuring does not change a listing's verification level, its verification note or its description. Editors set those, and an owner cannot.
+- At most three featured listings are pinned on the first page of any search. Everything else is ordered alphabetically, or by relevance when someone searches.
+- A featured listing that has a publisher relationship note shows that note on its card.
+- Only a verified owner of a published listing can feature it. Editors can see every featured listing in the directory admin.
+- A featured listing stops being featured when its subscription ends, at the end of the period already paid for.
+- Featured listings follow the same rules as everything else in this policy, and Eye Today may unpublish any listing that does not.

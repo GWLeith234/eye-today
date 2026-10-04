@@ -8,14 +8,17 @@ export function DirectoryFilters({
   categories,
   services,
   action = "/directory",
+  view = "list",
 }: {
   filters: DirectoryFilters;
   categories: DirectoryCategory[];
   services: string[];
   action?: string;
+  view?: "list" | "map";
 }) {
   return (
     <form role="search" method="get" action={action} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {view === "map" ? <input type="hidden" name="view" value="map" /> : null}
       <label className="flex flex-col gap-1 text-sm sm:col-span-2 lg:col-span-3">
         Search
         <input name="q" defaultValue={filters.q} maxLength={80} className={field} />

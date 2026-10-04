@@ -39,14 +39,19 @@ export type ListingCard = {
   logo_storage_path: string | null;
   logo_alt: string | null;
   has_legal: boolean;
+  lat: number | null;
+  lng: number | null;
+  relationship_disclosure: string | null;
+  // True only for the (at most three) pinned featured matches on page 1 of a search.
+  featured: boolean;
 };
 
 export type ListingDetail = ListingCard & {
+  id: string;
   languages: string[] | null;
   website: string | null;
   public_email: string | null;
   public_phone: string | null;
-  relationship_disclosure: string | null;
   last_reviewed_at: string | null;
   photo_paths: string[] | null;
   photo_alts: string[] | null;

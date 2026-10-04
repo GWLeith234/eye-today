@@ -13,6 +13,8 @@ import { NewsletterForm } from "@/components/public/newsletter-form";
 import { inkOnPaper, sectionPaint } from "@/lib/brand/palette";
 import { SupportNote } from "@/components/public/support-note";
 import { ViewBeacon } from "@/components/public/view-beacon";
+import { ListingCardView } from "@/components/public/listing-card";
+import { getArticleListings } from "@/lib/directory/public";
 import { sanitizeArticleHtml } from "@/lib/editor/sanitize";
 import { mediaUrl } from "@/lib/media/url";
 import { getBylines, getRelated } from "@/lib/public/data";
@@ -114,7 +116,7 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
   const article = await loadArticle(section, slug);
   if (!article || !article.sections) notFound();
 
-  const [bylines, related] = await Promise.all([getBylines(article.id), getRelated(article.id)]);
+  const [bylines, related, listings] = await Promise.all([getBylines(article.id), getRelated(article.id), getArticleListings(article.id)]);
   const published = publicDate(article);
   // Only show "Updated" when the edit came meaningfully after publication.
   const updated =
@@ -259,6 +261,18 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
       </p>
 
       <SupportNote />
+
+      {listings.length ? (
+        <section aria-labelledby="story-listings" className="flex flex-col gap-2 border-t-2 border-ink pt-4">
+          <h2 id="story-listings" className="font-display text-2xl font-semibold">In the directory</h2>
+          <p className="text-sm text-muted">Listings mentioned in this story. A listing is not an endorsement.</p>
+          <div>
+            {listings.map((card) => (
+              <ListingCardView key={card.slug} card={card} />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {related.length ? (
         <section aria-labelledby="related-heading" className="flex flex-col gap-4 border-t-2 border-ink pt-4">

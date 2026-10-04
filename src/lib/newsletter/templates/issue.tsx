@@ -1,21 +1,27 @@
 import { Body, Container, Head, Heading, Hr, Html, Link, Preview, Section, Text } from "@react-email/components";
 
+import { MEDICAL_DISCLAIMER } from "@/lib/public/disclaimer";
+
 import { COLORS, SANS, SERIF } from "./colors";
 
 export type IssueStory = { title: string; dek: string | null; url: string; sponsored: boolean };
+
+export type IssueDirectoryItem = { name: string; url: string; place: string; category: string };
 
 export type IssueEmailProps = {
   listName: string;
   preheader: string;
   intro: string;
   stories: IssueStory[];
+  // New directory listings. Empty or missing: the section is left out.
+  directory?: IssueDirectoryItem[];
   postalAddress: string;
   siteUrl: string;
   unsubscribeUrl: string;
 };
 
 // Every value here is text, and React escapes it: the intro and story titles are never HTML.
-export function IssueEmail({ listName, preheader, intro, stories, postalAddress, siteUrl, unsubscribeUrl }: IssueEmailProps) {
+export function IssueEmail({ listName, preheader, intro, stories, directory = [], postalAddress, siteUrl, unsubscribeUrl }: IssueEmailProps) {
   return (
     <Html lang="en">
       <Head />
@@ -49,6 +55,27 @@ export function IssueEmail({ listName, preheader, intro, stories, postalAddress,
               {story.dek ? <Text style={{ fontSize: 15, lineHeight: "22px", margin: "4px 0 0" }}>{story.dek}</Text> : null}
             </Section>
           ))}
+
+          {directory.length > 0 ? (
+            <Section style={{ margin: "0 0 22px" }}>
+              <Hr style={{ borderColor: COLORS.ink, borderTopWidth: 2, margin: "0 0 14px" }} />
+              <Heading as="h2" style={{ fontFamily: SERIF, fontSize: 22, margin: "0 0 8px" }}>
+                New in the directory
+              </Heading>
+              {directory.map((item) => (
+                <Text key={item.url} style={{ fontSize: 15, lineHeight: "22px", margin: "0 0 8px" }}>
+                  <Link href={item.url} style={{ color: COLORS.accent, fontWeight: 700 }}>
+                    {item.name}
+                  </Link>
+                  {" — "}
+                  {[item.category, item.place].filter(Boolean).join(", ")}
+                </Text>
+              ))}
+              <Text style={{ color: COLORS.muted, fontSize: 12, lineHeight: "18px", margin: "8px 0 0" }}>
+                A listing is not an endorsement. {MEDICAL_DISCLAIMER}
+              </Text>
+            </Section>
+          ) : null}
 
           <Hr style={{ borderColor: COLORS.rule, margin: "24px 0 16px" }} />
           <Text style={{ color: COLORS.muted, fontSize: 12, lineHeight: "18px", margin: "0 0 8px" }}>

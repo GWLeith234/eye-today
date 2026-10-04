@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 
+import { handleFeatureEvent } from "@/lib/directory/feature-webhook";
 import { newConfirmToken, unsubscribeToken } from "@/lib/newsletter/tokens";
 
 import { membershipStatusFrom, pastDuePeriodEnd } from "./mapping";
@@ -239,6 +240,10 @@ async function applySubscription(
 }
 
 export async function handleStripeEvent(db: SupabaseClient, stripe: Stripe, event: Stripe.Event, env: Env, now: Date = new Date()) {
+  // A featured-listing subscription is not a supporter membership: it is handled, and returns, before
+  // any membership, role or newsletter logic can see it.
+  if (await handleFeatureEvent(db, stripe, event)) return;
+
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object;

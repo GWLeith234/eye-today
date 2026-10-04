@@ -50,6 +50,8 @@ jobs:
       STRIPE_PRICE_MONTHLY: price_e2e_monthly
       STRIPE_PRICE_ANNUAL: price_e2e_annual
       STRIPE_PRICE_ONCE: price_e2e_once
+      STRIPE_PRICE_FEATURED_MONTHLY: price_e2e_featured_monthly
+      STRIPE_PRICE_FEATURED_ANNUAL: price_e2e_featured_annual
       # Cloudflare's published always-pass test keys. They are not a production secret.
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
       TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA

@@ -5,6 +5,7 @@ import { requireArea } from "@/lib/auth/session";
 import { mintPreviewToken } from "@/lib/preview-token";
 
 import { ArticleEditor } from "../article-editor";
+import { ListingAttach } from "../listing-attach";
 import { loadEditorLists } from "../editor-data";
 
 type ArticleRow = {
@@ -54,6 +55,7 @@ export default async function EditArticlePage({ params }: PageProps<"/admin/arti
   const token = mintPreviewToken(article.id);
 
   return (
+    <>
     <ArticleEditor
       article={{
         id: article.id,
@@ -81,5 +83,7 @@ export default async function EditArticlePage({ params }: PageProps<"/admin/arti
       previewHref={token ? `/preview/${article.id}?token=${token}` : null}
       aiConfigured={isAssistantConfigured()}
     />
+    <ListingAttach articleId={article.id} />
+    </>
   );
 }

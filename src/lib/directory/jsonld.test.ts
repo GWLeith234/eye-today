@@ -40,3 +40,10 @@ test("listing JSON-LD uses a clinic type only for clinic categories and never in
   assert.equal("description" in group, false);
   assert.equal("aggregateRating" in group, false);
 });
+
+test("coordinates become a geo point only when both are stored", () => {
+  const withGeo = listingJsonLd({ ...base, category_slug: "treatment-clinic", verification_level: "listed", lat: 20.2, lng: -87.5 });
+  assert.deepEqual(withGeo.geo, { "@type": "GeoCoordinates", latitude: 20.2, longitude: -87.5 });
+  assert.equal("geo" in listingJsonLd({ ...base, category_slug: "treatment-clinic", verification_level: "listed" }), false);
+  assert.equal("geo" in listingJsonLd({ ...base, category_slug: "treatment-clinic", verification_level: "listed", lat: 20.2, lng: null }), false);
+});

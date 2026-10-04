@@ -38,13 +38,21 @@ export function parseDirectoryFilters(input: {
   return { q, country, category, service, verification, page };
 }
 
-export function directoryHref(filters: DirectoryFilters, page = filters.page): string {
+export type DirectoryView = "list" | "map";
+
+// ?view=map changes the layout only. The list and the map are built from the same search result.
+export function parseDirectoryView(value: unknown): DirectoryView {
+  return one(value).trim() === "map" ? "map" : "list";
+}
+
+export function directoryHref(filters: DirectoryFilters, page = filters.page, view: DirectoryView = "list"): string {
   const params = new URLSearchParams();
   if (filters.q) params.set("q", filters.q);
   if (filters.country) params.set("country", filters.country);
   if (filters.category) params.set("category", filters.category);
   if (filters.service) params.set("service", filters.service);
   if (filters.verification) params.set("verification", filters.verification);
+  if (view === "map") params.set("view", "map");
   if (page > 1) params.set("page", String(page));
   const query = params.toString();
   return query ? `/directory?${query}` : "/directory";

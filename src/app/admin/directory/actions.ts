@@ -14,6 +14,8 @@ import { splitTags } from "@/lib/directory/query";
 import { parseSourceLines } from "@/lib/directory/sources";
 import { LISTING_STATUSES, UNREVIEWED_SUBMISSION_NOTE, VERIFICATION_LEVELS } from "@/lib/directory/types";
 import { rateLimit } from "@/lib/http/rate-limit";
+import { sendMail } from "@/lib/email/resend";
+import { parseCoordinates } from "@/lib/directory/geo";
 import { sanitizeLegalHtml } from "@/lib/public/content-doc";
 import { getSiteId } from "@/lib/site";
 import { SLUG_RE, slugify } from "@/lib/slug";
@@ -42,6 +44,8 @@ const listingSchema = z.object({
   relationship_disclosure: z.string().trim().max(1000),
   last_reviewed_at: z.string().trim(),
   status: z.enum(LISTING_STATUSES),
+  lat: z.string().trim(),
+  lng: z.string().trim(),
 });
 
 function blank(value: string): string | null {
@@ -84,6 +88,8 @@ export async function saveListing(_state: SaveState, formData: FormData): Promis
     relationship_disclosure: formData.get("relationship_disclosure") ?? "",
     last_reviewed_at: formData.get("last_reviewed_at") ?? "",
     status: formData.get("status") ?? "",
+    lat: formData.get("lat") ?? "",
+    lng: formData.get("lng") ?? "",
   });
   if (!parsed.success) {
     return { error: "Check the listing fields. A verification note is required, and a website must start with https://." };
@@ -93,6 +99,9 @@ export async function saveListing(_state: SaveState, formData: FormData): Promis
   }
   const unverified = publishVerificationError(parsed.data.status, parsed.data.verification_level, parsed.data.verification_note);
   if (unverified) return { error: unverified };
+
+  const coords = parseCoordinates(parsed.data.lat, parsed.data.lng);
+  if (!coords.ok) return { error: coords.error };
 
   const photos = formData
     .getAll("photos")
@@ -132,6 +141,8 @@ export async function saveListing(_state: SaveState, formData: FormData): Promis
     verification_note: parsed.data.verification_note,
     relationship_disclosure: blank(parsed.data.relationship_disclosure),
     last_reviewed_at: reviewed,
+    lat: coords.lat,
+    lng: coords.lng,
   };
 
   const id = parsed.data.id;
@@ -353,4 +364,126 @@ export async function saveLegal(_state: SaveState, formData: FormData): Promise<
   revalidatePath(`/directory/${code.toLowerCase()}`);
   revalidatePath("/sitemap.xml");
   redirect(`/admin/directory/legal/${code}?saved=1`);
+}
+
+
+// One lookup, on an editor's click. It never runs on save, and nothing it returns is stored until the editor
+// saves the form. Nominatim's rules: an identifying User-Agent and no more than one request a second.
+export async function geocodeListing(
+  query: string,
+): Promise<{ ok: true; lat: number; lng: number; label: string } | { ok: false; error: string }> {
+  const ctx = await getEditorContext();
+  if (!ctx) return { ok: false, error: "Your session has expired. Sign in again." };
+  const origin = process.env.SITE_URL?.trim().replace(/\/+$/, "");
+  if (!origin) return { ok: false, error: "Lookups are not available: SITE_URL is not set. Type the coordinates instead." };
+  const text = query.replace(/[<>]/g, "").trim().slice(0, 200);
+  if (!text) return { ok: false, error: "Fill in the name, city or country first." };
+  if (!rateLimit(`geocode:${ctx.userId}`, 10, 60_000) || !rateLimit("geocode:all", 1, 1100)) {
+    return { ok: false, error: "Wait a moment and try again." };
+  }
+
+  try {
+    const url = new URL("https://nominatim.openstreetmap.org/search");
+    url.searchParams.set("format", "jsonv2");
+    url.searchParams.set("limit", "1");
+    url.searchParams.set("q", text);
+    const response = await fetch(url, {
+      headers: { "User-Agent": `EyeTodayDirectory/1.0 (${origin})`, "Accept-Language": "en" },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!response.ok) return { ok: false, error: "The lookup service did not answer. Type the coordinates instead." };
+    const rows = (await response.json()) as { lat?: string; lon?: string; display_name?: string }[];
+    const found = parseCoordinates(rows[0]?.lat ?? "", rows[0]?.lon ?? "");
+    if (!found.ok || found.lat === null || found.lng === null) return { ok: false, error: "No match. Try a more specific place, or type the coordinates." };
+    return { ok: true, lat: found.lat, lng: found.lng, label: String(rows[0]?.display_name ?? text).slice(0, 160) };
+  } catch {
+    return { ok: false, error: "The lookup service did not answer. Type the coordinates instead." };
+  }
+}
+
+// --- Claims, owner proposals and reports ------------------------------------------------------------
+
+type ClaimRow = { id: string; email: string; profile_id: string; directory_listings: { name: string; slug: string } | { name: string; slug: string }[] | null };
+
+async function claimFor(ctx: NonNullable<Awaited<ReturnType<typeof getEditorContext>>>, id: string) {
+  const { data } = await ctx.supabase
+    .from("listing_claims")
+    .select("id, email, profile_id, directory_listings(name, slug)")
+    .eq("id", id)
+    .maybeSingle<ClaimRow>();
+  if (!data) return null;
+  const listing = Array.isArray(data.directory_listings) ? data.directory_listings[0] : data.directory_listings;
+  return { email: data.email, name: listing?.name ?? "the listing" };
+}
+
+export async function approveManualClaim(formData: FormData) {
+  const ctx = await getEditorContext();
+  if (!ctx) redirect(loginPath("/admin/directory"));
+  const id = String(formData.get("id") ?? "");
+  if (!z.uuid().safeParse(id).success) redirect("/admin/directory?error=invalid");
+  const claim = await claimFor(ctx, id);
+  const { data, error } = await ctx.supabase.rpc("approve_listing_claim", { p_claim_id: id });
+  if (error || data !== true) redirect("/admin/directory?error=save_failed");
+  if (claim) {
+    await sendMail({
+      to: [claim.email],
+      subject: `You now manage ${claim.name} in the Eye Today directory`,
+      text: `An editor approved your claim. Open your listings page on Eye Today to propose changes. An editor reviews each change, and claiming does not change the listing's verification level.`,
+    });
+  }
+  revalidatePath("/admin/directory");
+  redirect("/admin/directory?saved=claim_approved");
+}
+
+export async function rejectClaim(formData: FormData) {
+  const ctx = await getEditorContext();
+  if (!ctx) redirect(loginPath("/admin/directory"));
+  const id = String(formData.get("id") ?? "");
+  if (!z.uuid().safeParse(id).success) redirect("/admin/directory?error=invalid");
+  const claim = await claimFor(ctx, id);
+  const { data, error } = await ctx.supabase.from("listing_claims").update({ status: "rejected" }).eq("id", id).eq("status", "pending").select("id");
+  if (error || !data?.length) redirect("/admin/directory?error=save_failed");
+  if (claim) {
+    await sendMail({
+      to: [claim.email],
+      subject: `Your claim for ${claim.name}`,
+      text: `We could not confirm your claim on ${claim.name} in the Eye Today directory. You can write to us from the Contact page if you think this is a mistake.`,
+    });
+  }
+  redirect("/admin/directory?saved=claim_rejected");
+}
+
+export async function approveProposal(formData: FormData) {
+  const ctx = await getEditorContext();
+  if (!ctx) redirect(loginPath("/admin/directory"));
+  const id = String(formData.get("id") ?? "");
+  if (!z.uuid().safeParse(id).success) redirect("/admin/directory?error=invalid");
+  const { data, error } = await ctx.supabase.rpc("approve_listing_proposal", { p_id: id });
+  const row = ((data ?? []) as { old_slug: string; new_slug: string; old_country: string; new_country: string }[])[0];
+  if (error || !row) redirect("/admin/directory?error=save_failed");
+  // Refresh the new pages and, when the slug or country changed, the old ones too.
+  refreshListing(row.new_country, row.new_slug, { slug: row.old_slug, country_code: row.old_country });
+  revalidatePath("/admin/directory");
+  redirect("/admin/directory?saved=proposal_approved");
+}
+
+export async function rejectProposal(formData: FormData) {
+  const ctx = await getEditorContext();
+  if (!ctx) redirect(loginPath("/admin/directory"));
+  const id = String(formData.get("id") ?? "");
+  if (!z.uuid().safeParse(id).success) redirect("/admin/directory?error=invalid");
+  const { data, error } = await ctx.supabase.from("listing_edit_proposals").update({ status: "rejected" }).eq("id", id).eq("status", "pending").select("id");
+  if (error || !data?.length) redirect("/admin/directory?error=save_failed");
+  redirect("/admin/directory?saved=proposal_rejected");
+}
+
+export async function setReportStatus(formData: FormData) {
+  const ctx = await getEditorContext();
+  if (!ctx) redirect(loginPath("/admin/directory"));
+  const id = String(formData.get("id") ?? "");
+  const status = formData.get("status") === "closed" ? "closed" : "open";
+  if (!z.uuid().safeParse(id).success) redirect("/admin/directory?error=invalid");
+  const { error } = await ctx.supabase.from("listing_reports").update({ status }).eq("id", id);
+  if (error) redirect("/admin/directory?error=save_failed");
+  redirect(`/admin/directory?saved=report_${status}`);
 }

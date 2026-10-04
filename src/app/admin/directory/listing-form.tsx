@@ -1,10 +1,10 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useRef, useState, useTransition } from "react";
 
 import { LISTING_STATUSES, VERIFICATION_LABELS, VERIFICATION_LEVELS, type ListingStatus, type VerificationLevel } from "@/lib/directory/types";
 
-import { checkListingClaims, saveListing, type ClaimFlag, type SaveState } from "./actions";
+import { checkListingClaims, geocodeListing, saveListing, type ClaimFlag, type SaveState } from "./actions";
 
 type Category = { id: string; name: string };
 type MediaOption = { id: string; storage_path: string; alt: string | null };
@@ -30,6 +30,8 @@ export type ListingFormValue = {
   relationship_disclosure: string;
   last_reviewed_at: string;
   status: ListingStatus;
+  lat: string;
+  lng: string;
 };
 
 const field = "rounded border px-3 py-2 text-base";
@@ -49,9 +51,14 @@ export function ListingForm({
   const [description, setDescription] = useState(listing.description);
   const [flags, setFlags] = useState<{ ok: true; items: ClaimFlag[] } | { ok: false; error: string } | null>(null);
   const [checking, startCheck] = useTransition();
+  const formRef = useRef<HTMLFormElement>(null);
+  const [lat, setLat] = useState(listing.lat);
+  const [lng, setLng] = useState(listing.lng);
+  const [geo, setGeo] = useState<string | null>(null);
+  const [locating, startLocate] = useTransition();
 
   return (
-    <form action={action} className="grid max-w-2xl gap-3">
+    <form ref={formRef} action={action} className="grid max-w-2xl gap-3">
       {notice ? <p role="status" className="rounded border border-green-600 p-2 text-sm">{notice}</p> : null}
       {state.error ? <p role="alert" className="rounded border border-red-600 p-2 text-sm">{state.error}</p> : null}
       <input type="hidden" name="id" value={listing.id} />
@@ -137,6 +144,42 @@ export function ListingForm({
           </div>
         ) : null}
       </div>
+      <fieldset className="flex flex-col gap-2 rounded border p-3 text-sm">
+        <legend className="px-1 font-semibold">Map position</legend>
+        <p className="opacity-70">Both numbers, or neither. Shown on the directory map only when both are set. Looking one up never saves it: check it, then save the listing.</p>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1">
+            Latitude
+            <input name="lat" inputMode="decimal" value={lat} onChange={(event) => setLat(event.target.value)} placeholder="20.2114" className={`${field} w-40`} />
+          </label>
+          <label className="flex flex-col gap-1">
+            Longitude
+            <input name="lng" inputMode="decimal" value={lng} onChange={(event) => setLng(event.target.value)} placeholder="-87.4654" className={`${field} w-40`} />
+          </label>
+          <button
+            type="button"
+            disabled={locating}
+            onClick={() => {
+              const data = new FormData(formRef.current ?? undefined);
+              const query = [data.get("name"), data.get("city"), data.get("region"), data.get("country_code")].map((part) => String(part ?? "").trim()).filter(Boolean).join(", ");
+              startLocate(async () => {
+                const result = await geocodeListing(query);
+                if (result.ok) {
+                  setLat(String(result.lat));
+                  setLng(String(result.lng));
+                  setGeo(`Found: ${result.label}. Check the pin, then save.`);
+                } else {
+                  setGeo(result.error);
+                }
+              });
+            }}
+            className="rounded border px-3 py-2"
+          >
+            {locating ? "Looking up…" : "Look up position"}
+          </button>
+        </div>
+        {geo ? <p role="status">{geo}</p> : null}
+      </fieldset>
       <label className="flex flex-col gap-1 text-sm">
         Logo
         <select name="logo_media_id" defaultValue={listing.logo_media_id} className={field}>
