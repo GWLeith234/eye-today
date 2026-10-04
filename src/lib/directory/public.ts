@@ -167,3 +167,34 @@ async function loadSitemap(): Promise<{ kind: string; slug: string; updated_at: 
   }
   return (data ?? []) as { kind: string; slug: string; updated_at: string }[];
 }
+
+export function getArticleListings(articleId: string): Promise<ListingCard[]> {
+  return within(loadArticleListings(articleId), []);
+}
+
+async function loadArticleListings(articleId: string): Promise<ListingCard[]> {
+  const supabase = client();
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("article_directory_cards", { p_article: articleId });
+  if (error) {
+    console.error("public read article_directory_cards failed", error.code);
+    return [];
+  }
+  return (data ?? []) as ListingCard[];
+}
+
+// Stories by the listing's service tags plus the ones an editor attached to it.
+export function getListingStories(listingId: string, services: string[]): Promise<ArticleCard[]> {
+  return within(loadListingStories(listingId, services), []);
+}
+
+async function loadListingStories(listingId: string, services: string[]): Promise<ArticleCard[]> {
+  const supabase = client();
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("directory_listing_stories", { p_listing: listingId, service_slugs: serviceSlugs(services) });
+  if (error) {
+    console.error("public read directory_listing_stories failed", error.code);
+    return [];
+  }
+  return (data ?? []) as ArticleCard[];
+}
