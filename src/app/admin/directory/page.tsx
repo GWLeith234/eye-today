@@ -3,7 +3,7 @@ import Link from "next/link";
 import { requireArea } from "@/lib/auth/session";
 import { countryName } from "@/lib/directory/countries";
 
-import { acceptSubmission, openLegal, rejectSubmission, updateCategory } from "./actions";
+import { acceptSubmission, approveManualClaim, approveProposal, openLegal, rejectClaim, rejectProposal, rejectSubmission, setReportStatus, updateCategory } from "./actions";
 
 const ERRORS: Record<string, string> = {
   invalid: "That form was not valid.",
@@ -16,6 +16,12 @@ const ERRORS: Record<string, string> = {
 const DONE: Record<string, string> = {
   category: "Category saved.",
   rejected: "Submission rejected. It was not published.",
+  claim_approved: "Claim approved. The person now manages the listing.",
+  claim_rejected: "Claim rejected.",
+  proposal_approved: "Change applied to the listing. Its verification level was not touched.",
+  proposal_rejected: "Change rejected. The listing is unchanged.",
+  report_closed: "Report closed.",
+  report_open: "Report reopened.",
 };
 
 type ListingRow = {
@@ -35,6 +41,22 @@ type SubmissionRow = {
   payload: { name?: string; country_code?: string; category_slug?: string } | null;
   created_at: string;
 };
+
+type Embedded<T> = T | T[] | null;
+const one = <T,>(value: Embedded<T>): T | null => (Array.isArray(value) ? (value[0] ?? null) : value);
+
+type ClaimRow = { id: string; email: string; method: string; status: string; created_at: string; directory_listings: Embedded<{ name: string; slug: string }> };
+type ProposalRow = {
+  id: string;
+  status: string;
+  created_at: string;
+  payload: Record<string, unknown>;
+  directory_listings: Embedded<Record<string, unknown> & { name: string; slug: string }>;
+};
+type ReportRow = { id: string; reason: string; reporter_email: string; status: string; created_at: string; directory_listings: Embedded<{ name: string; slug: string }> };
+type FeatureRow = { listing_id: string; status: string; current_period_end: string | null; directory_listings: Embedded<{ name: string; slug: string }> };
+
+const show = (value: unknown) => (Array.isArray(value) ? value.join(", ") : value === null || value === undefined || value === "" ? "(empty)" : String(value));
 
 type CategoryRow = { id: string; slug: string; name: string; sort: number; hidden: boolean };
 
@@ -61,6 +83,39 @@ export default async function DirectoryAdminPage({ searchParams }: PageProps<"/a
   if (status === "draft" || status === "pending" || status === "published" || status === "unpublished") {
     listingsQuery = listingsQuery.eq("status", status);
   }
+
+  const reportStatus = params.reports === "closed" ? "closed" : "open";
+
+  const [claims, proposals, reports, features] = await Promise.all([
+    supabase
+      .from("listing_claims")
+      .select("id, email, method, status, created_at, directory_listings(name, slug)")
+      .in("status", ["pending"])
+      .eq("method", "manual")
+      .order("created_at", { ascending: false })
+      .limit(50)
+      .returns<ClaimRow[]>(),
+    supabase
+      .from("listing_edit_proposals")
+      .select("id, status, created_at, payload, directory_listings(name, slug, country_code, region, city, services, languages, website, public_email, public_phone, description)")
+      .eq("status", "pending")
+      .order("created_at")
+      .limit(50)
+      .returns<ProposalRow[]>(),
+    supabase
+      .from("listing_reports")
+      .select("id, reason, reporter_email, status, created_at, directory_listings(name, slug)")
+      .eq("status", reportStatus)
+      .order("created_at", { ascending: false })
+      .limit(100)
+      .returns<ReportRow[]>(),
+    supabase
+      .from("listing_features")
+      .select("listing_id, status, current_period_end, directory_listings(name, slug)")
+      .order("current_period_end", { ascending: false })
+      .limit(100)
+      .returns<FeatureRow[]>(),
+  ]);
 
   const [listings, submissions, categories, legal] = await Promise.all([
     listingsQuery.returns<ListingRow[]>(),
@@ -110,6 +165,98 @@ export default async function DirectoryAdminPage({ searchParams }: PageProps<"/a
               </li>
             );
           })}
+        </ul>
+      </section>
+
+      <section aria-labelledby="claims-heading" className="flex flex-col gap-3">
+        <h2 id="claims-heading" className="text-xl font-semibold">Claims waiting for an editor</h2>
+        <p className="text-sm opacity-70">People whose email is not at the listing&apos;s domain asked an editor to confirm they run it. Approving makes them an owner. It never changes the verification level.</p>
+        {(claims.data ?? []).length === 0 ? <p className="text-sm opacity-70">None.</p> : null}
+        <ul className="flex flex-col gap-3">
+          {(claims.data ?? []).map((claim) => {
+            const listing = one(claim.directory_listings);
+            return (
+              <li key={claim.id} className="rounded border p-3" data-testid="manual-claim">
+                <p className="font-semibold">{listing?.name ?? "Listing"}</p>
+                <p className="text-sm opacity-70">{claim.email} · {new Date(claim.created_at).toISOString().slice(0, 10)}</p>
+                <div className="mt-2 flex gap-2">
+                  <form action={approveManualClaim}><input type="hidden" name="id" value={claim.id} /><button type="submit" className="rounded bg-foreground px-3 py-1 text-background">Approve claim</button></form>
+                  <form action={rejectClaim}><input type="hidden" name="id" value={claim.id} /><button type="submit" className="rounded border px-3 py-1">Reject</button></form>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      <section aria-labelledby="proposals-heading" className="flex flex-col gap-3">
+        <h2 id="proposals-heading" className="text-xl font-semibold">Owner changes</h2>
+        <p className="text-sm opacity-70">Proposed by a verified owner. Only the fields shown can change. Verification, the note, the publisher relationship and the map position are not part of a proposal.</p>
+        {(proposals.data ?? []).length === 0 ? <p className="text-sm opacity-70">None.</p> : null}
+        <ul className="flex flex-col gap-3">
+          {(proposals.data ?? []).map((proposal) => {
+            const listing = one(proposal.directory_listings);
+            return (
+              <li key={proposal.id} className="rounded border p-3" data-testid="proposal">
+                <p className="font-semibold">{listing?.name ?? "Listing"}</p>
+                <table className="mt-1 text-sm">
+                  <tbody>
+                    {Object.entries(proposal.payload).map(([key, value]) => (
+                      <tr key={key} className="align-top">
+                        <th scope="row" className="pr-3 text-left font-semibold">{key}</th>
+                        <td className="pr-3 opacity-70">{show(listing?.[key])}</td>
+                        <td>→ {show(value)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="mt-2 flex gap-2">
+                  <form action={approveProposal}><input type="hidden" name="id" value={proposal.id} /><button type="submit" className="rounded bg-foreground px-3 py-1 text-background">Approve change</button></form>
+                  <form action={rejectProposal}><input type="hidden" name="id" value={proposal.id} /><button type="submit" className="rounded border px-3 py-1">Reject</button></form>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      <section aria-labelledby="reports-heading" className="flex flex-col gap-3">
+        <h2 id="reports-heading" className="text-xl font-semibold">Reported problems</h2>
+        <nav aria-label="Report status" className="flex gap-3 text-sm">
+          <Link href="/admin/directory?reports=open" className={reportStatus === "open" ? "font-semibold underline" : "underline"}>Open</Link>
+          <Link href="/admin/directory?reports=closed" className={reportStatus === "closed" ? "font-semibold underline" : "underline"}>Closed</Link>
+        </nav>
+        {(reports.data ?? []).length === 0 ? <p className="text-sm opacity-70">No {reportStatus} reports.</p> : null}
+        <ul className="flex flex-col gap-3">
+          {(reports.data ?? []).map((report) => {
+            const listing = one(report.directory_listings);
+            return (
+              <li key={report.id} className="rounded border p-3">
+                <p className="font-semibold">{listing?.name ?? "Listing"}</p>
+                <p className="whitespace-pre-wrap text-sm">{report.reason}</p>
+                <p className="text-sm opacity-70">{report.reporter_email} · {new Date(report.created_at).toISOString().slice(0, 10)}</p>
+                <form action={setReportStatus} className="mt-2">
+                  <input type="hidden" name="id" value={report.id} />
+                  <button type="submit" name="status" value={report.status === "open" ? "closed" : "open"} className="rounded border px-3 py-1 text-sm">
+                    {report.status === "open" ? "Close report" : "Reopen"}
+                  </button>
+                </form>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      <section aria-labelledby="features-heading" className="flex flex-col gap-2">
+        <h2 id="features-heading" className="text-xl font-semibold">Featured listings</h2>
+        {(features.data ?? []).length === 0 ? <p className="text-sm opacity-70">None.</p> : null}
+        <ul className="flex flex-col gap-1 text-sm">
+          {(features.data ?? []).map((feature) => (
+            <li key={`${feature.listing_id}-${feature.current_period_end}`}>
+              {one(feature.directory_listings)?.name ?? feature.listing_id} · {feature.status}
+              {feature.current_period_end ? ` · until ${feature.current_period_end.slice(0, 10)}` : ""}
+            </li>
+          ))}
         </ul>
       </section>
 
