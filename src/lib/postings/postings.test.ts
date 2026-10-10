@@ -67,6 +67,7 @@ test("checkout refuses bad input without calling Stripe", async () => {
   assert.equal(payable({ status: "pending", paid_days: 30, expires_at: null }, now), false, "paid and waiting");
   assert.equal(payable({ status: "rejected", paid_days: 30, expires_at: null }, now), false, "rejected but already paid");
   assert.equal(payable({ status: "rejected", paid_days: 0, expires_at: null }, now), true, "rejected and never paid");
+  assert.equal(payable({ status: "rejected", paid_days: 0, expires_at: "2026-11-01T00:00:00Z" }, now), false, "rejected while live, time left");
   assert.equal(payable({ status: "pending", paid_days: 0, expires_at: "2026-11-01T00:00:00Z" }, now), false, "edited live posting, clock running");
   assert.equal(payable({ status: "pending", paid_days: 0, expires_at: "2026-10-01T00:00:00Z" }, now), true, "edited, then its time ran out");
 });

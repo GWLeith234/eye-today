@@ -30,8 +30,8 @@ export function payable(posting: PayableState, now: number = Date.now()): boolea
     case "published":
     case "expired":
       return true;
+    // A posting rejected or sent back while live keeps its unexpired time; re-approval restores it.
     case "rejected":
-      return posting.paid_days === 0;
     case "pending":
       return posting.paid_days === 0 && !timeLeft;
     default:
