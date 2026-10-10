@@ -283,6 +283,7 @@ begin
   assert (select expires_at from public.postings where id = 'd1700000-0000-4000-8000-0000000000f1') < now() + interval '30 days',
     'unexpired time is kept on re-approval';
   assert (select count(*) from public.posting_payments) >= 2, 'editors read payments';
+  assert public.posting_description_preview('a < b') = '<p>a &lt; b</p>', 'editor descriptions are escaped the same way';
   update public.postings set status = 'rejected', reject_reason = 'Unsourced claims'
    where id = 'd1700000-0000-4000-8000-0000000000f5';
   assert (select count(*) from public.posting_by_slug('classified', 'po-training')) = 0, 'rejected is hidden';

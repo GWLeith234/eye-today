@@ -327,6 +327,20 @@ $$;
 revoke all on function public.save_posting(uuid, text, text, text, text, text, text, text, text, text, integer, integer, text, text, text, text, text, date) from public, anon, authenticated;
 grant execute on function public.save_posting(uuid, text, text, text, text, text, text, text, text, text, integer, integer, text, text, text, text, text, date) to authenticated;
 
+-- Editors save a posting's description through the same escaping as save_posting.
+create function public.posting_description_preview(p_text text)
+returns text
+language sql
+immutable
+security definer
+set search_path = ''
+as $$
+  select public._event_description_html(pg_catalog.left(coalesce(p_text, ''), 6000));
+$$;
+
+revoke all on function public.posting_description_preview(text) from public, anon, authenticated;
+grant execute on function public.posting_description_preview(text) to authenticated;
+
 -- ---------------------------------------------------------------------------
 -- Payments (service role, from the verified Stripe webhook)
 -- ---------------------------------------------------------------------------

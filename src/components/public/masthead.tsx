@@ -127,6 +127,7 @@ export function Masthead({ sections, dateLabel }: { sections: NavSection[]; date
         <div className="flex items-center gap-3 text-sm">
           <Link href="/directory" className="hover:underline">Directory</Link>
           <Link href="/events" className="hover:underline">Events</Link>
+          <Link href="/jobs" className="hover:underline">Jobs</Link>
           <Link href="/search" className="hover:underline">Search</Link>
           <details className="relative hidden md:block">
             <summary className="cursor-pointer hover:underline">Newsletter</summary>
@@ -178,6 +179,8 @@ export function Masthead({ sections, dateLabel }: { sections: NavSection[]; date
             <div className="flex flex-col gap-3 border-t border-rule pt-3 text-sm">
               <Link href="/directory" className="hover:underline">Directory</Link>
               <Link href="/events" className="hover:underline">Events</Link>
+              <Link href="/jobs" className="hover:underline">Jobs</Link>
+              <Link href="/classifieds" className="hover:underline">Classifieds</Link>
               <Link href="/search" className="hover:underline">Search</Link>
               <Link href="/newsletter" className="hover:underline">Newsletter</Link>
               <Link href="/support" className="font-semibold hover:underline">Support</Link>

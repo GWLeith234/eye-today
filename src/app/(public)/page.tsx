@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { AdSlot } from "@/components/public/ad-slot";
 import { UpcomingEvents } from "@/components/events/event-list";
+import { LatestJobs } from "@/components/postings/posting-list";
 import { AuthorFace } from "@/components/public/author-face";
 import { NewsletterForm } from "@/components/public/newsletter-form";
 import { SectionIcon } from "@/components/public/section-icon";
@@ -9,6 +10,7 @@ import { StoryCard } from "@/components/public/story-card";
 import { SupporterHidden } from "@/components/public/supporter-hidden";
 import { onBand, sectionBandVar, sectionIconName, sectionInkVar, sectionPaint } from "@/lib/brand/palette";
 import { upcomingEvents } from "@/lib/events/public";
+import { latestJobs } from "@/lib/postings/public";
 import { type ArticleCard, getHomepage, getLatest, getMostRead, getSectionArticles, getSectionFaces, getSections } from "@/lib/public/data";
 import { isReservedSectionSlug } from "@/lib/public/reserved";
 
@@ -36,13 +38,14 @@ function Rail({ title, href, slug, icon, cards }: { title: string; href: string;
 
 export default async function HomePage() {
   const sections = (await getSections()).filter((section) => !isReservedSectionSlug(section.slug));
-  const [homepage, latest, mostRead, faces, rails, events] = await Promise.all([
+  const [homepage, latest, mostRead, faces, rails, events, jobs] = await Promise.all([
     getHomepage(),
     getLatest(10, 0),
     getMostRead(5),
     getSectionFaces("opinion", 4),
     Promise.all(sections.map(async (section) => ({ section, cards: await getSectionArticles(section.slug, 1, 4) }))),
     upcomingEvents(4),
+    latestJobs(4),
   ]);
 
   const lead = homepage.find((card) => card.slot === "lead");
@@ -57,6 +60,7 @@ export default async function HomePage() {
         <h1 className="font-display text-3xl font-semibold">The first stories are on their way.</h1>
         <div className="mt-10 text-left">
           <UpcomingEvents events={events} />
+          <LatestJobs jobs={jobs} />
         </div>
       </div>
     );
@@ -113,6 +117,7 @@ export default async function HomePage() {
       </div>
 
       <UpcomingEvents events={events} />
+      <LatestJobs jobs={jobs} />
 
       {otherRails.map(({ section, cards }) => (
         <Rail key={section.id} title={section.name} href={`/${section.slug}`} slug={section.slug} icon={section.icon} cards={cards} />
