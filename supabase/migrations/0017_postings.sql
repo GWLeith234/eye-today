@@ -178,6 +178,35 @@ create policy "editors read payments"
 -- Poster writes
 -- ---------------------------------------------------------------------------
 
+-- Plain text in, escaped HTML paragraphs out (same rules as events, with the posting limit of 6000 characters).
+create function public._posting_description_html(p_text text)
+returns text
+language sql
+immutable
+set search_path = ''
+as $$
+  select coalesce(
+    pg_catalog.string_agg('<p>' || pg_catalog.replace(para, E'\n', '<br>') || '</p>', '' order by n),
+    ''
+  )
+    from (
+      select pg_catalog.btrim(part, E' \t\r\n') as para, n
+        from pg_catalog.regexp_split_to_table(
+               pg_catalog.replace(
+               pg_catalog.replace(
+               pg_catalog.replace(
+               pg_catalog.replace(
+               pg_catalog.replace(
+               pg_catalog.replace(pg_catalog.left(coalesce(p_text, ''), 6000), E'\r\n', E'\n'),
+                 '&', '&amp;'), '<', '&lt;'), '>', '&gt;'), '"', '&quot;'), '''', '&#39;'),
+               E'\n[ \t]*\n+'
+             ) with ordinality as t (part, n)
+    ) paras
+   where para <> '';
+$$;
+
+revoke all on function public._posting_description_html(text) from public, anon, authenticated;
+
 -- Creates a draft (p_id null) or edits the caller's own posting. Editing anything already submitted sends
 -- it back to an editor (pending); an expired posting must be renewed before it can be edited.
 create function public.save_posting(
@@ -285,7 +314,7 @@ begin
       case when p_kind = 'job' then p_employment_type end,
       case when p_kind = 'classified' then p_category end,
       p_salary_min, p_salary_max, p_salary_currency, case when p_salary_min is null and p_salary_max is null then null else p_salary_period end,
-      public._event_description_html(p_description),
+      public._posting_description_html(p_description),
       p_apply_url, p_apply_email, p_closing_date, me, pg_catalog.lower(email), 'draft'
     ) returning id into saved;
     return saved;
@@ -313,7 +342,7 @@ begin
     salary_max = p_salary_max,
     salary_currency = p_salary_currency,
     salary_period = case when p_salary_min is null and p_salary_max is null then null else p_salary_period end,
-    description_html = public._event_description_html(p_description),
+    description_html = public._posting_description_html(p_description),
     apply_url = p_apply_url,
     apply_email = p_apply_email,
     closing_date = p_closing_date,
@@ -335,7 +364,7 @@ immutable
 security definer
 set search_path = ''
 as $$
-  select public._event_description_html(pg_catalog.left(coalesce(p_text, ''), 6000));
+  select public._posting_description_html(p_text);
 $$;
 
 revoke all on function public.posting_description_preview(text) from public, anon, authenticated;

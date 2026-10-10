@@ -83,15 +83,15 @@ export default async function AccountPostingsPage({ searchParams }: PageProps<"/
               <p>
                 Status: <strong>{ended ? STATUS.expired : STATUS[row.status]}</strong>
                 {live && row.expires_at ? ` · until ${when(row.expires_at)}` : ""}
-                {row.status === "pending" && row.paid_days > 0 ? ` · ${row.paid_days} days paid` : ""}
+                {(row.status === "pending" || row.status === "rejected") && row.paid_days > 0 ? ` · ${row.paid_days} days already paid` : ""}
               </p>
               {row.status === "rejected" && row.reject_reason ? <p>Editor’s note: {row.reject_reason}</p> : null}
               <div className="flex flex-wrap items-center gap-3">
                 {!ended ? <Link href={`/account/postings/${row.id}`} className="underline">Edit</Link> : null}
-                {offered && payable(ended ? "expired" : row.status) ? (
+                {offered && payable(ended ? { ...row, status: "expired" } : row, now) ? (
                   <form action={startPostingCheckout} className="flex flex-wrap items-center gap-2">
                     <input type="hidden" name="id" value={row.id} />
-                    <span>{row.status === "draft" || row.status === "rejected" ? "Pay and submit:" : live ? "Extend:" : "Renew:"}</span>
+                    <span>{row.status === "draft" || (row.status === "rejected" && !row.expires_at) ? "Pay and submit:" : live ? "Extend:" : "Renew:"}</span>
                     <button type="submit" name="days" value="30" className="rounded border border-rule px-3 py-1">30 days</button>
                     <button type="submit" name="days" value="60" className="rounded border border-rule px-3 py-1">60 days</button>
                   </form>

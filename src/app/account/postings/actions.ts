@@ -58,10 +58,10 @@ export async function startPostingCheckout(formData: FormData) {
           loadPosting: async () => {
             const { data } = await supabase
               .from("postings")
-              .select("status, expires_at")
+              .select("status, paid_days, expires_at")
               .eq("id", id.data)
               .eq("poster_id", user.id)
-              .maybeSingle<{ status: string; expires_at: string | null }>();
+              .maybeSingle<{ status: string; paid_days: number; expires_at: string | null }>();
             return data;
           },
           createSession: async (params) => (await stripe.checkout.sessions.create(params)).url,

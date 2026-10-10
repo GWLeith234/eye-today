@@ -284,6 +284,7 @@ begin
     'unexpired time is kept on re-approval';
   assert (select count(*) from public.posting_payments) >= 2, 'editors read payments';
   assert public.posting_description_preview('a < b') = '<p>a &lt; b</p>', 'editor descriptions are escaped the same way';
+  assert length(public.posting_description_preview(repeat('x', 5500))) = 5507, 'descriptions keep up to 6000 characters';
   update public.postings set status = 'rejected', reject_reason = 'Unsourced claims'
    where id = 'd1700000-0000-4000-8000-0000000000f5';
   assert (select count(*) from public.posting_by_slug('classified', 'po-training')) = 0, 'rejected is hidden';

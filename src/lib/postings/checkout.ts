@@ -12,16 +12,31 @@ export type PostingCheckoutDeps = {
   userId: string;
   email: string | null;
   postingId: string;
-  // The caller's own posting and its status, or null.
-  loadPosting: () => Promise<{ status: string; expires_at: string | null } | null>;
+  // The caller's own posting, or null.
+  loadPosting: () => Promise<PayableState | null>;
   createSession: (params: Stripe.Checkout.SessionCreateParams) => Promise<string | null>;
   now?: Date;
 };
 
-// What can be paid for: a draft or a rejected posting (first payment), a live one (extend),
-// an expired one (renew). A posting already waiting for review has its payment.
-export function payable(status: string): boolean {
-  return status === "draft" || status === "rejected" || status === "published" || status === "expired";
+export type PayableState = { status: string; paid_days: number; expires_at: string | null };
+
+// What can be paid for: a draft (first payment), a live or expired posting (extend or renew), and a rejected
+// or pending posting only when it holds no paid time — neither days waiting for approval nor unexpired time
+// (an edited live posting sits in pending while its clock runs). Otherwise the poster would pay twice.
+export function payable(posting: PayableState, now: number = Date.now()): boolean {
+  const timeLeft = posting.expires_at !== null && new Date(posting.expires_at).getTime() > now;
+  switch (posting.status) {
+    case "draft":
+    case "published":
+    case "expired":
+      return true;
+    case "rejected":
+      return posting.paid_days === 0;
+    case "pending":
+      return posting.paid_days === 0 && !timeLeft;
+    default:
+      return false;
+  }
 }
 
 export async function runPostingCheckout(deps: PostingCheckoutDeps, durationInput: unknown): Promise<PostingCheckoutOutcome> {
@@ -33,7 +48,7 @@ export async function runPostingCheckout(deps: PostingCheckoutDeps, durationInpu
   try {
     const posting = await deps.loadPosting();
     if (!posting) return { ok: false, error: "not_yours" };
-    if (!payable(posting.status)) return { ok: false, error: "not_payable" };
+    if (!payable(posting, (deps.now ?? new Date()).getTime())) return { ok: false, error: "not_payable" };
 
     const origin = (deps.env.SITE_URL ?? "").trim().replace(/\/+$/, "");
     const metadata = { kind: POSTING_KIND, posting_id: deps.postingId, profile_id: deps.userId, days: String(days) };
@@ -58,6 +73,6 @@ export const POSTING_CHECKOUT_MESSAGES: Record<PostingCheckoutError, string> = {
   not_configured: "Paid posting isn’t open yet. Your draft is saved, and an editor can still publish it.",
   invalid_duration: "Choose 30 or 60 days.",
   not_yours: "That posting wasn’t found.",
-  not_payable: "That posting is already paid and waiting for an editor.",
+  not_payable: "That posting already has paid time. Edit it and send it back for review instead of paying again.",
   failed: "We couldn’t start checkout. Nothing was charged. Please try again.",
 };

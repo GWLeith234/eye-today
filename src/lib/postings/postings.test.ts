@@ -30,7 +30,7 @@ test("checkout is a one-time payment for the chosen price with posting metadata"
       userId: USER,
       email: "a@example.com",
       postingId: POSTING,
-      loadPosting: async () => ({ status: "draft", expires_at: null }),
+      loadPosting: async () => ({ status: "draft", paid_days: 0, expires_at: null }),
       createSession: async (p) => {
         params = p;
         return "https://checkout.stripe.test/x";
@@ -53,7 +53,7 @@ test("checkout refuses bad input without calling Stripe", async () => {
     userId: USER,
     email: null,
     postingId: POSTING,
-    loadPosting: async () => ({ status: "pending", expires_at: null }),
+    loadPosting: async () => ({ status: "pending", paid_days: 30, expires_at: null }),
     createSession: async () => {
       throw new Error("should not be called");
     },
@@ -62,8 +62,13 @@ test("checkout refuses bad input without calling Stripe", async () => {
   assert.deepEqual(await runPostingCheckout(deps, "30"), { ok: false, error: "not_payable" });
   assert.deepEqual(await runPostingCheckout({ ...deps, loadPosting: async () => null }, "30"), { ok: false, error: "not_yours" });
   assert.deepEqual(await runPostingCheckout({ ...deps, env: {} }, "30"), { ok: false, error: "not_configured" });
-  assert.equal(payable("expired"), true);
-  assert.equal(payable("pending"), false);
+  const now = Date.parse("2026-10-10T00:00:00Z");
+  assert.equal(payable({ status: "expired", paid_days: 0, expires_at: "2026-09-01T00:00:00Z" }, now), true);
+  assert.equal(payable({ status: "pending", paid_days: 30, expires_at: null }, now), false, "paid and waiting");
+  assert.equal(payable({ status: "rejected", paid_days: 30, expires_at: null }, now), false, "rejected but already paid");
+  assert.equal(payable({ status: "rejected", paid_days: 0, expires_at: null }, now), true, "rejected and never paid");
+  assert.equal(payable({ status: "pending", paid_days: 0, expires_at: "2026-11-01T00:00:00Z" }, now), false, "edited live posting, clock running");
+  assert.equal(payable({ status: "pending", paid_days: 0, expires_at: "2026-10-01T00:00:00Z" }, now), true, "edited, then its time ran out");
 });
 
 function fakeDb(result: { data: unknown; error: { code?: string } | null }) {
