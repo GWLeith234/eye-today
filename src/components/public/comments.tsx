@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 
 import { postComment, reportComment } from "@/lib/comments/actions";
 
-type Published = { id: string; parent_id: string | null; body: string; created_at: string; display_name: string; is_supporter: boolean };
+type Published = { id: string; parent_id: string | null; body: string; created_at: string; display_name: string; is_supporter: boolean; own?: boolean };
 type Mine = { id: string; parent_id: string | null; body: string; created_at: string; status: string; reject_reason: string | null };
 type Payload = { open: boolean; signedIn: boolean; comments: Published[]; mine: Mine[] };
 
@@ -107,7 +107,9 @@ export function Comments({ articleId }: { articleId: string }) {
 
   const top = data.comments.filter((c) => c.parent_id === null);
   const replies = (id: string) => data.comments.filter((c) => c.parent_id === id);
-  const mineTop = data.mine.filter((c) => c.parent_id === null);
+  // A held or rejected reply whose parent is no longer showing is listed on its own, so it never just vanishes.
+  const topIds = new Set(top.map((c) => c.id));
+  const mineTop = data.mine.filter((c) => c.parent_id === null || !topIds.has(c.parent_id));
   const mineReplies = (id: string) => data.mine.filter((c) => c.parent_id === id);
 
   const mineView = (c: Mine) => (
@@ -150,7 +152,7 @@ export function Comments({ articleId }: { articleId: string }) {
                 <time dateTime={c.created_at} className="ml-2 text-xs font-normal opacity-70">{when(c.created_at)}</time>
               </p>
               <Body text={c.body} />
-              {data.signedIn ? (
+              {data.signedIn && !c.own ? (
                 <div className="flex gap-3">
                   <button type="button" onClick={() => setReplyTo(replyTo === c.id ? null : c.id)} className="text-xs underline">Reply</button>
                   <Report commentId={c.id} />
@@ -172,7 +174,7 @@ export function Comments({ articleId }: { articleId: string }) {
                     <time dateTime={r.created_at} className="ml-2 text-xs font-normal opacity-70">{when(r.created_at)}</time>
                   </p>
                   <Body text={r.body} />
-                  {data.signedIn ? <Report commentId={r.id} /> : null}
+                  {data.signedIn && !r.own ? <Report commentId={r.id} /> : null}
                 </li>
               ))}
             </ul>

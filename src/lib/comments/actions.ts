@@ -16,6 +16,7 @@ import { decideCommentStatus, type ScreenFlag } from "./status";
 export type CommentResult = { ok: true; message: string } | { ok: false; message: string };
 
 const WAIT = "You have posted a few comments recently. Please wait a little while before posting again.";
+const REPORT_WAIT = "You have sent several reports recently. Please wait a little while before sending another.";
 const FAILED = "Your comment could not be posted. Please try again.";
 
 const postSchema = z.object({
@@ -109,7 +110,7 @@ export async function reportComment(input: { commentId: string; reason: string }
   if (!parsed.success) return { ok: false, message: "Say briefly what is wrong with the comment." };
   const { supabase, user } = await getSession();
   if (!user) return { ok: false, message: "Sign in to report a comment." };
-  if (!rateLimit(`comment-report:${user.id}`, 10, 60 * 60 * 1000)) return { ok: false, message: WAIT };
+  if (!rateLimit(`comment-report:${user.id}`, 10, 60 * 60 * 1000)) return { ok: false, message: REPORT_WAIT };
   const { error } = await supabase.rpc("report_comment", { p_comment_id: parsed.data.commentId, p_reason: parsed.data.reason });
   if (error) return { ok: false, message: "That comment could not be reported." };
   return { ok: true, message: "Thanks. An editor will take a look." };
