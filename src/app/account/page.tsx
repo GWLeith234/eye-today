@@ -106,6 +106,11 @@ export default async function AccountPage({ searchParams }: PageProps<"/account"
         <h2 className="text-xl font-semibold">Membership</h2>
         <Link href="/account/billing" className="text-sm underline">Billing and supporter membership</Link>
       </section>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="text-xl font-semibold">Events</h2>
+        <Link href="/account/events" className="text-sm underline">Events you have submitted</Link>
+      </section>
     </main>
   );
 }

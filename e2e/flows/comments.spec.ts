@@ -28,6 +28,8 @@ test("a reader's comment waits for an editor and then shows with their name", as
   await reader.page.goto("/account");
   await reader.page.getByLabel("Display name").fill("E2E Reader");
   await reader.page.getByRole("button", { name: "Save profile" }).click();
+  // Wait for the save to land, or the comment can be posted under the old name.
+  await expect(reader.page).toHaveURL(/saved=profile/);
 
   await reader.page.goto(story);
   await expect(reader.page.getByRole("heading", { name: "Comments" })).toBeVisible();
