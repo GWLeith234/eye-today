@@ -1,17 +1,15 @@
 import "server-only";
 
-import { createHash, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
 
 import { cookies } from "next/headers";
+
+import { deviceHash } from "./device-hash";
 
 // Signed-out voters are told apart by a random token in an httpOnly cookie. Only a salted sha256 of it is
 // stored, never the token or an IP address.
 export const DEVICE_COOKIE = "et_voter";
 const TOKEN = /^[A-Za-z0-9_-]{32,64}$/;
-
-export function deviceHash(token: string, salt = process.env.VIEW_HASH_SALT || "eye-today-view"): string {
-  return createHash("sha256").update(`poll:${salt}:${token}`).digest("hex");
-}
 
 // Read-only (pages, reads): the existing hash or null.
 export async function readDeviceHash(): Promise<string | null> {
