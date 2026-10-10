@@ -22,11 +22,11 @@ export function PollForm({
   results: string;
   opensAt: string;
   closesAt: string;
-  options: string[];
+  options: { id: string; label: string }[];
   notice?: string;
 }) {
   const [state, action, pending] = useActionState(savePoll, { error: null } satisfies SaveState);
-  const slots = [...options, ...Array(Math.max(0, 6 - options.length)).fill("")].slice(0, 6);
+  const slots = [...options, ...Array.from({ length: Math.max(0, 6 - options.length) }, () => ({ id: "", label: "" }))].slice(0, 6);
   return (
     <form action={action} className="grid max-w-xl gap-3">
       {notice ? <p role="status" className="rounded border border-green-600 p-2 text-sm">{notice}</p> : null}
@@ -38,9 +38,13 @@ export function PollForm({
       </label>
       <fieldset className="flex flex-col gap-2 text-sm">
         <legend className="mb-1">Options (two to six; leave the rest blank)</legend>
-        {slots.map((value, index) => (
-          <input key={index} name="option" maxLength={120} defaultValue={value} aria-label={`Option ${index + 1}`} className={field} />
+        {slots.map((slot, index) => (
+          <span key={slot.id || `new-${index}`} className="contents">
+            <input type="hidden" name="option_id" value={slot.id} />
+            <input name="option" maxLength={120} defaultValue={slot.label} aria-label={`Option ${index + 1}`} className={field} />
+          </span>
         ))}
+        <span className="text-xs text-muted">Editing an option’s text keeps its votes. Emptying an option removes it, which is only allowed while it has no votes.</span>
       </fieldset>
       <label className="flex flex-col gap-1 text-sm">
         Status

@@ -17,6 +17,12 @@ test("the same seed and entries always give the same winner, whatever order they
   assert.deepEqual(first.ordered.map((e) => e.id), ["e1", "e2", "e3", "e4", "e5"]);
 });
 
+test("the TypeScript rule matches the database draw on a shared vector", () => {
+  // supabase/tests/0018_polls_contests.sql asserts draw_contest picks the same entry for this seed.
+  const ids = ["d1800000-0000-4000-8000-0000000000f2", "d1800000-0000-4000-8000-0000000000f3", "d1800000-0000-4000-8000-0000000000f1"];
+  assert.equal(pickWinner("ab".repeat(32), ids.map((id) => ({ id }))).winner.id, "d1800000-0000-4000-8000-0000000000f3");
+});
+
 test("different seeds spread across entries, and bad input is refused", () => {
   const seen = new Set<number>();
   for (let i = 0; i < 64; i += 1) seen.add(drawIndex(i.toString(16).padStart(64, "0"), 4));

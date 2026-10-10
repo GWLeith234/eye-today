@@ -51,7 +51,7 @@ export default async function PollAdminPage({ params, searchParams }: PageProps<
         results={poll.results}
         opensAt={local(poll.opens_at)}
         closesAt={local(poll.closes_at)}
-        options={(options ?? []).map((option) => option.label)}
+        options={(options ?? []).map((option) => ({ id: option.id, label: option.label }))}
         notice={query.saved === "1" ? "Poll saved." : undefined}
       />
     </div>

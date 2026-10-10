@@ -6,7 +6,6 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { getEditorContext } from "@/lib/auth/editor";
-import { pickWinner } from "@/lib/contests/draw";
 import { getSiteId } from "@/lib/site";
 import { SLUG_RE } from "@/lib/slug";
 
@@ -68,28 +67,13 @@ export async function drawWinner(formData: FormData) {
   if (!id.success) redirect("/admin/contests");
   const back = `/admin/contests/${id.data}`;
 
-  const { data: contest } = await ctx.supabase
-    .from("contests")
-    .select("id, site_id, status, closes_at")
-    .eq("id", id.data)
-    .maybeSingle<{ id: string; site_id: string; status: string; closes_at: string }>();
-  if (!contest) redirect("/admin/contests");
-  if (contest.status !== "closed" && new Date(contest.closes_at).getTime() > Date.now()) redirect(`${back}?error=not_closed`);
-
-  const { data: entries } = await ctx.supabase.from("contest_entries").select("id").eq("contest_id", contest.id).order("id").limit(100000).returns<{ id: string }[]>();
-  if (!entries?.length) redirect(`${back}?error=no_entries`);
-
+  // The database counts and orders every entry (no API row cap) and records the draw in one step,
+  // using the same rule as src/lib/contests/draw.ts.
   const seed = randomBytes(32).toString("hex");
-  const { winner } = pickWinner(seed, entries);
-  const { error } = await ctx.supabase.from("contest_draws").insert({
-    site_id: contest.site_id,
-    contest_id: contest.id,
-    seed,
-    entry_count: entries.length,
-    winner_entry_id: winner.id,
-    drawn_by: ctx.userId,
-  });
+  const { error } = await ctx.supabase.rpc("draw_contest", { p_contest: id.data, p_seed: seed });
   if (error) {
+    if (error.message === "not closed") redirect(`${back}?error=not_closed`);
+    if (error.message === "no entries") redirect(`${back}?error=no_entries`);
     console.error("contest draw failed", error.code);
     redirect(`${back}?error=draw_failed`);
   }

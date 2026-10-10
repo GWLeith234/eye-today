@@ -417,3 +417,56 @@ $$;
 
 revoke all on function public.enter_contest(uuid, text, text, text, boolean) from public, anon, authenticated;
 grant execute on function public.enter_contest(uuid, text, text, text, boolean) to anon, authenticated;
+
+-- Editors draw after a contest closes. The seed comes from the server (crypto-random). The winner is entry
+-- number sha256(seed) mod n, with entries ordered by id — the same rule as src/lib/contests/draw.ts, so anyone with
+-- the seed and the entry list can repeat it. Done here so every entry counts, however many there are.
+create function public.draw_contest(p_contest uuid, p_seed text)
+returns uuid
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  c public.contests;
+  n integer;
+  digest_hex text;
+  acc numeric := 0;
+  i integer;
+  pick integer;
+  winner uuid;
+begin
+  if (select public.current_app_role()) not in ('editor', 'admin') then
+    raise exception 'not allowed' using errcode = '42501';
+  end if;
+  if p_seed is null or p_seed !~ '^[0-9a-f]{64}$' then
+    raise exception 'invalid seed' using errcode = '23514';
+  end if;
+  select * into c from public.contests x where x.id = p_contest;
+  if c.id is null then
+    raise exception 'not allowed' using errcode = '42501';
+  end if;
+  if c.status <> 'closed' and c.closes_at > pg_catalog.now() then
+    raise exception 'not closed' using errcode = '23514';
+  end if;
+  select count(*) into n from public.contest_entries e where e.contest_id = c.id;
+  if n = 0 then
+    raise exception 'no entries' using errcode = '23514';
+  end if;
+
+  digest_hex := pg_catalog.encode(extensions.digest(pg_catalog.decode(p_seed, 'hex'), 'sha256'), 'hex');
+  for i in 1..64 loop
+    acc := acc * 16 + pg_catalog.strpos('0123456789abcdef', pg_catalog.substr(digest_hex, i, 1)) - 1;
+  end loop;
+  pick := (acc % n)::integer;
+
+  select e.id into winner from public.contest_entries e where e.contest_id = c.id order by e.id offset pick limit 1;
+  insert into public.contest_draws (site_id, contest_id, seed, entry_count, winner_entry_id, drawn_by)
+  values (c.site_id, c.id, p_seed, n, winner, (select auth.uid()));
+  return winner;
+end;
+$$;
+
+revoke all on function public.draw_contest(uuid, text) from public, anon, authenticated;
+grant execute on function public.draw_contest(uuid, text) to authenticated;

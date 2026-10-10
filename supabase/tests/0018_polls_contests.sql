@@ -180,4 +180,43 @@ $$;
 reset role;
 \echo 'ok  editors'
 
+-- The database draw matches the TypeScript rule: seed 'ab' x 32 over three entries picks index 2 (the …f3 entry).
+insert into public.contest_entries (id, site_id, contest_id, name, email, consent_at) values
+  ('d1800000-0000-4000-8000-0000000000f2', '00000000-0000-4000-8000-000000000001', 'd1800000-0000-4000-8000-000000000c02', 'B', 'b@x.test', now()),
+  ('d1800000-0000-4000-8000-0000000000f3', '00000000-0000-4000-8000-000000000001', 'd1800000-0000-4000-8000-000000000c02', 'C', 'c@x.test', now()),
+  ('d1800000-0000-4000-8000-0000000000f1', '00000000-0000-4000-8000-000000000001', 'd1800000-0000-4000-8000-000000000c02', 'A', 'a@x.test', now());
+set local request.jwt.claims = '{"role": "authenticated", "sub": "d1800000-0000-4000-8000-0000000000e1"}';
+set local role authenticated;
+do $$
+declare
+  failed boolean := false;
+begin
+  assert public.draw_contest('d1800000-0000-4000-8000-000000000c02', repeat('ab', 32)) = 'd1800000-0000-4000-8000-0000000000f3',
+    'the SQL draw matches sha256(seed) mod n over entries ordered by id';
+  assert (select entry_count from public.contest_draws where contest_id = 'd1800000-0000-4000-8000-000000000c02') = 3, 'entry count recorded';
+  begin
+    perform public.draw_contest('d1800000-0000-4000-8000-000000000c01', repeat('ab', 32));
+  exception when check_violation then failed := true;
+  end;
+  assert failed, 'an open contest cannot be drawn yet';
+end;
+$$;
+reset role;
+set local request.jwt.claims = '{"role": "authenticated", "sub": "d1800000-0000-4000-8000-0000000000a1"}';
+set local role authenticated;
+do $$
+declare
+  failed boolean := false;
+begin
+  begin
+    perform public.draw_contest('d1800000-0000-4000-8000-000000000c02', repeat('cd', 32));
+  exception when insufficient_privilege then failed := true;
+  end;
+  assert failed, 'a reader cannot draw';
+end;
+$$;
+reset role;
+\echo 'ok  draw'
+
+
 rollback;
