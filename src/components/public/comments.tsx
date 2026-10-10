@@ -143,7 +143,7 @@ export function Comments({ articleId }: { articleId: string }) {
         {mineTop.map(mineView)}
         {top.map((c) => (
           <li key={c.id} className="flex flex-col gap-2">
-            <article className="flex flex-col gap-1 text-sm">
+            <article data-comment-id={c.id} className="flex flex-col gap-1 text-sm">
               <p className="font-semibold">
                 {c.display_name}
                 {c.is_supporter ? <span className="ml-2 border border-rule px-1 text-xs font-normal uppercase tracking-widest">Supporter</span> : null}

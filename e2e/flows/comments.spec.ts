@@ -50,7 +50,8 @@ test("a reader's comment waits for an editor and then shows with their name", as
   expect(id).toBeTruthy();
 
   await page.goto(story);
-  const published = page.getByRole("article").filter({ hasText: text });
+  // Scoped to the comments region: the story itself is an <article> that contains every comment.
+  const published = page.locator("#comments article[data-comment-id]").filter({ hasText: text });
   await expect(published).toBeVisible();
   await expect(published).toContainText("E2E Reader");
 });
