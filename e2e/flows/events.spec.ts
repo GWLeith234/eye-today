@@ -21,7 +21,7 @@ test("an organiser submits an event, an editor approves it, and it appears every
   const reader = await signIn(browser, "reader");
   await reader.page.goto("/events/submit");
   await reader.page.getByLabel("Event name").fill(title);
-  await reader.page.getByLabel("Type", { exact: true }).selectOption("integration_circle");
+  await reader.page.getByLabel("Type").selectOption("integration_circle");
   await reader.page.getByLabel("In person").check();
   await reader.page.getByLabel("Start date").fill(`${year}-07-01`);
   await reader.page.getByLabel("Start time").fill("19:00");
@@ -32,7 +32,7 @@ test("an organiser submits an event, an editor approves it, and it appears every
   await reader.page.getByLabel("Organiser", { exact: true }).fill("E2E Organiser");
   await reader.page.getByLabel("Registration link").fill("https://example.com/register");
   await reader.page.getByLabel("Directory listing (optional)").fill("zed-clinic");
-  await reader.page.getByLabel("Description", { exact: true }).fill("A circle for people after treatment.");
+  await reader.page.getByLabel("Description").fill("A circle for people after treatment.");
   await reader.page.waitForFunction(() => {
     const input = document.querySelector('input[name="cf-turnstile-response"]') as HTMLInputElement | null;
     return Boolean(input?.value);
