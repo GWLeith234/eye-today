@@ -11,7 +11,7 @@ const ALLOWED_TAGS = [
 
 const ALLOWED_ATTR = [
   "href", "target", "rel", "src", "alt", "title", "width", "height", "start",
-  "class", "data-type", "data-embed", "data-url", "data-youtube-video",
+  "class", "data-type", "data-embed", "data-url", "data-youtube-video", "data-poll",
   "allowfullscreen", "allow", "frameborder", "loading",
 ];
 
@@ -49,6 +49,13 @@ DOMPurify.addHook("afterSanitizeAttributes", (node) => {
   const element = node as Element;
   if (element.tagName === "IMG" && !isAllowedImageSrc(element.getAttribute("src"))) {
     element.removeAttribute("src");
+  }
+  // A poll placeholder carries a uuid and nothing else; anything else is dropped.
+  if (element.hasAttribute?.("data-poll")) {
+    const id = element.getAttribute("data-poll") ?? "";
+    if (element.tagName !== "DIV" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      element.removeAttribute("data-poll");
+    }
   }
   if (element.tagName === "A") {
     if (!/^(https?:\/\/|mailto:)/i.test(element.getAttribute("href") ?? "")) element.removeAttribute("href");

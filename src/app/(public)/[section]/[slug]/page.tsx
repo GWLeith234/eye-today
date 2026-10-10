@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 
 import { AdSlot } from "@/components/public/ad-slot";
+import { PollMounts } from "@/components/polls/poll-mounts";
 import { Comments } from "@/components/public/comments";
 import { AuthorFace } from "@/components/public/author-face";
 import { ShareRow } from "@/components/public/share-row";
@@ -251,6 +252,7 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
 
       {/* body_html is sanitized when saved and again here in case a row was written elsewhere. */}
       <div className="article-body mx-auto flex w-full max-w-3xl flex-col gap-4" dangerouslySetInnerHTML={{ __html: sanitizeArticleHtml(article.body_html ?? "", { sponsored: article.is_sponsored }) }} />
+      <PollMounts />
 
       <AdSlot name="in-article" />
 

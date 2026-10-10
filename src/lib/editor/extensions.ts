@@ -16,6 +16,9 @@ declare module "@tiptap/core" {
     embed: {
       insertEmbed: (url: string) => ReturnType;
     };
+    poll: {
+      insertPoll: (pollId: string) => ReturnType;
+    };
   }
 }
 
@@ -103,6 +106,49 @@ export const Embed = Node.create({
   },
 });
 
+export const POLL_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// A placeholder for a reader poll. The article page mounts the live poll into it; the HTML holds only the id.
+export const Poll = Node.create({
+  name: "poll",
+  group: "block",
+  atom: true,
+  draggable: true,
+
+  addAttributes() {
+    return { pollId: { default: null } };
+  },
+
+  parseHTML() {
+    return [
+      {
+        tag: "div[data-poll]",
+        getAttrs: (element) => {
+          const id = (element as HTMLElement).getAttribute("data-poll") ?? "";
+          return POLL_ID.test(id) ? { pollId: id.toLowerCase() } : false;
+        },
+      },
+    ];
+  },
+
+  renderHTML({ node }) {
+    const id = typeof node.attrs.pollId === "string" && POLL_ID.test(node.attrs.pollId) ? node.attrs.pollId.toLowerCase() : null;
+    if (!id) return ["div", { class: "poll-embed" }];
+    return ["div", { "data-poll": id, class: "poll-embed" }, "Poll"];
+  },
+
+  addCommands() {
+    return {
+      insertPoll:
+        (pollId: string) =>
+        ({ commands }) => {
+          if (!POLL_ID.test(pollId.trim())) return false;
+          return commands.insertContent({ type: this.name, attrs: { pollId: pollId.trim().toLowerCase() } });
+        },
+    };
+  },
+});
+
 const SAFE_LINK = /^(https?:\/\/|mailto:)/i;
 
 export const editorExtensions = [
@@ -121,4 +167,5 @@ export const editorExtensions = [
   Youtube.configure({ nocookie: true, controls: true, width: 640, height: 360 }),
   PullQuote,
   Embed,
+  Poll,
 ];

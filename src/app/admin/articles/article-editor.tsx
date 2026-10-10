@@ -235,6 +235,12 @@ export function ArticleEditor({
     atCursor()?.insertEmbed(url).run();
   }
 
+  function addPoll() {
+    const id = window.prompt("Poll ID (copy it from Admin → Polls)");
+    if (!id || !editor) return;
+    if (!atCursor()?.insertPoll(id).run()) window.alert("That is not a poll ID. Copy the ID shown next to the poll in Admin → Polls.");
+  }
+
   function addImage(mediaId: string) {
     const item = media.find((m) => m.id === mediaId);
     if (item) atCursor()?.setImage({ src: mediaUrl(item.storage_path, { width: 1200 }), alt: item.alt ?? "" }).run();
@@ -286,6 +292,7 @@ export function ArticleEditor({
           <button type="button" className={tool} onClick={addLink}>Link</button>
           <button type="button" className={tool} onClick={addYoutube}>YouTube</button>
           <button type="button" className={tool} onClick={addEmbed}>X / Instagram</button>
+          {!isContributor ? <button type="button" className={tool} onClick={addPoll}>Poll</button> : null}
           {!isContributor ? (
             <select aria-label="Insert image" className={tool} value="" onChange={(e) => addImage(e.target.value)}>
               <option value="">Insert image…</option>
