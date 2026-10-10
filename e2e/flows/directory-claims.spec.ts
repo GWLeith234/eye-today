@@ -40,7 +40,7 @@ test("claim with a domain email, propose an edit, an editor approves it, and ver
       await expect(reader.page).toHaveURL(new RegExp(`/account/listings/claim/${slug}`));
       await reader.page.getByLabel(/Your work email/).fill("someone@gmail.example");
       await reader.page.getByRole("button", { name: "Email me a code" }).click();
-      await expect(reader.page.getByRole("alert")).toContainText("not at the listing's website domain");
+      await expect(reader.page.locator("main").getByRole("alert")).toContainText("not at the listing's website domain");
     });
 
     await test.step("a mailbox at the listing's domain gets a code and the code makes them an owner", async () => {
@@ -56,7 +56,7 @@ test("claim with a domain email, propose an edit, an editor approves it, and ver
       // A wrong code does not say what was wrong.
       await reader.page.getByLabel("Code from the email").fill("00000000");
       await reader.page.getByRole("button", { name: "Confirm" }).click();
-      await expect(reader.page.getByRole("alert")).toContainText("That code did not work");
+      await expect(reader.page.locator("main").getByRole("alert")).toContainText("That code did not work");
 
       // One wrong guess leaves the real code valid.
       await reader.page.getByLabel("Code from the email").fill(code!);
@@ -237,6 +237,12 @@ test("the map view lists the same names as the list view, with pins and visible 
   // One without a position: in the list, not on the map.
   await insertListing(admin, { slug: `${prefix}nopin-${stamp}`, name: `Nopin Map Test ${stamp}`, country: "QR" });
 
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+  page.on("console", (message) => {
+    if (message.type() === "error") pageErrors.push(message.text());
+  });
+
   try {
     await page.route("https://tile.openstreetmap.org/**", (route) => route.fulfill({ status: 204 }));
     const names = async () => page.getByTestId("listing-card").getByRole("heading").allInnerTexts();
@@ -251,6 +257,8 @@ test("the map view lists the same names as the list view, with pins and visible 
     await expect(page.getByTestId("directory-map")).toBeVisible();
     await expect(page.locator(".leaflet-marker-icon")).toHaveCount(3);
     await expect(page.getByText("OpenStreetMap")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "The directory did not load" })).toHaveCount(0);
+    expect(pageErrors, pageErrors.join("\n")).toEqual([]);
     expect(await names()).toEqual(listNames);
 
     await page.getByRole("link", { name: "List", exact: true }).click();

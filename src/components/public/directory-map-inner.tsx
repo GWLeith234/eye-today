@@ -54,14 +54,18 @@ function Pins({ pins }: { pins: MapPin[] }) {
 }
 
 export default function DirectoryMapInner({ pins }: { pins: MapPin[] }) {
+  // react-leaflet only copies className, id, and style onto the map div. A test id
+  // passed to MapContainer never reaches the DOM, so it lives on this wrapper.
   return (
-    <MapContainer center={[20, 0]} zoom={2} scrollWheelZoom={false} className="h-[420px] w-full" data-testid="directory-map">
-      <TileLayer
-        url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        maxZoom={19}
-      />
-      <Pins pins={pins} />
-    </MapContainer>
+    <div data-testid="directory-map">
+      <MapContainer center={[20, 0]} zoom={2} scrollWheelZoom={false} className="h-[420px] w-full">
+        <TileLayer
+          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          maxZoom={19}
+        />
+        <Pins pins={pins} />
+      </MapContainer>
+    </div>
   );
 }
