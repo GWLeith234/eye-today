@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 
 import { signIn } from "../helpers/auth";
-import { waitForStripeSession } from "../helpers/mailbox";
+import { readStripeSessions } from "../helpers/mailbox";
 
 test("support does not charge a card when payments are closed", async ({ page }) => {
   test.skip(Boolean(process.env.STRIPE_SECRET_KEY), "Payments are configured for the full suite.");
@@ -29,7 +29,9 @@ test("checkout is requested once and a replayed webhook does not double-create a
   await reader.page.getByRole("button", { name: "Subscribe" }).first().click();
   await expect(reader.page).toHaveURL(/checkout\.stripe\.test\/e2e-session/);
 
-  const session = await waitForStripeSession();
+  // Other flows (job postings) write to the same Stripe log in parallel, so find this test's session by price.
+  await expect.poll(() => readStripeSessions().some((line) => line.price === process.env.STRIPE_PRICE_MONTHLY), { timeout: 15_000 }).toBe(true);
+  const session = readStripeSessions().reverse().find((line) => line.price === process.env.STRIPE_PRICE_MONTHLY)!;
   expect(session.mode).toBe("subscription");
   expect(session.price).toBe(process.env.STRIPE_PRICE_MONTHLY);
   expect(session.customer).toMatch(/^cus_[A-Za-z0-9_]{6,64}$/);

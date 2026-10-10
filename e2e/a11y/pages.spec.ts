@@ -23,11 +23,11 @@ test("a section and an article have no serious or critical axe violations when t
   await page.goto("/");
   const hrefs = await page.locator("a[href]").evaluateAll((nodes) => nodes.map((node) => node.getAttribute("href") ?? ""));
   // Event and directory pages share the two-segment shape of a story; they are not stories.
-  const article = hrefs.find((href) => /^\/[a-z0-9-]+\/[a-z0-9-]+$/.test(href) && !/^\/(events|directory|jobs|classifieds)\//.test(href));
+  const article = hrefs.find((href) => /^\/[a-z0-9-]+\/[a-z0-9-]+$/.test(href) && !/^\/(events|directory|jobs|classifieds|contests)\//.test(href));
   const staticPaths = new Set([
     "search", "newsletter", "newsletters", "support", "about", "contact", "advertise", "ad-policy",
     "write-for-us", "editorial-policy", "corrections", "disclaimer", "privacy", "terms", "login", "account",
-    "directory", "events", "jobs", "classifieds",
+    "directory", "events", "jobs", "classifieds", "contests",
   ]);
   const section = hrefs.find((href) => {
     const match = /^\/([a-z0-9-]+)$/.exec(href);

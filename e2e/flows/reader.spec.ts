@@ -4,7 +4,7 @@ test("a reader can open the front page and search", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("link", { name: "Eye Today" }).first()).toBeVisible();
   const hrefs = await page.locator("main a[href]").evaluateAll((nodes) => nodes.map((node) => node.getAttribute("href") ?? ""));
-  const article = hrefs.find((href) => /^\/[a-z0-9-]+\/[a-z0-9-]+$/.test(href) && !/^\/(events|directory|jobs|classifieds)\//.test(href));
+  const article = hrefs.find((href) => /^\/[a-z0-9-]+\/[a-z0-9-]+$/.test(href) && !/^\/(events|directory|jobs|classifieds|contests)\//.test(href));
   if (article) {
     await page.goto(article);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();

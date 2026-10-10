@@ -14,6 +14,7 @@ const ABOUT = [
   { href: "/events", label: "Events" },
   { href: "/jobs", label: "Jobs" },
   { href: "/classifieds", label: "Classifieds" },
+  { href: "/contests", label: "Contests" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
   { href: "/write-for-us", label: "Write for us" },

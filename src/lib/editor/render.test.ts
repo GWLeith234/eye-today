@@ -67,3 +67,12 @@ test("images must be https (or this project's Storage)", () => {
   assert.ok(isAllowedImageSrc("https://cdn.example/a.png"));
   assert.ok(!isAllowedImageSrc("javascript:alert(1)"));
 });
+
+test("a poll node renders a placeholder with its id, and the sanitizer keeps only a uuid", () => {
+  const id = "0f6c1a52-3b5e-4c2a-9a0e-1d2e3f4a5b6c";
+  const html = renderArticleHtml(doc({ type: "poll", attrs: { pollId: id } }));
+  assert.match(html, new RegExp(`<div data-poll="${id}" class="poll-embed">Poll</div>`));
+  assert.doesNotMatch(renderArticleHtml(doc({ type: "poll", attrs: { pollId: "nope" } })), /data-poll/);
+  assert.doesNotMatch(sanitizeArticleHtml('<div data-poll="x" onclick="a()">Poll</div>'), /data-poll|onclick/);
+  assert.doesNotMatch(sanitizeArticleHtml(`<p data-poll="${id}">x</p>`), /data-poll/);
+});
