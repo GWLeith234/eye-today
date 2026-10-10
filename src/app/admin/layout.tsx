@@ -14,6 +14,7 @@ const NAV = [
   { href: "/admin/sections", label: "Sections" },
   { href: "/admin/tags", label: "Tags" },
   { href: "/admin/directory", label: "Directory" },
+  { href: "/admin/comments", label: "Comments" },
 ];
 
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {

@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 
 import { AdSlot } from "@/components/public/ad-slot";
+import { Comments } from "@/components/public/comments";
 import { AuthorFace } from "@/components/public/author-face";
 import { ShareRow } from "@/components/public/share-row";
 import { StoryCard } from "@/components/public/story-card";
@@ -111,12 +112,25 @@ function Time({ value, label }: { value: string; label: string }) {
   );
 }
 
+// Only decides whether to mount the comment region. The comments themselves are fetched per visitor, uncached.
+async function isCommentsOpen(articleId: string): Promise<boolean> {
+  const supabase = createAnonClient();
+  if (!supabase) return false;
+  const { data } = await supabase.rpc("comments_open", { p_article_id: articleId });
+  return data === true;
+}
+
 export default async function ArticlePage({ params }: PageProps<"/[section]/[slug]">) {
   const { section, slug } = await params;
   const article = await loadArticle(section, slug);
   if (!article || !article.sections) notFound();
 
-  const [bylines, related, listings] = await Promise.all([getBylines(article.id), getRelated(article.id), getArticleListings(article.id)]);
+  const [bylines, related, listings, commentsOpen] = await Promise.all([
+    getBylines(article.id),
+    getRelated(article.id),
+    getArticleListings(article.id),
+    isCommentsOpen(article.id),
+  ]);
   const published = publicDate(article);
   // Only show "Updated" when the edit came meaningfully after publication.
   const updated =
@@ -259,6 +273,8 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
         {MEDICAL_DISCLAIMER}{" "}
         <Link href="/disclaimer" className="underline">Read the full disclaimer</Link>
       </p>
+
+      {commentsOpen ? <Comments articleId={article.id} /> : null}
 
       <SupportNote />
 
