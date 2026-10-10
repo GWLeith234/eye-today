@@ -140,6 +140,8 @@ begin
     'sitemap is published only';
   assert (select count(*) from public.events_for_listing('d1600000-0000-4000-8000-0000000000c1', 4)) = 1, 'listing rail';
   assert (select count(*) from public.events_in_month(date '2025-03-01')) = 1, 'a past month shows its event';
+  assert (select count(*) from public.events_in_month(date '2025-04-01')) = 0, 'it does not leak into the next month';
+  assert (select count(*) from public.events_in_month(date '2025-02-01')) = 0, 'or the previous one';
   assert (select count(*) from public.events_in_month((now() + interval '5 days')::date)
            where slug in ('ev-pending', 'ev-cancelled')) = 0, 'month view is published only';
 

@@ -502,8 +502,10 @@ as $$
     from public._events_public() e
    where e.status = 'published'
      and p_month is not null
-     and e.starts_at < (pg_catalog.date_trunc('month', p_month::timestamp) + interval '1 month') at time zone 'UTC'
-     and e.ends_at >= pg_catalog.date_trunc('month', p_month::timestamp) at time zone 'UTC'
+     -- One day of slack each side: the page places events on their local dates, and a zone can be
+     -- up to 14 hours from UTC, so an event on the 1st or the last day may sit in the next or previous UTC month.
+     and e.starts_at < (pg_catalog.date_trunc('month', p_month::timestamp) + interval '1 month' + interval '1 day') at time zone 'UTC'
+     and e.ends_at >= (pg_catalog.date_trunc('month', p_month::timestamp) - interval '1 day') at time zone 'UTC'
    order by e.starts_at, e.id
    limit 300;
 $$;
