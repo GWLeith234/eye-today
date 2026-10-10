@@ -4,12 +4,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { UpcomingEvents } from "@/components/events/event-list";
+import { LatestJobs } from "@/components/postings/posting-list";
 import { DirectoryFrame } from "@/components/public/directory-frame";
 import { VerificationBadge } from "@/components/public/listing-card";
 import { StoryList } from "@/components/public/story-card";
 import { countryName } from "@/lib/directory/countries";
 import { listingJsonLd } from "@/lib/directory/jsonld";
 import { eventsForListing } from "@/lib/events/public";
+import { jobsForListing } from "@/lib/postings/public";
 import { getDirectoryListing, getListingStories } from "@/lib/directory/public";
 import { mediaUrl } from "@/lib/media/url";
 import { absoluteUrl } from "@/lib/public/site";
@@ -63,7 +65,11 @@ export default async function ListingPage({ params }: PageProps<"/directory/list
     lat: listing.lat,
     lng: listing.lng,
   });
-  const [related, events] = await Promise.all([getListingStories(listing.id, listing.services ?? []), eventsForListing(listing.id, 4)]);
+  const [related, events, jobs] = await Promise.all([
+    getListingStories(listing.id, listing.services ?? []),
+    eventsForListing(listing.id, 4),
+    jobsForListing(listing.id, 4),
+  ]);
   const when = reviewed(listing.last_reviewed_at);
   const place = [listing.city, listing.region, countryName(listing.country_code)].filter(Boolean).join(", ");
   const photos = (listing.photo_paths ?? []).map((path, index) => ({
@@ -150,6 +156,7 @@ export default async function ListingPage({ params }: PageProps<"/directory/list
         ) : null}
       </article>
       <UpcomingEvents events={events} id="listing-events" />
+      <LatestJobs jobs={jobs} id="listing-jobs" heading="Jobs here" />
       {related.length > 0 ? (
         <section aria-labelledby="related-stories">
           <h2 id="related-stories" className="mb-2 font-serif text-2xl font-bold">Related stories</h2>

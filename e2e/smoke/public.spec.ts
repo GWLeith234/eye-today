@@ -18,6 +18,9 @@ const PAGES = [
   "/directory/how-we-verify",
   "/events",
   "/events?view=calendar",
+  "/jobs",
+  "/classifieds",
+  "/jobs/policy",
 ];
 
 test("public pages return 200", async ({ request }) => {
@@ -67,7 +70,7 @@ test("a published article shows the medical disclaimer", async ({ page }) => {
   await page.goto("/");
   const hrefs = await page.locator("a[href]").evaluateAll((nodes) => nodes.map((node) => node.getAttribute("href") ?? ""));
   // Event and directory pages share the two-segment shape of a story; they are not stories.
-  const article = hrefs.find((href) => /^\/[a-z0-9-]+\/[a-z0-9-]+$/.test(href) && !/^\/(events|directory)\//.test(href));
+  const article = hrefs.find((href) => /^\/[a-z0-9-]+\/[a-z0-9-]+$/.test(href) && !/^\/(events|directory|jobs|classifieds)\//.test(href));
   test.skip(!article, "No published article to open");
   await page.goto(article!);
   // The footer link uses the same opening words. The article's own note is the disclaimer.

@@ -12,6 +12,8 @@ import { Wordmark } from "./wordmark";
 const ABOUT = [
   { href: "/directory", label: "Directory" },
   { href: "/events", label: "Events" },
+  { href: "/jobs", label: "Jobs" },
+  { href: "/classifieds", label: "Classifieds" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
   { href: "/write-for-us", label: "Write for us" },

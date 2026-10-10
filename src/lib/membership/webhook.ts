@@ -4,6 +4,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 
 import { handleFeatureEvent } from "@/lib/directory/feature-webhook";
+import { refreshPostings } from "@/lib/postings/revalidate";
+import { handlePostingEvent } from "@/lib/postings/webhook";
 import { newConfirmToken, unsubscribeToken } from "@/lib/newsletter/tokens";
 
 import { membershipStatusFrom, pastDuePeriodEnd } from "./mapping";
@@ -243,6 +245,14 @@ export async function handleStripeEvent(db: SupabaseClient, stripe: Stripe, even
   // A featured-listing subscription is not a supporter membership: it is handled, and returns, before
   // any membership, role or newsletter logic can see it.
   if (await handleFeatureEvent(db, stripe, event)) return;
+  // A posting payment is a one-time checkout for the job board, never a membership.
+  if (
+    await handlePostingEvent(db, event, (outcome) => {
+      if (outcome === "extended" || outcome === "renewed") refreshPostings();
+    })
+  ) {
+    return;
+  }
 
   switch (event.type) {
     case "checkout.session.completed": {

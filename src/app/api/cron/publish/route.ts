@@ -1,5 +1,6 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 
+import { refreshPostings } from "@/lib/postings/revalidate";
 import { revalidateAllPublic } from "@/lib/public/revalidate";
 
 export const dynamic = "force-dynamic";
@@ -21,11 +22,18 @@ export async function POST(request: Request) {
 
   // The service role is loaded only after the secret matches.
   const { createAdminClient } = await import("@/lib/supabase/admin");
-  const { data, error } = await createAdminClient().rpc("publish_due_articles");
+  const db = createAdminClient();
+  const { data, error } = await db.rpc("publish_due_articles");
   if (error) {
     return Response.json({ error: "publish_failed" }, { status: 500, headers });
   }
-
   if (data) revalidateAllPublic();
-  return Response.json({ published: data ?? 0 }, { headers });
+
+  // Same five-minute run: postings past their expiry or closing date. Public reads already hide them;
+  // this flips the status and refreshes the boards. A failure here does not undo the publish above.
+  const expired = await db.rpc("expire_postings");
+  if (expired.error) console.error("expire postings failed", expired.error.code);
+  else if (expired.data) refreshPostings();
+
+  return Response.json({ published: data ?? 0, expired: expired.error ? null : (expired.data ?? 0) }, { headers });
 }

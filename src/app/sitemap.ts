@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { getDirectorySitemap } from "@/lib/directory/public";
 import { eventsSitemap } from "@/lib/events/public";
+import { postingsSitemap } from "@/lib/postings/public";
 import { getSections } from "@/lib/public/data";
 import { liveArticleRows, rowHref } from "@/lib/public/feeds";
 import { isReservedSectionSlug } from "@/lib/public/reserved";
@@ -12,12 +13,18 @@ export const revalidate = 3600;
 const STATIC_PAGES = [
   "/about", "/contact", "/advertise", "/write-for-us", "/editorial-policy",
   "/corrections", "/disclaimer", "/ad-policy", "/privacy", "/terms", "/community-guidelines", "/newsletter", "/support",
-  "/directory", "/directory/how-we-verify", "/directory/submit", "/events",
+  "/directory", "/directory/how-we-verify", "/directory/submit", "/events", "/jobs", "/classifieds", "/jobs/policy",
 ];
 
 // Live articles only: the anon client never sees drafts or future schedules.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [sections, articles, directory, events] = await Promise.all([getSections(), liveArticleRows(), getDirectorySitemap(), eventsSitemap()]);
+  const [sections, articles, directory, events, postings] = await Promise.all([
+    getSections(),
+    liveArticleRows(),
+    getDirectorySitemap(),
+    eventsSitemap(),
+    postingsSitemap(),
+  ]);
   return [
     { url: absoluteUrl("/"), changeFrequency: "hourly", priority: 1 },
     ...sections
@@ -28,6 +35,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: absoluteUrl(row.kind === "country" ? `/directory/${row.slug}` : `/directory/listing/${row.slug}`),
       lastModified: row.updated_at,
     })),
+    ...postings.map((row) => ({ url: absoluteUrl(`/${row.kind === "job" ? "jobs" : "classifieds"}/${row.slug}`), lastModified: row.updated_at })),
     ...events.map((row) => ({ url: absoluteUrl(`/events/${row.slug}`), lastModified: row.updated_at })),
     ...STATIC_PAGES.map((path) => ({ url: absoluteUrl(path), changeFrequency: "yearly" as const, priority: 0.3 })),
   ];
