@@ -96,7 +96,7 @@ test("a reader enters a contest and an editor draws and records a winner", async
   // The masthead and footer have newsletter email fields too, so stay inside the entry form.
   const form = page.getByRole("form", { name: "Enter" });
   await form.getByLabel("Your name").fill("Rae Reader");
-  await form.getByLabel("Email").fill(`rae-${stamp}@example.com`);
+  await form.getByRole("textbox", { name: /^Email/ }).fill(`rae-${stamp}@example.com`);
   await form.getByRole("checkbox").check();
   await page.waitForFunction(() => Boolean((document.querySelector('input[name="cf-turnstile-response"]') as HTMLInputElement | null)?.value));
   await page.getByRole("button", { name: "Enter the contest" }).click();
