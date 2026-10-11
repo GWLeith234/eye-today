@@ -17,4 +17,4 @@ Eye Today is owned by EvolveX360, a digital media and marketing company based in
 
 > TODO for the publisher: confirm Jeff's bio and the disclosure lines above with him, and add the clinic disclosure (Option A) before launch.
 
-Reach the newsroom at newsroom@eyetoday.com.
+Reach the newsroom at newsroom@theeye.today.
