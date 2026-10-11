@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { newDirectoryListings, type DirectoryItem } from "./directory";
+import { currentEdition, type EditionItem } from "./edition";
 import { mailConfig, NOT_CONFIGURED, sendIssueEmail } from "./provider";
 import { type Rendered, renderIssue } from "./render";
 import { liveStoriesById, type StoryRow } from "./stories";
@@ -18,10 +19,11 @@ export type IssueRow = {
   intro: string;
   story_ids: string[];
   include_directory: boolean;
+  include_edition: boolean;
   status: "draft" | "scheduled" | "sent";
 };
 
-export type IssueContent = { listName: string; preheader: string; intro: string; stories: StoryRow[]; directory?: DirectoryItem[] };
+export type IssueContent = { listName: string; preheader: string; intro: string; stories: StoryRow[]; directory?: DirectoryItem[]; edition?: EditionItem | null };
 
 // The message with a placeholder where each recipient's unsubscribe link goes.
 export async function renderIssueMessage(content: IssueContent): Promise<Rendered | { error: string }> {
@@ -38,6 +40,7 @@ export async function renderIssueMessage(content: IssueContent): Promise<Rendere
       sponsored: s.is_sponsored,
     })),
     directory: content.directory ?? [],
+    edition: content.edition ?? null,
     postalAddress: cfg.postalAddress,
     siteUrl: cfg.siteUrl,
     unsubscribeUrl: UNSUBSCRIBE_PLACEHOLDER,
@@ -60,7 +63,7 @@ export async function sendIssue(supabase: SupabaseClient, issueId: string): Prom
 
   const { data: issue } = await supabase
     .from("newsletter_issues")
-    .select("id, site_id, list_id, subject, preheader, intro, story_ids, include_directory, status")
+    .select("id, site_id, list_id, subject, preheader, intro, story_ids, include_directory, include_edition, status")
     .eq("id", issueId)
     .maybeSingle<IssueRow>();
   if (!issue) return { ok: false, error: "That issue could not be found." };
@@ -73,7 +76,8 @@ export async function sendIssue(supabase: SupabaseClient, issueId: string): Prom
   if (stories.length === 0) return { ok: false, error: "Add at least one live story before sending." };
 
   const directory = issue.include_directory ? await newDirectoryListings(supabase, cfg.siteUrl) : [];
-  const message = await renderIssueMessage({ listName: list.name, preheader: issue.preheader ?? "", intro: issue.intro, stories, directory });
+  const edition = issue.include_edition ? await currentEdition(supabase, cfg.siteUrl) : null;
+  const message = await renderIssueMessage({ listName: list.name, preheader: issue.preheader ?? "", intro: issue.intro, stories, directory, edition });
   if ("error" in message) return { ok: false, error: message.error };
 
   let sent = 0;

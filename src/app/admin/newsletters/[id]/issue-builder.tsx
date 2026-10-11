@@ -26,6 +26,7 @@ type Issue = {
   intro: string;
   storyIds: string[];
   includeDirectory: boolean;
+  includeEdition: boolean;
   status: "draft" | "scheduled" | "sent";
   scheduledFor: string | null;
   sentAt: string | null;
@@ -74,6 +75,7 @@ export function IssueBuilder({
   const [intro, setIntro] = useState(issue.intro);
   const [storyIds, setStoryIds] = useState(issue.storyIds);
   const [includeDirectory, setIncludeDirectory] = useState(issue.includeDirectory);
+  const [includeEdition, setIncludeEdition] = useState(issue.includeEdition);
   const [scheduleAt, setScheduleAt] = useState(toLocalInput(issue.scheduledFor));
   const [testTo, setTestTo] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
@@ -82,7 +84,7 @@ export function IssueBuilder({
   const sent = issue.status === "sent";
   const byId = new Map(stories.map((s) => [s.id, s]));
   const unselected = stories.filter((s) => s.live && !storyIds.includes(s.id));
-  const payload = { id: issue.id, subject, preheader, intro, story_ids: storyIds, include_directory: includeDirectory };
+  const payload = { id: issue.id, subject, preheader, intro, story_ids: storyIds, include_directory: includeDirectory, include_edition: includeEdition };
 
   function run<T extends { ok: boolean }>(work: () => Promise<T>, done: (result: Extract<T, { ok: true }>) => string | void) {
     setNote(null);
@@ -150,6 +152,13 @@ export function IssueBuilder({
           <span>
             Add &ldquo;New in the directory&rdquo;
             <span className="block opacity-70">Lists published directory listings created in the last 7 days, with the medical disclaimer. Left out when there are none.</span>
+          </span>
+        </label>
+        <label className="flex items-start gap-2 text-sm">
+          <input type="checkbox" checked={includeEdition} onChange={(e) => setIncludeEdition(e.target.checked)} className="mt-1" />
+          <span>
+            Add &ldquo;This month&rsquo;s issue&rdquo;
+            <span className="block opacity-70">A card for the newest e-edition everyone can read. Left out when there is none.</span>
           </span>
         </label>
         <label className="flex flex-col gap-1 text-sm">
