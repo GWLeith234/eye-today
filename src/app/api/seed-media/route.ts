@@ -1,7 +1,11 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
+import { EDITION_COLUMNS, type EditionRow, editorStories, toDetail } from "@/lib/editions/admin";
+import { pdfObjectPath } from "@/lib/editions/model";
+import { pdfPageCount, renderEditionPdf } from "@/lib/editions/pdf";
 import { EXTENSION_FOR, readDimensions, sniffRaster } from "@/lib/media/sniff";
+import { absoluteUrl } from "@/lib/public/site";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +18,8 @@ type Item = { file: string; key: string; alt: string; credit: string; caption: s
 // (site_id, storage_path), so the insert itself is the lock: a second call, or two concurrent ones, can
 // never create a duplicate row; the object is upserted to the same path, so an interrupted run is simply retried. There is nothing to
 // pass in: it can only ever import the files in this build. Remove this route once the demo content is in.
-export async function POST() {
+// ?pdf=<slug>: render that edition's PDF once (same code as the admin button) when it has none yet.
+export async function POST(request: Request) {
   const { createAdminClient } = await import("@/lib/supabase/admin");
   let db;
   try {
@@ -24,6 +29,32 @@ export async function POST() {
   }
   const { data: site } = await db.from("sites").select("id").eq("slug", "eyetoday").maybeSingle<{ id: string }>();
   if (!site) return Response.json({ error: "no site" }, { status: 500, headers });
+
+  const slug = new URL(request.url).searchParams.get("pdf");
+  if (slug) {
+    const { data: row } = await db.from("editions").select(EDITION_COLUMNS).eq("slug", slug).maybeSingle<EditionRow>();
+    if (!row) return Response.json({ error: "no edition" }, { status: 404, headers });
+    if (row.pdf_path) return Response.json({ pdf: "already generated", pages: null }, { headers });
+    const { data: cover } = row.cover_media_id
+      ? await db.from("media").select("storage_path, alt").eq("id", row.cover_media_id).maybeSingle<{ storage_path: string; alt: string | null }>()
+      : { data: null };
+    const stories = await editorStories(db, row.id);
+    if (stories.length === 0) return Response.json({ error: "no stories" }, { status: 400, headers });
+    let bytes: Buffer;
+    try {
+      bytes = await renderEditionPdf({ edition: toDetail(row, cover ?? null), stories, siteUrl: absoluteUrl("/").replace(/\/$/, "") });
+    } catch (error) {
+      return Response.json({ error: `render failed: ${error instanceof Error ? error.message : String(error)}` }, { status: 500, headers });
+    }
+    const pages = pdfPageCount(bytes);
+    if (pages < 3) return Response.json({ error: "incomplete pdf" }, { status: 500, headers });
+    const objectPath = pdfObjectPath(row.id);
+    const { error: uploadError } = await db.storage.from("editions").upload(objectPath, bytes, { contentType: "application/pdf", cacheControl: "0", upsert: false });
+    if (uploadError) return Response.json({ error: `store failed: ${uploadError.message}` }, { status: 500, headers });
+    const { error: updateError } = await db.from("editions").update({ pdf_path: objectPath, pdf_generated_at: new Date().toISOString() }).eq("id", row.id);
+    if (updateError) return Response.json({ error: "record failed" }, { status: 500, headers });
+    return Response.json({ pdf: objectPath, pages, bytes: bytes.length }, { headers });
+  }
 
   const dir = path.join(process.cwd(), "public", "seed-media");
   const manifest = JSON.parse(await readFile(path.join(dir, "manifest.json"), "utf8")) as Item[];
