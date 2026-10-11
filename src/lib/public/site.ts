@@ -1,7 +1,7 @@
 // Site-wide constants and URL helpers for public pages, feeds and metadata.
 
 export const SITE_NAME = "Eye Today";
-export const SITE_DESCRIPTION = "News, research and stories about eye health.";
+export const SITE_DESCRIPTION = "Independent news, research and stories about addiction treatment, with a specialty beat on ibogaine.";
 
 // The pinned public origin, or null. SITE_URL is also metadataBase in the root layout.
 export function siteOrigin(): string | null {
