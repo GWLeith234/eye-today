@@ -1,14 +1,14 @@
 import { z } from "zod";
 
 import { adIpHash } from "@/lib/ads/ip-hash";
-import { AD_SLOT_NAMES } from "@/lib/ads/slots";
+import { AD_SLOT_NAMES, PAGE_TYPES } from "@/lib/ads/slots";
 import { createAnonClient } from "@/lib/supabase/anon";
 
 export const dynamic = "force-dynamic";
 
 // Impressions only; clicks are recorded by the click route. Always 204 with no body, so the
 // response never says whether an event counted.
-const bodySchema = z.object({ creative: z.uuid(), slot: z.enum(AD_SLOT_NAMES) });
+const bodySchema = z.object({ creative: z.uuid(), slot: z.enum(AD_SLOT_NAMES), page: z.enum(PAGE_TYPES).default("other") });
 
 const done = () => new Response(null, { status: 204, headers: { "Cache-Control": "no-store" } });
 
@@ -29,6 +29,7 @@ export async function POST(request: Request) {
     slot_key: parsed.data.slot,
     event_type: "impression",
     ip_hash: adIpHash(request),
+    page_type: parsed.data.page,
   });
   if (error) console.error("record_ad_event failed", error.code);
   return done();

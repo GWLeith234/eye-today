@@ -40,7 +40,7 @@ test("an approved creative records an impression and a click", async ({ browser 
   await link.scrollIntoViewIfNeeded();
   await page.waitForTimeout(1500);
   const href = await link.getAttribute("href");
-  expect(href).toMatch(/^\/api\/ads\/click\/[0-9a-f-]{36}$/i);
+  expect(href).toMatch(/^\/api\/ads\/click\/[0-9a-f-]{36}\?page=home$/i);
   const click = await page.request.get(href!, { maxRedirects: 0 });
   expect(click.status()).toBe(302);
 

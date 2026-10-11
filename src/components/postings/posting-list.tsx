@@ -11,9 +11,11 @@ import {
   type PostingKind,
   REMOTE_LABELS,
 } from "@/lib/postings/types";
+import { SideAds, TopAds } from "@/components/public/page-ads";
+import type { PageType } from "@/lib/ads/slots";
 import { MEDICAL_DISCLAIMER } from "@/lib/public/disclaimer";
 
-export function BoardFrame({ children }: { children: React.ReactNode }) {
+export function BoardFrame({ children, ads = "jobs" }: { children: React.ReactNode; ads?: PageType }) {
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8">
       <nav aria-label="Jobs and classifieds" className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
@@ -22,7 +24,9 @@ export function BoardFrame({ children }: { children: React.ReactNode }) {
         <Link href="/account/postings/new" className="hover:underline">Post a listing</Link>
         <Link href="/jobs/policy" className="hover:underline">Posting policy</Link>
       </nav>
+      <TopAds page={ads} />
       {children}
+      <SideAds page={ads} />
       <p role="note" className="border-l-4 border-accent bg-white/60 p-3 text-sm font-semibold">
         {MEDICAL_DISCLAIMER}{" "}
         <Link href="/disclaimer" className="underline">Read the disclaimer</Link>

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { EventCardView } from "@/components/events/event-list";
 import { EventsFrame } from "@/components/events/events-frame";
+import { RiverAd } from "@/components/public/page-ads";
 import { eventsHref, monthGrid, monthKey, parseEventFilters, parseMonth, shiftMonth } from "@/lib/events/query";
 import { countEvents, eventsInMonth, listEvents } from "@/lib/events/public";
 import { dayInZone } from "@/lib/events/time";
@@ -63,9 +64,10 @@ export default async function EventsPage({ searchParams }: PageProps<"/events">)
         <p role="status">No events match.</p>
       ) : (
         <ul className="flex flex-col gap-4">
-          {events.map((event) => (
-            <li key={event.id}>
+          {events.map((event, index) => (
+            <li key={event.id} className="flex flex-col gap-4">
               <EventCardView event={event} />
+              <RiverAd page="events" index={index} count={events.length} />
             </li>
           ))}
         </ul>

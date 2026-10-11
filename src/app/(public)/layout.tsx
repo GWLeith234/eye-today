@@ -1,3 +1,4 @@
+import { MobileBanner } from "@/components/public/mobile-banner";
 import { Plausible } from "@/components/public/plausible";
 import { SiteFooter } from "@/components/public/site-footer";
 import { SiteHeader } from "@/components/public/site-header";
@@ -13,6 +14,7 @@ export default async function PublicLayout({ children }: LayoutProps<"/">) {
         {children}
       </main>
       <SiteFooter sections={sections} />
+      <MobileBanner />
       <Plausible />
     </div>
   );

@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Fragment } from "react";
 
 import { DirectoryFilters } from "@/components/public/directory-filters";
 import { DirectoryMap } from "@/components/public/directory-map";
 import { DirectoryFrame } from "@/components/public/directory-frame";
 import { ListingCardView } from "@/components/public/listing-card";
+import { RiverAd } from "@/components/public/page-ads";
 import { countryName } from "@/lib/directory/countries";
 import { countDirectory, getDirectoryCategories, getDirectoryServices, searchDirectory } from "@/lib/directory/public";
 import { directoryHref, parseDirectoryFilters, parseDirectoryView } from "@/lib/directory/query";
@@ -51,8 +53,11 @@ export default async function DirectoryPage({ searchParams }: PageProps<"/direct
       </p>
       {view === "map" ? <DirectoryMap pins={pins} /> : null}
       <div data-testid="listing-results">
-        {cards.map((card) => (
-          <ListingCardView key={card.slug} card={card} />
+        {cards.map((card, index) => (
+          <Fragment key={card.slug}>
+            <ListingCardView card={card} />
+            <RiverAd page="directory" index={index} count={cards.length} className="my-4" />
+          </Fragment>
         ))}
       </div>
       {pages > 1 ? (
