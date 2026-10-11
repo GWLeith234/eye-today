@@ -108,8 +108,12 @@ export async function saveEdition(_state: SaveState, formData: FormData): Promis
   }
 
   const { data: saved, error } = await ctx.supabase.from("editions").update(fields).eq("id", editionId).select("id").maybeSingle<{ id: string }>();
-  if (error) return { error: error.code === "23505" ? "Another edition already uses that slug." : "The edition could not be saved." };
-  if (!saved) return { error: "The edition could not be saved." };
+  if (error || !saved) {
+    // Same cleanup as above: a brand-new edition never outlives a failed save, so the form (which keeps
+    // its state) can simply be submitted again.
+    if (!parsed.data.id) await ctx.supabase.from("editions").delete().eq("id", editionId);
+    return { error: error?.code === "23505" ? "Another edition already uses that slug." : "The edition could not be saved. Nothing was changed." };
+  }
 
   revalidatePath("/sitemap.xml");
   redirect(`/admin/editions/${editionId}?saved=1`);
