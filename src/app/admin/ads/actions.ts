@@ -193,3 +193,22 @@ export async function deleteCreative(formData: FormData) {
   revalidatePath(path);
   back(path, { saved: "deleted" });
 }
+
+const campaignDecision = z.object({ id: z.uuid(), decision: z.enum(["approve", "reject"]), reason: z.string().trim().max(500) });
+
+// A paid, pending campaign: approve sets it active (and approves its pending creatives); reject records
+// the reason for the advertiser. decide_ad_campaign checks the editor role itself.
+export async function decideCampaign(formData: FormData) {
+  const ctx = await getEditorContext();
+  if (!ctx) redirect("/login");
+  const parsed = campaignDecision.safeParse(fields(formData, ["id", "decision", "reason"]));
+  if (!parsed.success) redirect("/admin/ads");
+  const path = `/admin/ads/${parsed.data.id}`;
+  const approve = parsed.data.decision === "approve";
+  if (!approve && !parsed.data.reason) back(path, { error: "Give the advertiser a reason when rejecting." });
+  const { error } = await ctx.supabase.rpc("decide_ad_campaign", { p_campaign: parsed.data.id, p_approve: approve, p_reason: approve ? null : parsed.data.reason });
+  if (error) back(path, { error: "That decision could not be saved." });
+  revalidatePath(path);
+  revalidatePath("/admin/ads");
+  back(path, { saved: approve ? "approved" : "rejected" });
+}

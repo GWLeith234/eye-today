@@ -52,6 +52,7 @@ on conflict (site_id, slug) do nothing;
 insert into public.ad_slots (site_id, key, name, width, height)
 values
   ('00000000-0000-4000-8000-000000000001', 'leaderboard', 'Leaderboard', 728, 90),
+  ('00000000-0000-4000-8000-000000000001', 'mobile-banner', 'Mobile banner', 320, 50),
   ('00000000-0000-4000-8000-000000000001', 'bigbox-1', 'Big box 1', 300, 250),
   ('00000000-0000-4000-8000-000000000001', 'bigbox-2', 'Big box 2', 300, 250),
   ('00000000-0000-4000-8000-000000000001', 'in-river', 'In river', 640, 120),
@@ -122,3 +123,31 @@ from public.directory_categories c
 where c.site_id = '00000000-0000-4000-8000-000000000001'
   and c.slug = 'treatment-clinic'
 on conflict (id) do nothing;
+
+-- House ads (0023 seeds these for existing sites; on a fresh reset the site is created above, so seed them here too).
+with site as (select id from public.sites where slug = 'eyetoday'),
+camp as (
+  insert into public.ad_campaigns (site_id, advertiser_name, name, status, is_house)
+  select site.id, 'Eye Today', 'House ads', 'active', true from site
+   where not exists (select 1 from public.ad_campaigns h where h.site_id = site.id and h.is_house)
+  returning id, site_id
+),
+slot as (select id, key from public.ad_slots where site_id = (select id from site))
+insert into public.ad_creatives (site_id, campaign_id, slot_id, click_url, alt, html, status, weight)
+select camp.site_id, camp.id, slot.id, v.click_url, v.alt, v.html, 'approved', 1
+  from camp
+  cross join (values
+    ('leaderboard', 'https://theeye.today/editions', 'Read the monthly edition',
+     '<p><strong>The monthly edition.</strong> Every month, the stories that mattered, in one issue you can read online or download. <a href="https://theeye.today/editions">Read the first issue</a></p>'),
+    ('mobile-banner', 'https://theeye.today/newsletter', 'Get the newsletter',
+     '<p><strong>Eye Today in your inbox.</strong> <a href="https://theeye.today/newsletter">Subscribe</a></p>'),
+    ('bigbox-1', 'https://theeye.today/directory/submit', 'List your clinic in the directory',
+     '<p><strong>List your clinic.</strong> Verified listings in the only independent directory of ibogaine and addiction-treatment providers. <a href="https://theeye.today/directory/submit">Submit a listing</a></p>'),
+    ('bigbox-2', 'https://theeye.today/support', 'Support independent reporting',
+     '<p><strong>Independent reporting costs money.</strong> Supporters keep Eye Today free to read and free of provider influence. <a href="https://theeye.today/support">Become a supporter</a></p>'),
+    ('in-river', 'https://theeye.today/advertise', 'Advertise with Eye Today',
+     '<p><strong>Reach the people who make treatment decisions.</strong> Clinics, researchers, conferences and advocates read Eye Today. <a href="https://theeye.today/advertise">Advertise with us</a></p>'),
+    ('in-article', 'https://theeye.today/newsletter', 'Get the newsletter',
+     '<p><strong>Don''t miss the next story.</strong> News, research and policy on ibogaine and addiction treatment, in your inbox. <a href="https://theeye.today/newsletter">Subscribe to the newsletter</a></p>')
+  ) as v(slot_key, click_url, alt, html)
+  join slot on slot.key = v.slot_key;

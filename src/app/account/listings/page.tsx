@@ -1,7 +1,8 @@
 import Link from "next/link";
 
 import { CLAIM_MESSAGES } from "@/lib/directory/claims";
-import { FEATURED_MESSAGES, type FeaturedError, featuredOffered } from "@/lib/directory/featured";
+import { PREMIUM_LISTING_ANNUAL_USD } from "@/lib/ads/slots";
+import { FEATURED_MESSAGES, type FeaturedError, featuredIntervals, featuredOffered } from "@/lib/directory/featured";
 import { requireArea } from "@/lib/auth/session";
 
 import { openFeaturedPortal, startFeaturedCheckout } from "./actions";
@@ -42,6 +43,7 @@ export default async function AccountListingsPage({ searchParams }: PageProps<"/
   ]);
   const listings = (owned ?? []).flatMap((row) => (row.directory_listings ? [row.directory_listings] : []));
   const offered = featuredOffered(process.env);
+  const intervals = featuredIntervals(process.env);
   const now = nowMs();
 
   return (
@@ -95,9 +97,9 @@ export default async function AccountListingsPage({ searchParams }: PageProps<"/
               ) : offered ? (
                 <form action={startFeaturedCheckout} className="flex flex-wrap items-center gap-3 text-sm">
                   <input type="hidden" name="listing_id" value={listing.id} />
-                  <span>Feature this listing. It is labelled &ldquo;Featured&rdquo; and does not change its verification.</span>
-                  <button type="submit" name="interval" value="monthly" className="rounded bg-ink px-3 py-1 text-paper">Feature monthly</button>
-                  <button type="submit" name="interval" value="annual" className="rounded border border-ink px-3 py-1">Feature annually</button>
+                  <span>Premium listing, ${PREMIUM_LISTING_ANNUAL_USD} a year: pinned to the top of the directory, labelled &ldquo;Featured&rdquo;, and rotated on section and story pages. It does not change the listing&rsquo;s verification.</span>
+                  <button type="submit" name="interval" value="annual" className="rounded bg-ink px-3 py-1 text-paper">Feature annually</button>
+                  {intervals.includes("monthly") ? <button type="submit" name="interval" value="monthly" className="rounded border border-ink px-3 py-1">Feature monthly</button> : null}
                 </form>
               ) : null}
             </li>

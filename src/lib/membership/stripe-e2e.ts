@@ -10,7 +10,7 @@ import type Stripe from "stripe";
 
 const CUSTOMER_ID = "cus_e2eTestCustomer";
 
-function logSession(entry: { customer: string | null; price: string | null; mode: string | null }) {
+function logSession(entry: { customer: string | null; price: string | null; mode: string | null; quantity: number | null }) {
   const path = process.env.E2E_STRIPE_LOG?.trim();
   if (!path) return;
   mkdirSync(dirname(path), { recursive: true });
@@ -34,6 +34,7 @@ export function createE2EStripe(): Stripe {
             customer: typeof params.customer === "string" ? params.customer : null,
             price: typeof price === "string" ? price : null,
             mode: params.mode ?? null,
+            quantity: params.line_items?.[0]?.quantity ?? null,
           });
           return { id: "cs_e2e", url: "https://checkout.stripe.test/e2e-session" };
         },

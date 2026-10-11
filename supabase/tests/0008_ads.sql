@@ -1,4 +1,4 @@
--- supabase/tests/0008_ads.sql — ad serving, events and access.
+-- supabase/tests/0008_ads.sql (signatures updated for 0023: serve_ad(slot, page), record_ad_event(..., page); house ads may fill a slot, so 'nothing' means nothing paid) — ad serving, events and access.
 --
 -- Run against a freshly reset local stack (plain psql, not `supabase test db`):
 --   npx supabase db reset
@@ -71,9 +71,9 @@ begin
   begin perform 1 from public._servable_ads(); exception when insufficient_privilege then failed := true; end;
   assert failed, 'anon cannot call the internal servable list';
 
-  assert (select count(*) from public.serve_ad('bigbox-1')) = 0, 'serve_ad returns nothing for a pending creative';
+  assert (select count(*) from public.serve_ad('bigbox-1', 'other') where not is_house) = 0, 'serve_ad returns nothing paid for a pending creative';
   assert (select count(*) from public.ad_click_target('a8000000-0000-4000-8000-0000000000d1')) = 0, 'no click target for a pending creative';
-  perform public.record_ad_event('a8000000-0000-4000-8000-0000000000d1', 'bigbox-1', 'impression', repeat('a', 64));
+  perform public.record_ad_event('a8000000-0000-4000-8000-0000000000d1', 'bigbox-1', 'impression', repeat('a', 64), 'other');
 end;
 $$;
 reset role;
@@ -92,7 +92,7 @@ do $$
 declare
   failed boolean;
 begin
-  assert (select count(*) from public.ad_campaigns) = 3, 'editor reads campaigns';
+  assert (select count(*) from public.ad_campaigns where not is_house) = 3, 'editor reads campaigns';
   insert into public.ad_campaigns (site_id, advertiser_name, name) values ('00000000-0000-4000-8000-000000000001', 'New Co', 'Editor made');
   update public.ad_creatives set status = 'approved' where id = 'a8000000-0000-4000-8000-0000000000d1';
   assert (select status from public.ad_creatives where id = 'a8000000-0000-4000-8000-0000000000d1') = 'approved', 'editor approves';
@@ -136,23 +136,23 @@ do $$
 declare
   served record;
 begin
-  select * into served from public.serve_ad('bigbox-1');
+  select * into served from public.serve_ad('bigbox-1', 'other');
   assert served.creative_id = 'a8000000-0000-4000-8000-0000000000d1', 'the approved creative is served';
   assert served.html = '<p>Spring clinic</p>', 'sanitized html comes back';
   assert served.freq_cap = 3, 'the frequency cap comes back';
-  assert (select count(*) from public.serve_ad('bigbox-2')) = 0, 'and only in its own slot';
-  assert (select count(*) from public.serve_ad('nope')) = 0, 'unknown slot';
+  assert (select count(*) from public.serve_ad('bigbox-2', 'other') where not is_house) = 0, 'and only in its own slot';
+  assert (select count(*) from public.serve_ad('nope', 'other')) = 0, 'unknown slot';
   assert (select click_url from public.ad_click_target('a8000000-0000-4000-8000-0000000000d1')) = 'https://clinic.example/spring', 'click target';
   assert (select slot_key from public.ad_click_target('a8000000-0000-4000-8000-0000000000d1')) = 'bigbox-1', 'click target names the slot';
   assert (select count(*) from public.ad_click_target('a8000000-0000-4000-8000-0000000000d2')) = 0, 'draft campaign has no click target';
 
   -- record_ad_event: right slot only, both event types.
-  perform public.record_ad_event('a8000000-0000-4000-8000-0000000000d1', 'bigbox-2', 'impression', repeat('b', 64));
-  perform public.record_ad_event('a8000000-0000-4000-8000-0000000000d2', 'bigbox-1', 'impression', repeat('b', 64));
-  perform public.record_ad_event('a8000000-0000-4000-8000-0000000000d3', 'bigbox-1', 'impression', repeat('b', 64));
-  perform public.record_ad_event('a8000000-0000-4000-8000-0000000000d1', 'bigbox-1', 'impression', 'not-a-hash');
-  perform public.record_ad_event('a8000000-0000-4000-8000-0000000000d1', 'bigbox-1', 'impression', repeat('b', 64));
-  perform public.record_ad_event('a8000000-0000-4000-8000-0000000000d1', 'bigbox-1', 'click', repeat('b', 64));
+  perform public.record_ad_event('a8000000-0000-4000-8000-0000000000d1', 'bigbox-2', 'impression', repeat('b', 64), 'other');
+  perform public.record_ad_event('a8000000-0000-4000-8000-0000000000d2', 'bigbox-1', 'impression', repeat('b', 64), 'other');
+  perform public.record_ad_event('a8000000-0000-4000-8000-0000000000d3', 'bigbox-1', 'impression', repeat('b', 64), 'other');
+  perform public.record_ad_event('a8000000-0000-4000-8000-0000000000d1', 'bigbox-1', 'impression', 'not-a-hash', 'other');
+  perform public.record_ad_event('a8000000-0000-4000-8000-0000000000d1', 'bigbox-1', 'impression', repeat('b', 64), 'other');
+  perform public.record_ad_event('a8000000-0000-4000-8000-0000000000d1', 'bigbox-1', 'click', repeat('b', 64), 'other');
 end;
 $$;
 reset role;
@@ -197,8 +197,8 @@ update public.ad_creatives set status = 'rejected' where id = 'a8000000-0000-400
 set local role anon;
 do $$
 begin
-  assert (select count(*) from public.serve_ad('bigbox-1')) = 0, 'a rejected creative never serves';
-  perform public.record_ad_event('a8000000-0000-4000-8000-0000000000d1', 'bigbox-1', 'impression', repeat('c', 64));
+  assert (select count(*) from public.serve_ad('bigbox-1', 'other') where not is_house) = 0, 'a rejected creative never serves';
+  perform public.record_ad_event('a8000000-0000-4000-8000-0000000000d1', 'bigbox-1', 'impression', repeat('c', 64), 'other');
 end;
 $$;
 reset role;
@@ -207,7 +207,7 @@ update public.ad_campaigns set status = 'paused' where id = 'a8000000-0000-4000-
 set local role anon;
 do $$
 begin
-  assert (select count(*) from public.serve_ad('bigbox-1')) = 0, 'a paused campaign never serves';
+  assert (select count(*) from public.serve_ad('bigbox-1', 'other') where not is_house) = 0, 'a paused campaign never serves';
 end;
 $$;
 reset role;
@@ -216,7 +216,7 @@ update public.ad_creatives set is_active = false where id = 'a8000000-0000-4000-
 set local role anon;
 do $$
 begin
-  assert (select count(*) from public.serve_ad('bigbox-1')) = 0, 'an inactive creative never serves';
+  assert (select count(*) from public.serve_ad('bigbox-1', 'other') where not is_house) = 0, 'an inactive creative never serves';
 end;
 $$;
 reset role;
@@ -243,7 +243,7 @@ declare
   i integer;
 begin
   for i in 1..400 loop
-    if (select creative_id from public.serve_ad('in-article')) = 'a8000000-0000-4000-8000-0000000000e2' then heavy := heavy + 1; end if;
+    if (select creative_id from public.serve_ad('in-article', 'other')) = 'a8000000-0000-4000-8000-0000000000e2' then heavy := heavy + 1; end if;
   end loop;
   assert heavy between 360 and 400, format('the heavier creative wins most of the time: %s of 400', heavy);
 end;
@@ -259,7 +259,7 @@ declare
   i integer;
 begin
   for i in 1..40 loop
-    perform public.record_ad_event('a8000000-0000-4000-8000-0000000000d1', 'bigbox-1', 'impression', repeat('f', 64));
+    perform public.record_ad_event('a8000000-0000-4000-8000-0000000000d1', 'bigbox-1', 'impression', repeat('f', 64), 'other');
   end loop;
 end;
 $$;

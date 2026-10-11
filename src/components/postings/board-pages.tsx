@@ -19,6 +19,8 @@ import {
 import { absoluteUrl } from "@/lib/public/site";
 import { SLUG_RE } from "@/lib/slug";
 
+import { RiverAd } from "@/components/public/page-ads";
+
 import { BoardFrame, PostingCardView, postingPlace, postingTypeLabel } from "./posting-list";
 
 const field = "rounded border border-rule bg-paper px-3 py-2 text-sm";
@@ -71,9 +73,10 @@ export async function BoardList({ kind, searchParams }: { kind: PostingKind; sea
         <p role="status">Nothing matches right now.</p>
       ) : (
         <ul className="flex flex-col gap-4">
-          {postings.map((posting) => (
-            <li key={posting.id}>
+          {postings.map((posting, index) => (
+            <li key={posting.id} className="flex flex-col gap-4">
               <PostingCardView kind={kind} posting={posting} />
+              <RiverAd page="jobs" index={index} count={postings.length} />
             </li>
           ))}
         </ul>

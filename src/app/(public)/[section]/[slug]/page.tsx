@@ -5,13 +5,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 
-import { AdSlot } from "@/components/public/ad-slot";
 import { PollMounts } from "@/components/polls/poll-mounts";
 import { Comments } from "@/components/public/comments";
 import { AuthorFace } from "@/components/public/author-face";
 import { ShareRow } from "@/components/public/share-row";
+import { SponsoredListing } from "@/components/public/sponsored-listing";
 import { StoryCard } from "@/components/public/story-card";
 import { NewsletterForm } from "@/components/public/newsletter-form";
+import { InlineAd, SideAds, TopAds } from "@/components/public/page-ads";
 import { inkOnPaper, sectionPaint } from "@/lib/brand/palette";
 import { SupportNote } from "@/components/public/support-note";
 import { ViewBeacon } from "@/components/public/view-beacon";
@@ -250,11 +251,13 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
 
       <ShareRow path={path} title={article.title} origin={origin} />
 
+      <TopAds page="article" />
+
       {/* body_html is sanitized when saved and again here in case a row was written elsewhere. */}
       <div className="article-body mx-auto flex w-full max-w-3xl flex-col gap-4" dangerouslySetInnerHTML={{ __html: sanitizeArticleHtml(article.body_html ?? "", { sponsored: article.is_sponsored }) }} />
       <PollMounts />
 
-      <AdSlot name="in-article" />
+      <InlineAd page="article" />
 
       <section aria-label="Author disclosures" className="mx-auto flex w-full max-w-3xl flex-col gap-2 border border-rule border-l-4 bg-paper p-4 text-sm" style={{ borderLeftColor: tone }}>
         <h2 className="font-semibold uppercase tracking-widest">Disclosure</h2>
@@ -276,6 +279,8 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
         <Link href="/disclaimer" className="underline">Read the full disclaimer</Link>
       </p>
 
+      <SideAds page="article" />
+
       {commentsOpen ? <Comments articleId={article.id} /> : null}
 
       <SupportNote />
@@ -291,6 +296,8 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
           </div>
         </section>
       ) : null}
+
+      <SponsoredListing />
 
       {related.length ? (
         <section aria-labelledby="related-heading" className="flex flex-col gap-4 border-t-2 border-ink pt-4">

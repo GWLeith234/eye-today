@@ -60,3 +60,14 @@ export async function insertListing(admin: Admin, seed: ListingSeed): Promise<st
 export async function removeListings(admin: Admin, slugPrefix: string) {
   await admin.from("directory_listings").delete().like("slug", `${slugPrefix}%`);
 }
+
+// Pauses every active, non-house campaign that holds a creative for the given unit, so a test selling that unit
+// is the only paid rotation there. Tests for different units run alongside each other untouched.
+export async function parkPaidCampaignsOn(admin: Admin, slotKey: string): Promise<void> {
+  const { data: slot } = await admin.from("ad_slots").select("id").eq("key", slotKey).limit(1).maybeSingle<{ id: string }>();
+  if (!slot) return;
+  const { data: creatives } = await admin.from("ad_creatives").select("campaign_id").eq("slot_id", slot.id);
+  const ids = Array.from(new Set(((creatives ?? []) as { campaign_id: string }[]).map((c) => c.campaign_id)));
+  if (ids.length === 0) return;
+  await admin.from("ad_campaigns").update({ status: "paused" }).in("id", ids).eq("status", "active").eq("is_house", false);
+}

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { adIpHash } from "@/lib/ads/ip-hash";
+import { isPageType } from "@/lib/ads/slots";
 import { createAnonClient } from "@/lib/supabase/anon";
 
 export const dynamic = "force-dynamic";
@@ -33,11 +34,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   }
   if (destination.protocol !== "https:") return notFound();
 
+  // Page type is recorded for the breakdown report only; it never influences the destination.
+  const page = new URL(request.url).searchParams.get("page") ?? "other";
   await supabase.rpc("record_ad_event", {
     creative: creative.data,
     slot_key: target.slot_key,
     event_type: "click",
     ip_hash: adIpHash(request),
+    page_type: isPageType(page) ? page : "other",
   });
 
   return NextResponse.redirect(destination, { status: 302, headers: noStore });

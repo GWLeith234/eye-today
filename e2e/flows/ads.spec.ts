@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 
+import { parkPaidCampaignsOn } from "../helpers/admin";
 import { signIn } from "../helpers/auth";
 
 test("an approved creative records an impression and a click", async ({ browser }) => {
@@ -11,7 +12,8 @@ test("an approved creative records an impression and a click", async ({ browser 
   const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "", process.env.SUPABASE_SERVICE_ROLE_KEY ?? "", {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  await admin.from("ad_campaigns").update({ status: "paused" }).eq("status", "active");
+  // Only paid campaigns with a leaderboard creative compete for this slot; ad-units.spec.ts sells the big box alongside.
+  await parkPaidCampaignsOn(admin, "leaderboard");
   const stamp = Date.now().toString(36);
   const name = `E2E campaign ${stamp}`;
   const sponsor = `E2E sponsor ${stamp}`;
@@ -40,7 +42,7 @@ test("an approved creative records an impression and a click", async ({ browser 
   await link.scrollIntoViewIfNeeded();
   await page.waitForTimeout(1500);
   const href = await link.getAttribute("href");
-  expect(href).toMatch(/^\/api\/ads\/click\/[0-9a-f-]{36}$/i);
+  expect(href).toMatch(/^\/api\/ads\/click\/[0-9a-f-]{36}\?page=home$/i);
   const click = await page.request.get(href!, { maxRedirects: 0 });
   expect(click.status()).toBe(302);
 
@@ -52,7 +54,7 @@ test("an approved creative records an impression and a click", async ({ browser 
     .toMatch(/impression/);
   const csv = await (await editor.page.request.get(`/admin/ads/${campaignId}/report`)).text();
   expect(csv).toMatch(/click/);
-  expect(csv.split("\n")[0]).toBe("occurred_at,creative_id,slot,event_type");
+  expect(csv.split("\n")[0]).toBe("occurred_at,creative_id,slot,page_type,event_type");
 
   await reader.close();
   await editor.page.context().close();

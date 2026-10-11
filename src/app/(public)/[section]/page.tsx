@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { ListPage } from "@/components/public/list-page";
+import { SponsoredListing } from "@/components/public/sponsored-listing";
 import { sectionPaint } from "@/lib/brand/palette";
 import { getSection, getSectionArticles, getSectionCount } from "@/lib/public/data";
 import { parsePage } from "@/lib/public/paging";
@@ -43,6 +44,7 @@ export default async function SectionPage({ params, searchParams }: PageProps<"/
       tone={sectionPaint(section.slug, section.color)}
       icon={section.icon}
       slug={section.slug}
+      sponsored={<SponsoredListing />}
     />
   );
 }

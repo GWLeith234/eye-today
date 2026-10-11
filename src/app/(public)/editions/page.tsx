@@ -4,6 +4,7 @@ import Link from "next/link";
 import { issueLabel } from "@/lib/editions/model";
 import { listEditions } from "@/lib/editions/public";
 import { mediaUrl } from "@/lib/media/url";
+import { TopAds } from "@/components/public/page-ads";
 import { SupportNote } from "@/components/public/support-note";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +20,7 @@ export default async function EditionsPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
       <h1 className="font-serif text-4xl font-bold">Editions</h1>
+      <TopAds page="editions" />
       <p>Each month we gather the stories that mattered into one issue. Read it page by page here, or download the PDF.</p>
       {editions.length === 0 ? <p role="status">The first edition is on its way.</p> : null}
       <ul className="grid gap-6 sm:grid-cols-2">

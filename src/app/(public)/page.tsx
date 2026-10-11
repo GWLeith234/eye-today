@@ -1,10 +1,11 @@
 import Link from "next/link";
 
-import { AdSlot } from "@/components/public/ad-slot";
 import { UpcomingEvents } from "@/components/events/event-list";
 import { LatestJobs } from "@/components/postings/posting-list";
+import { AdSlot } from "@/components/public/ad-slot";
 import { AuthorFace } from "@/components/public/author-face";
 import { NewsletterForm } from "@/components/public/newsletter-form";
+import { RiverAd, TopAds } from "@/components/public/page-ads";
 import { SectionIcon } from "@/components/public/section-icon";
 import { StoryCard } from "@/components/public/story-card";
 import { SupporterHidden } from "@/components/public/supporter-hidden";
@@ -17,7 +18,6 @@ import { isReservedSectionSlug } from "@/lib/public/reserved";
 export const revalidate = 60;
 
 // The in-river ad sits after this many stories in The Latest.
-const IN_RIVER_AFTER = 5;
 
 function Rail({ title, href, slug, icon, cards }: { title: string; href: string; slug: string; icon: string | null; cards: ArticleCard[] }) {
   if (!cards.length) return null;
@@ -79,7 +79,7 @@ export default async function HomePage() {
       ) : null}
 
       {/* Empty until a creative arrives, so an unfilled slot adds no gap. */}
-      <AdSlot name="leaderboard" />
+      <TopAds page="home" />
 
       <div className="grid gap-10 lg:grid-cols-3">
         <section aria-labelledby="latest" className="flex flex-col gap-4 lg:col-span-2">
@@ -88,17 +88,15 @@ export default async function HomePage() {
             {latest.map((card, index) => (
               <div key={card.article_slug} className="flex flex-col gap-4">
                 <StoryCard card={card} variant="compact" />
-                {index === IN_RIVER_AFTER - 1 ? <AdSlot name="in-river" /> : null}
+                <RiverAd page="home" index={index} count={latest.length} />
               </div>
             ))}
-            {/* Fewer stories than the ad's position: show it at the end of the list instead. */}
-            {latest.length < IN_RIVER_AFTER ? <AdSlot name="in-river" /> : null}
           </div>
         </section>
 
         <aside className="flex flex-col gap-6" aria-label="Most read and advertising">
           <SupporterHidden>
-            <AdSlot name="bigbox-1" />
+            <AdSlot name="bigbox-1" page="home" />
           </SupporterHidden>
           <section aria-labelledby="most-read" className="flex flex-col gap-3">
             <h2 id="most-read" className="border-b-2 border-ink pb-1 font-display text-2xl font-semibold">Most Read</h2>
@@ -111,7 +109,7 @@ export default async function HomePage() {
             </ol>
           </section>
           <SupporterHidden>
-            <AdSlot name="bigbox-2" />
+            <AdSlot name="bigbox-2" page="home" />
           </SupporterHidden>
         </aside>
       </div>

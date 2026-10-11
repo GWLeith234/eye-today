@@ -198,3 +198,20 @@ async function loadListingStories(listingId: string, services: string[]): Promis
   }
   return (data ?? []) as ArticleCard[];
 }
+
+// One active premium listing, chosen at random, for the labelled sponsored card on section and
+// article pages. Null when nobody has bought one.
+export function getSponsoredListing(): Promise<ListingCard | null> {
+  return within(loadSponsoredListing(), null);
+}
+
+async function loadSponsoredListing(): Promise<ListingCard | null> {
+  const supabase = client();
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("serve_sponsored_listing");
+  if (error) {
+    console.error("public read serve_sponsored_listing failed", error.code);
+    return null;
+  }
+  return ((data ?? []) as ListingCard[])[0] ?? null;
+}
