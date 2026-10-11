@@ -47,8 +47,11 @@ export default async function CampaignPage({ params, searchParams }: PageProps<"
   const rows = (breakdown ?? []) as BreakdownRow[];
   const totals = breakdownTotals(rows);
   const editable = campaign.status === "draft" || campaign.status === "pending";
-  const unpaid = campaign.status === "draft" && !campaign.paid_at;
-  const notice = typeof query.saved === "string" ? NOTICES[query.saved] : query.paid === "1" ? NOTICES.paid : undefined;
+  // Back from Stripe with ?paid=1 the webhook may not have landed yet: the campaign still reads as a draft.
+  // Neither the pay button nor the delete button shows then, so nothing can be charged twice or orphaned.
+  const returning = query.paid === "1";
+  const unpaid = campaign.status === "draft" && !campaign.paid_at && !returning;
+  const notice = typeof query.saved === "string" ? NOTICES[query.saved] : returning ? NOTICES.paid : undefined;
   const error = errorMessage(query);
   const offered = adCheckoutOffered(process.env);
   const covered = new Set(creatives.map((c) => c.ad_slots?.key));
@@ -90,7 +93,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps<"
 
       <section aria-labelledby="creatives" className="flex flex-col gap-3">
         <h2 id="creatives" className="text-xl font-semibold">Creatives</h2>
-        <p className="text-sm text-muted">One image per unit size. Each must be exactly the unit’s pixel size, JPEG, PNG, WebP or GIF, up to 1 MB. Every unit you cover is one more place the campaign appears; the leaderboard, big box and mobile banner cover most of the site.</p>
+        <p className="text-sm text-muted">One image per unit size. Each must be exactly the unit’s pixel size, JPEG, PNG, WebP or GIF, up to 1 MB. Every unit you cover is one more place the campaign appears; the leaderboard, big box and mobile banner cover most of the site. Every campaign gets one creative per unit, so the rotation is equal.</p>
         {creatives.length === 0 ? <p className="text-sm">No creatives yet.</p> : null}
         <ul className="flex flex-col gap-3">
           {creatives.map((c) => {
@@ -123,7 +126,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps<"
             <label className="flex flex-col gap-1 text-sm">Unit
               <select name="slot" required className={field} defaultValue={AD_SLOT_NAMES.find((n) => !covered.has(n)) ?? "leaderboard"}>
                 {AD_SLOT_NAMES.map((name) => (
-                  <option key={name} value={name}>
+                  <option key={name} value={name} disabled={covered.has(name)}>
                     {SLOT_SIZES[name].label} — {SLOT_SIZES[name].width} × {SLOT_SIZES[name].height} ({SLOT_SIZES[name].where}){covered.has(name) ? " · uploaded" : ""}
                   </option>
                 ))}

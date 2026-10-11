@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import Stripe from "stripe";
 
-import { adminClient } from "../helpers/admin";
+import { adminClient, parkPaidCampaignsOn } from "../helpers/admin";
 import { signIn } from "../helpers/auth";
 import { readStripeSessions } from "../helpers/mailbox";
 import { solidPng } from "../helpers/png";
@@ -34,7 +34,9 @@ test("an advertiser buys a run-of-site campaign, an editor approves it, and it s
   const name = `E2E Spring ${stamp}`;
   const alt = `E2E creative ${stamp}`;
   const admin = adminClient();
-  // The big box: ads.spec.ts runs alongside and sells the leaderboard, so this campaign takes a unit nobody else uses.
+  // The big box: ads.spec.ts runs alongside and sells the leaderboard, so this campaign takes a unit nobody else
+  // uses. Paid big-box campaigns left by earlier runs would share the rotation, so park those (and only those).
+  await parkPaidCampaignsOn(admin, "bigbox-1");
 
   const clinic = await signIn(browser, "reader");
   await clinic.page.goto("/account/advertise");

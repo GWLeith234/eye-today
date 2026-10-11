@@ -58,11 +58,40 @@ create policy "owners update own unpaid campaigns" on public.ad_campaigns for up
 create policy "owners delete own draft campaigns" on public.ad_campaigns for delete to authenticated
   using (owner_id = (select auth.uid()) and status = 'draft' and paid_at is null);
 
+-- What an owner may change on their own campaign: the names, the click URL, the frequency cap, and the
+-- start date until it is paid. Everything about payment, the window, the status and the house flag is
+-- written only by apply_ad_payment (service role), decide_ad_campaign and editors. Runs as the caller:
+-- the service role and definer functions are not 'authenticated', and editors pass by role.
+create function public._campaign_owner_guard()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if current_user <> 'authenticated' or (select public.current_app_role()) in ('editor', 'admin') then
+    return new;
+  end if;
+  if new.status is distinct from old.status or new.is_house is distinct from old.is_house
+     or new.owner_id is distinct from old.owner_id or new.site_id is distinct from old.site_id
+     or new.paid_at is distinct from old.paid_at or new.months is distinct from old.months
+     or new.stripe_session_id is distinct from old.stripe_session_id
+     or new.amount_cents is distinct from old.amount_cents or new.currency is distinct from old.currency
+     or new.ends_at is distinct from old.ends_at or new.reject_reason is distinct from old.reject_reason
+     or (old.paid_at is not null and new.starts_at is distinct from old.starts_at) then
+    raise exception 'only the names, click URL and (before payment) start date can be changed' using errcode = '42501';
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public._campaign_owner_guard() from public, anon, authenticated;
+create trigger ad_campaigns_owner_guard before update on public.ad_campaigns
+  for each row execute function public._campaign_owner_guard();
+
 create policy "owners read own creatives" on public.ad_creatives for select to authenticated
   using (exists (select 1 from public.ad_campaigns g where g.id = ad_creatives.campaign_id and g.owner_id = (select auth.uid())));
 create policy "owners insert own creatives" on public.ad_creatives for insert to authenticated
   with check (
-    status = 'pending' and html is null and media_id is not null
+    status = 'pending' and html is null and media_id is not null and weight = 1 and is_active
     and exists (select 1 from public.ad_campaigns g where g.id = ad_creatives.campaign_id
                  and g.owner_id = (select auth.uid()) and g.status in ('draft', 'pending'))
   );
@@ -120,6 +149,11 @@ begin
   end if;
   if v_slot.width > 0 and (v_media.width <> v_slot.width or v_media.height <> v_slot.height) then
     raise exception 'creative size must be % x %', v_slot.width, v_slot.height using errcode = '23514';
+  end if;
+  -- Equal rotation: a self-serve campaign holds one creative per unit.
+  if (select public.current_app_role()) not in ('editor', 'admin')
+     and exists (select 1 from public.ad_creatives c where c.campaign_id = new.campaign_id and c.slot_id = new.slot_id and c.id <> new.id) then
+    raise exception 'one creative per unit' using errcode = '23505';
   end if;
   return new;
 end;

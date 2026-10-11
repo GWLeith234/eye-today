@@ -68,6 +68,7 @@ set local role authenticated;
 do $$
 declare
   failed boolean := false;
+  v_col text;
   v_slot uuid := (select id from public.ad_slots where key = 'leaderboard' and site_id = '00000000-0000-4000-8000-000000000001');
 begin
   insert into public.ad_campaigns (id, site_id, advertiser_name, name, status, owner_id, months, click_url)
@@ -82,6 +83,24 @@ begin
   assert failed, 'an owner cannot create an active campaign';
   failed := false;
 
+  -- Before any creative exists: an owner cannot pre-approve or weight one (RLS). Then the right size goes in
+  -- as pending; a wrong size and a second creative for the same unit are refused by the trigger.
+  begin
+    insert into public.ad_creatives (site_id, campaign_id, slot_id, media_id, click_url, alt, status)
+    values ('00000000-0000-4000-8000-000000000001', 'd2300000-0000-4000-8000-000000000c01', v_slot,
+            'd2300000-0000-4000-8000-000000000a01', 'https://qa-clinic.test/', 'Pre-approved', 'approved');
+  exception when insufficient_privilege then failed := true;
+  end;
+  assert failed, 'an owner cannot approve their own creative';
+  failed := false;
+  begin
+    insert into public.ad_creatives (site_id, campaign_id, slot_id, media_id, click_url, alt, status, weight)
+    values ('00000000-0000-4000-8000-000000000001', 'd2300000-0000-4000-8000-000000000c01', v_slot,
+            'd2300000-0000-4000-8000-000000000a01', 'https://qa-clinic.test/', 'Heavy', 'pending', 50);
+  exception when insufficient_privilege then failed := true;
+  end;
+  assert failed, 'an owner cannot weight their creative';
+  failed := false;
   -- Right size goes in as pending; wrong size is refused.
   insert into public.ad_creatives (site_id, campaign_id, slot_id, media_id, click_url, alt, status)
   values ('00000000-0000-4000-8000-000000000001', 'd2300000-0000-4000-8000-000000000c01', v_slot,
@@ -97,10 +116,21 @@ begin
   begin
     insert into public.ad_creatives (site_id, campaign_id, slot_id, media_id, click_url, alt, status)
     values ('00000000-0000-4000-8000-000000000001', 'd2300000-0000-4000-8000-000000000c01', v_slot,
-            'd2300000-0000-4000-8000-000000000a01', 'https://qa-clinic.test/', 'Pre-approved', 'approved');
-  exception when insufficient_privilege then failed := true;
+            'd2300000-0000-4000-8000-000000000a01', 'https://qa-clinic.test/', 'Second', 'pending');
+  exception when unique_violation then failed := true;
   end;
-  assert failed, 'an owner cannot approve their own creative';
+  assert failed, 'an owner gets one creative per unit';
+  failed := false;
+  -- Names and the start date may change; payment, status and the window may not.
+  update public.ad_campaigns set name = 'Spring 2', starts_at = now() - interval '1 day' where id = 'd2300000-0000-4000-8000-000000000c01';
+  foreach v_col in array array[$x$status = 'pending'$x$, 'paid_at = now()', 'months = 12', $x$ends_at = now() + interval '5 years'$x$, 'is_house = true', 'amount_cents = 0'] loop
+    begin
+      execute format('update public.ad_campaigns set %s where id = %L', v_col, 'd2300000-0000-4000-8000-000000000c01');
+    exception when insufficient_privilege then failed := true;
+    end;
+    assert failed, format('an owner cannot set %s', v_col);
+    failed := false;
+  end loop;
   assert (select count(*) from public.ad_campaigns) = 1, 'an owner sees only their own campaigns';
 end $$;
 reset role;
@@ -136,6 +166,19 @@ begin
   assert public.apply_ad_payment('cs_test_3', 'd2300000-0000-4000-8000-000000000c01', 'd2300000-0000-4000-8000-0000000000a2', 3, 75000, 'usd') = 'no_campaign', 'someone else cannot pay for it';
   select * into g from public.ad_campaigns where id = 'd2300000-0000-4000-8000-000000000c01';
   assert g.status = 'pending' and g.paid_at is not null and g.ends_at = g.starts_at + interval '3 months', 'window is months from start';
+end $$;
+reset role;
+
+-- Once paid, the owner can still rename but not move the start date.
+set local request.jwt.claims = '{"role": "authenticated", "sub": "d2300000-0000-4000-8000-0000000000a1"}';
+set local role authenticated;
+do $$ declare failed boolean := false; begin
+  update public.ad_campaigns set name = 'Spring 3' where id = 'd2300000-0000-4000-8000-000000000c01';
+  begin
+    update public.ad_campaigns set starts_at = now() + interval '1 year' where id = 'd2300000-0000-4000-8000-000000000c01';
+  exception when insufficient_privilege then failed := true;
+  end;
+  assert failed, 'a paid start date is fixed';
 end $$;
 reset role;
 

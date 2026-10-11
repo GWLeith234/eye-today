@@ -127,6 +127,9 @@ export async function uploadAdCreative(formData: FormData) {
   if (!campaign || !slotRow) back(path, { error: "not_yours" });
   if (campaign.status !== "draft" && campaign.status !== "pending") back(path, { error: "locked" });
   if (!campaign.click_url) back(path, { error: "no_click_url" });
+  // Equal rotation: one creative per unit per campaign (the database trigger enforces it too).
+  const { count: existing } = await supabase.from("ad_creatives").select("id", { count: "exact", head: true }).eq("campaign_id", campaignId.data).eq("slot_id", slotRow.id);
+  if (existing) back(path, { error: "unit_taken", slot });
 
   const objectPath = `ads/${user.id}/${crypto.randomUUID()}.${EXTENSION_FOR[type]}`;
   const bucket = supabase.storage.from("media");
@@ -161,7 +164,7 @@ export async function uploadAdCreative(formData: FormData) {
   if (error) {
     await bucket.remove([objectPath]);
     console.error("ad creative insert failed", error.code, error.message);
-    back(path, { error: error.code === "23514" ? "file_size" : "failed", slot });
+    back(path, { error: error.code === "23514" ? "file_size" : error.code === "23505" ? "unit_taken" : "failed", slot });
   }
   revalidatePath(path);
   back(path, { saved: "creative" });

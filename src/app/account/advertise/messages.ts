@@ -19,6 +19,8 @@ const ERRORS: Record<string, string> = {
   file_type: "Creatives must be JPEG, PNG, WebP or GIF images.",
   locked: "This campaign is live or finished, so its creatives can’t change. Start a new campaign instead.",
   no_click_url: "Give the campaign a click URL first.",
+  unit_taken: "This campaign already has a creative for that unit. Remove it first to replace it; every campaign gets one creative per unit so the rotation stays equal.",
+  confirming: "Your payment is still being confirmed. This page will show the campaign as paid in a moment; please don’t pay again.",
 };
 
 export function errorMessage(params: Record<string, string | string[] | undefined>): string | null {
