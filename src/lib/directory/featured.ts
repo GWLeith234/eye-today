@@ -13,11 +13,17 @@ export function featuredPrices(env: Env): Record<FeaturedInterval, string | null
   return { monthly: clean(env.STRIPE_PRICE_FEATURED_MONTHLY), annual: clean(env.STRIPE_PRICE_FEATURED_ANNUAL) };
 }
 
-// Offered only with the secret key, SITE_URL (for the return links) and both featured prices.
+// Offered only with the secret key, SITE_URL (for the return links) and the annual price. The premium
+// listing is sold by the year; a monthly price is optional and adds a second button when set.
 // It does not depend on the supporter prices (STRIPE_PRICE_MONTHLY / ANNUAL / ONCE).
 export function featuredOffered(env: Env): boolean {
+  return Boolean(clean(env.STRIPE_SECRET_KEY) && clean(env.SITE_URL) && featuredPrices(env).annual);
+}
+
+// The intervals that can be bought right now.
+export function featuredIntervals(env: Env): FeaturedInterval[] {
   const prices = featuredPrices(env);
-  return Boolean(clean(env.STRIPE_SECRET_KEY) && clean(env.SITE_URL) && prices.monthly && prices.annual);
+  return (["annual", "monthly"] as const).filter((interval) => prices[interval]);
 }
 
 export type FeaturedError = "not_configured" | "invalid_interval" | "not_owner" | "already_featured" | "failed";
@@ -39,7 +45,8 @@ export type FeaturedDeps = {
 export async function runFeaturedCheckout(deps: FeaturedDeps, interval: string): Promise<FeaturedOutcome> {
   if (!featuredOffered(deps.env)) return { ok: false, error: "not_configured" };
   if (interval !== "monthly" && interval !== "annual") return { ok: false, error: "invalid_interval" };
-  const price = featuredPrices(deps.env)[interval]!;
+  const price = featuredPrices(deps.env)[interval];
+  if (!price) return { ok: false, error: "invalid_interval" };
 
   try {
     if (!(await deps.isOwner())) return { ok: false, error: "not_owner" };

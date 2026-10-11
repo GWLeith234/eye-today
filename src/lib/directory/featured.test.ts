@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { featuredOffered, featuredPrices, runFeaturedCheckout, type FeaturedDeps } from "./featured";
+import { featuredIntervals, featuredOffered, featuredPrices, runFeaturedCheckout, type FeaturedDeps } from "./featured";
 
 const ENV = {
   STRIPE_SECRET_KEY: "k",
@@ -10,13 +10,20 @@ const ENV = {
   STRIPE_PRICE_FEATURED_ANNUAL: "price_fa",
 };
 
-test("featured is offered only with the key, SITE_URL and both featured prices", () => {
+test("featured is offered only with the key, SITE_URL and the annual price; monthly is optional", () => {
   assert.equal(featuredOffered(ENV), true);
-  for (const missing of Object.keys(ENV)) {
+  for (const missing of ["STRIPE_SECRET_KEY", "SITE_URL", "STRIPE_PRICE_FEATURED_ANNUAL"]) {
     assert.equal(featuredOffered({ ...ENV, [missing]: undefined }), false, `${missing} missing`);
     assert.equal(featuredOffered({ ...ENV, [missing]: "  " }), false, `${missing} blank`);
   }
+  assert.equal(featuredOffered({ ...ENV, STRIPE_PRICE_FEATURED_MONTHLY: undefined }), true);
+  assert.deepEqual(featuredIntervals(ENV), ["annual", "monthly"]);
+  assert.deepEqual(featuredIntervals({ ...ENV, STRIPE_PRICE_FEATURED_MONTHLY: undefined }), ["annual"]);
   assert.deepEqual(featuredPrices({}), { monthly: null, annual: null });
+});
+
+test("a monthly checkout without a monthly price is refused", async () => {
+  assert.deepEqual(await runFeaturedCheckout({ ...deps().deps, env: { ...ENV, STRIPE_PRICE_FEATURED_MONTHLY: undefined } }, "monthly"), { ok: false, error: "invalid_interval" });
 });
 
 test("featured does not need the supporter prices", () => {
@@ -79,6 +86,7 @@ test("a non-owner, an already featured listing, or a bad interval never reaches 
     [{ hasActiveFeature: async () => true }, "monthly", "already_featured"],
     [{}, "weekly", "invalid_interval"],
     [{ env: { ...ENV, STRIPE_PRICE_FEATURED_ANNUAL: undefined } }, "monthly", "not_configured"],
+    [{ env: { ...ENV, STRIPE_PRICE_FEATURED_MONTHLY: undefined } }, "monthly", "invalid_interval"],
   ] as const) {
     const { deps: d, sessions, customers } = deps(override as Partial<FeaturedDeps>);
     assert.deepEqual(await runFeaturedCheckout(d, interval), { ok: false, error });
