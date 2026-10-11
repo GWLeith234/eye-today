@@ -112,7 +112,8 @@ export async function saveEdition(_state: SaveState, formData: FormData): Promis
     // Same cleanup as above: a brand-new edition never outlives a failed save, so the form (which keeps
     // its state) can simply be submitted again.
     if (!parsed.data.id) await ctx.supabase.from("editions").delete().eq("id", editionId);
-    return { error: error?.code === "23505" ? "Another edition already uses that slug." : "The edition could not be saved. Nothing was changed." };
+    if (error?.code === "23505") return { error: "Another edition already uses that slug." };
+    return { error: parsed.data.id ? "The story list was saved but the edition's details could not be. Try again." : "The edition could not be saved. Nothing was changed." };
   }
 
   revalidatePath("/sitemap.xml");
