@@ -65,7 +65,7 @@ test("an advertiser buys a run-of-site campaign, an editor approves it, and it s
 
   await test.step("checkout charges the monthly price three times", async () => {
     await clinic.page.route("https://checkout.stripe.test/**", (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<h1>Checkout</h1>" }));
-    await clinic.page.getByLabel("Months").selectOption("3");
+    await clinic.page.locator('select[name="months"]').selectOption("3");
     await clinic.page.getByRole("button", { name: "Pay with card" }).click();
     await expect(clinic.page).toHaveURL(/checkout\.stripe\.test\/e2e-session/);
     const session = readStripeSessions().reverse().find((line) => line.price === process.env.STRIPE_PRICE_ROS_MONTHLY);
