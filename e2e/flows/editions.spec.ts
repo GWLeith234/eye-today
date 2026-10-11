@@ -92,8 +92,8 @@ test("an editor builds and publishes a six-story edition that readers page throu
   await page.goto(`/editions/${slug}#e2e-edition-${stamp}-6`);
   await expect(reader.getByRole("heading", { name: titles[5] })).toBeVisible();
   await expect(reader.getByText("8 / 9")).toBeVisible();
-  await reader.dispatchEvent("touchstart", { touches: [{ clientX: 300, clientY: 400 }] });
-  await reader.dispatchEvent("touchend", { changedTouches: [{ clientX: 100, clientY: 405 }] });
+  await reader.dispatchEvent("touchstart", { touches: [{ identifier: 1, clientX: 300, clientY: 400 }] });
+  await reader.dispatchEvent("touchend", { changedTouches: [{ identifier: 1, clientX: 100, clientY: 405 }] });
   await expect(reader.getByRole("heading", { name: titles[4] })).toBeVisible();
   await expect(reader.getByText("9 / 9")).toBeVisible();
   await expect(reader.getByRole("button", { name: "Next page" })).toBeDisabled();

@@ -36,7 +36,13 @@ export async function storyChoices(supabase: SupabaseClient, includeIds: string[
   }));
 }
 
-export async function coverChoices(supabase: SupabaseClient): Promise<CoverChoice[]> {
+// The newest images, plus the edition's current cover so an older one is never cleared by a save.
+export async function coverChoices(supabase: SupabaseClient, currentId: string | null = null): Promise<CoverChoice[]> {
   const { data } = await supabase.from("media").select("id, storage_path, alt").order("created_at", { ascending: false }).limit(100).returns<MediaRow[]>();
-  return (data ?? []).map((row) => ({ id: row.id, label: row.alt?.trim() ? `${row.alt} (${row.storage_path.split("/").pop()})` : row.storage_path }));
+  const rows = [...(data ?? [])];
+  if (currentId && !rows.some((row) => row.id === currentId)) {
+    const { data: current } = await supabase.from("media").select("id, storage_path, alt").eq("id", currentId).maybeSingle<MediaRow>();
+    if (current) rows.unshift(current);
+  }
+  return rows.map((row) => ({ id: row.id, label: row.alt?.trim() ? `${row.alt} (${row.storage_path.split("/").pop()})` : row.storage_path }));
 }

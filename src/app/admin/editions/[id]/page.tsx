@@ -32,7 +32,7 @@ export default async function EditionAdminPage({ params, searchParams }: PagePro
   if (!edition) notFound();
   const items = await editorItems(supabase, id);
   const ids = items.map((item) => item.article.id);
-  const [stories, covers] = await Promise.all([storyChoices(supabase, ids), coverChoices(supabase)]);
+  const [stories, covers] = await Promise.all([storyChoices(supabase, ids), coverChoices(supabase, edition.cover_media_id)]);
 
   return (
     <div className="flex flex-col gap-4">

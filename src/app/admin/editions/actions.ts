@@ -150,6 +150,7 @@ export async function generatePdf(_state: PdfState, formData: FormData): Promise
     .eq("id", id);
   if (updateError) return { error: "The PDF was stored but the edition could not be updated." };
   if (row.pdf_path && row.pdf_path !== objectPath) await bucket.remove([row.pdf_path]);
+  revalidatePath(`/admin/editions/${id}`);
 
   return { error: null, pages };
 }
