@@ -11,7 +11,7 @@ test("an approved creative records an impression and a click", async ({ browser 
   const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "", process.env.SUPABASE_SERVICE_ROLE_KEY ?? "", {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  await admin.from("ad_campaigns").update({ status: "paused" }).eq("status", "active");
+  await admin.from("ad_campaigns").update({ status: "paused" }).eq("status", "active").eq("is_house", false);
   const stamp = Date.now().toString(36);
   const name = `E2E campaign ${stamp}`;
   const sponsor = `E2E sponsor ${stamp}`;

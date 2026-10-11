@@ -22,7 +22,7 @@ export async function waitForMail(to: string, includes: string): Promise<MailLin
   throw new Error(`No message for ${to} containing ${includes}`);
 }
 
-export type StripeLine = { customer: string; price: string; mode: string };
+export type StripeLine = { customer: string; price: string; mode: string; quantity?: number | null };
 
 export async function waitForStripeSession(): Promise<StripeLine> {
   const path = process.env.E2E_STRIPE_LOG;
