@@ -34,8 +34,7 @@ test("an advertiser buys a run-of-site campaign, an editor approves it, and it s
   const name = `E2E Spring ${stamp}`;
   const alt = `E2E creative ${stamp}`;
   const admin = adminClient();
-  // Paid campaigns from earlier runs would share the rotation; park them so this one is the only paid leaderboard.
-  await admin.from("ad_campaigns").update({ status: "paused" }).eq("status", "active").eq("is_house", false);
+  // The big box: ads.spec.ts runs alongside and sells the leaderboard, so this campaign takes a unit nobody else uses.
 
   const clinic = await signIn(browser, "reader");
   await clinic.page.goto("/account/advertise");
@@ -48,14 +47,15 @@ test("an advertiser buys a run-of-site campaign, an editor approves it, and it s
   await expect(clinic.page.getByTestId("campaign-status")).toHaveText("Draft (not paid)");
 
   await test.step("a wrong-size image is refused; the right size is stored pending", async () => {
-    await clinic.page.getByLabel("Unit").selectOption("leaderboard");
-    await clinic.page.getByLabel("Image").setInputFiles({ name: "wrong.png", mimeType: "image/png", buffer: solidPng(700, 100) });
+    await clinic.page.getByLabel("Unit").selectOption("bigbox-1");
+    await clinic.page.getByLabel("Image").setInputFiles({ name: "wrong.png", mimeType: "image/png", buffer: solidPng(300, 200) });
     await clinic.page.getByLabel("What it says (alt text)").fill(alt);
     await clinic.page.getByRole("button", { name: "Upload creative" }).click();
-    await expect(clinic.page.getByRole("alert")).toContainText("not 728 × 90 pixels");
+    // Next's route announcer is also role=alert, so match the message itself.
+    await expect(clinic.page.getByText("not 300 × 250 pixels")).toBeVisible();
 
-    await clinic.page.getByLabel("Unit").selectOption("leaderboard");
-    await clinic.page.getByLabel("Image").setInputFiles({ name: "right.png", mimeType: "image/png", buffer: solidPng(728, 90) });
+    await clinic.page.getByLabel("Unit").selectOption("bigbox-1");
+    await clinic.page.getByLabel("Image").setInputFiles({ name: "right.png", mimeType: "image/png", buffer: solidPng(300, 250) });
     await clinic.page.getByLabel("What it says (alt text)").fill(alt);
     await clinic.page.getByRole("button", { name: "Upload creative" }).click();
     await expect(clinic.page.getByRole("status")).toContainText("Creative uploaded");
@@ -112,9 +112,9 @@ test("an advertiser buys a run-of-site campaign, an editor approves it, and it s
     await expect(clinic.page.getByTestId("campaign-status")).toHaveText("Paid · waiting for an editor");
   });
 
-  // Not serving yet: the leaderboard on the home page is still the house ad.
+  // Not serving yet: the big box on the home page is still the house ad.
   await page.goto("/");
-  await expect(page.locator('aside[data-ad-slot="leaderboard"]')).toHaveAttribute("data-ad-house", "1");
+  await expect(page.locator('aside[data-ad-slot="bigbox-1"]')).toHaveAttribute("data-ad-house", "1");
 
   const editor = await signIn(browser, "editor");
   await test.step("the editor finds it in the queue and approves it", async () => {
@@ -131,7 +131,7 @@ test("an advertiser buys a run-of-site campaign, an editor approves it, and it s
 
   await test.step("the creative serves on the home page and a click is counted on the home page type", async () => {
     await page.goto("/");
-    const image = page.locator('aside[data-ad-slot="leaderboard"]').getByRole("img", { name: alt });
+    const image = page.locator('aside[data-ad-slot="bigbox-1"]').getByRole("img", { name: alt });
     await expect(image).toBeVisible();
     await image.scrollIntoViewIfNeeded();
     await page.waitForTimeout(1500);
@@ -148,10 +148,10 @@ test("an advertiser buys a run-of-site campaign, an editor approves it, and it s
         const csv = await clinic.page.request.get(`/account/advertise/${campaignId}/report`);
         return csv.ok() ? await csv.text() : "";
       })
-      .toMatch(/^slot,page_type,impressions,clicks,ctr\nleaderboard,home,\d+,1,/);
+      .toMatch(/^slot,page_type,impressions,clicks,ctr\nbigbox-1,home,\d+,1,/);
     await clinic.page.goto(`/account/advertise/${campaignId}`);
     await expect(clinic.page.getByTestId("campaign-status")).toHaveText("Live");
-    await expect(clinic.page.getByRole("region", { name: "Report" }).getByRole("row").filter({ hasText: "leaderboard" })).toContainText("home");
+    await expect(clinic.page.getByRole("region", { name: "Report" }).getByRole("row").filter({ hasText: "bigbox-1" })).toContainText("home");
     // Another signed-in user cannot read it (the e2e reader is one fixed account, so use the contributor).
     const other = await signIn(browser, "contributor");
     const denied = await other.page.request.get(`/account/advertise/${campaignId}/report`);
