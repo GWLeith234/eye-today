@@ -12,6 +12,10 @@ type CampaignRow = {
   status: string;
   starts_at: string | null;
   ends_at: string | null;
+  is_house: boolean;
+  owner_id: string | null;
+  months: number | null;
+  paid_at: string | null;
 };
 
 export default async function AdsPage({ searchParams }: PageProps<"/admin/ads">) {
@@ -19,10 +23,11 @@ export default async function AdsPage({ searchParams }: PageProps<"/admin/ads">)
   const params = await searchParams;
   const { data } = await supabase
     .from("ad_campaigns")
-    .select("id, advertiser_name, name, status, starts_at, ends_at")
+    .select("id, advertiser_name, name, status, starts_at, ends_at, is_house, owner_id, months, paid_at")
     .order("created_at", { ascending: false })
     .limit(100);
   const campaigns = (data ?? []) as CampaignRow[];
+  const awaiting = campaigns.filter((c) => c.status === "pending" && c.paid_at);
 
   return (
     <main className="flex w-full max-w-3xl flex-col gap-6 p-6">
@@ -33,6 +38,18 @@ export default async function AdsPage({ searchParams }: PageProps<"/admin/ads">)
       {typeof params.error === "string" ? (
         <p role="alert" className="rounded border border-red-600 p-3 text-sm">{params.error}</p>
       ) : null}
+
+      <section aria-labelledby="awaiting" className="flex flex-col gap-2 rounded border p-4">
+        <h2 id="awaiting" className="font-semibold">Paid campaigns awaiting approval ({awaiting.length})</h2>
+        {awaiting.length === 0 ? <p className="text-sm opacity-70">Nothing waiting. Self-serve campaigns appear here once paid.</p> : null}
+        <ul className="flex flex-col gap-1 text-sm">
+          {awaiting.map((c) => (
+            <li key={c.id}>
+              <Link href={`/admin/ads/${c.id}`} className="font-semibold underline">{c.name}</Link> · {c.advertiser_name} · {c.months} month{c.months === 1 ? "" : "s"}
+            </li>
+          ))}
+        </ul>
+      </section>
 
       <form action={createCampaign} className="flex flex-col gap-3 rounded border p-4">
         <h2 className="font-semibold">New campaign</h2>
@@ -73,7 +90,7 @@ export default async function AdsPage({ searchParams }: PageProps<"/admin/ads">)
         {campaigns.map((c) => (
           <li key={c.id} className="py-3">
             <Link href={`/admin/ads/${c.id}`} className="font-semibold underline">{c.name}</Link>
-            <p className="text-sm opacity-70">{c.advertiser_name} · {c.status}</p>
+            <p className="text-sm opacity-70">{c.advertiser_name} · {c.status}{c.is_house ? " · house" : c.owner_id ? " · self-serve" : ""}</p>
           </li>
         ))}
         {campaigns.length === 0 ? <li className="py-3 text-sm opacity-70">No campaigns yet.</li> : null}

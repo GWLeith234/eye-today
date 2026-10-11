@@ -79,6 +79,26 @@ create policy "owners read own ad events" on public.ad_events for select to auth
      where c.id = ad_events.creative_id and g.owner_id = (select auth.uid())
   ));
 
+-- Creative uploads. An advertiser's files live under media/ads/<their id>/ in the public media bucket,
+-- and their media rows carry that path and their owner_id. Nothing else in media opens to them.
+create policy "advertisers add creative files"
+  on storage.objects for insert to authenticated
+  with check (bucket_id = 'media' and (storage.foldername(name))[1] = 'ads'
+              and (storage.foldername(name))[2] = (select auth.uid())::text);
+create policy "advertisers read own creative files"
+  on storage.objects for select to authenticated
+  using (bucket_id = 'media' and (storage.foldername(name))[1] = 'ads'
+         and (storage.foldername(name))[2] = (select auth.uid())::text);
+create policy "advertisers remove own creative files"
+  on storage.objects for delete to authenticated
+  using (bucket_id = 'media' and (storage.foldername(name))[1] = 'ads'
+         and (storage.foldername(name))[2] = (select auth.uid())::text);
+
+create policy "advertisers read own creative media" on public.media for select to authenticated
+  using (owner_id = (select auth.uid()) and storage_path like 'ads/%');
+create policy "advertisers insert own creative media" on public.media for insert to authenticated
+  with check (owner_id = (select auth.uid()) and storage_path like 'ads/' || (select auth.uid())::text || '/%');
+
 -- A creative's media must match the slot size exactly, and an advertiser may only use their own upload.
 -- Definer: media rows are hidden from non-editors under RLS, and the size check needs to see them.
 create function public._creative_media_fits()

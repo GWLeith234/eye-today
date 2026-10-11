@@ -52,7 +52,7 @@ test("an approved creative records an impression and a click", async ({ browser 
     .toMatch(/impression/);
   const csv = await (await editor.page.request.get(`/admin/ads/${campaignId}/report`)).text();
   expect(csv).toMatch(/click/);
-  expect(csv.split("\n")[0]).toBe("occurred_at,creative_id,slot,event_type");
+  expect(csv.split("\n")[0]).toBe("occurred_at,creative_id,slot,page_type,event_type");
 
   await reader.close();
   await editor.page.context().close();

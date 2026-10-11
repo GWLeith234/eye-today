@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 
+import { handleAdEvent } from "@/lib/ads/webhook";
 import { handleFeatureEvent } from "@/lib/directory/feature-webhook";
 import { refreshPostings } from "@/lib/postings/revalidate";
 import { handlePostingEvent } from "@/lib/postings/webhook";
@@ -245,6 +246,8 @@ export async function handleStripeEvent(db: SupabaseClient, stripe: Stripe, even
   // A featured-listing subscription is not a supporter membership: it is handled, and returns, before
   // any membership, role or newsletter logic can see it.
   if (await handleFeatureEvent(db, stripe, event)) return;
+  // An ad campaign payment is a one-time checkout for N months of run-of-site, never a membership.
+  if (await handleAdEvent(db, event)) return;
   // A posting payment is a one-time checkout for the job board, never a membership.
   if (
     await handlePostingEvent(db, event, (outcome) => {

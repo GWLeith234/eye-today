@@ -15,10 +15,36 @@ insert into auth.users (id, email) values
   ('d2300000-0000-4000-8000-0000000000a2', 'ads.other@qa.test');
 update public.profiles set role = 'editor' where id = 'd2300000-0000-4000-8000-0000000000e1';
 
--- Media the clinic uploaded: one right size, one wrong size.
+-- Media the clinic uploads itself, under RLS: one right size, one wrong size. Paths outside its own
+-- ads/<id>/ folder, and rows owned by someone else, are refused.
+set local request.jwt.claims = '{"role": "authenticated", "sub": "d2300000-0000-4000-8000-0000000000a1"}';
+set local role authenticated;
 insert into public.media (id, site_id, storage_path, alt, width, height, owner_id) values
-  ('d2300000-0000-4000-8000-000000000a01', '00000000-0000-4000-8000-000000000001', 'ads/lb.png', 'Leaderboard', 728, 90, 'd2300000-0000-4000-8000-0000000000a1'),
-  ('d2300000-0000-4000-8000-000000000a02', '00000000-0000-4000-8000-000000000001', 'ads/wrong.png', 'Wrong', 700, 100, 'd2300000-0000-4000-8000-0000000000a1');
+  ('d2300000-0000-4000-8000-000000000a01', '00000000-0000-4000-8000-000000000001', 'ads/d2300000-0000-4000-8000-0000000000a1/lb.png', 'Leaderboard', 728, 90, 'd2300000-0000-4000-8000-0000000000a1'),
+  ('d2300000-0000-4000-8000-000000000a02', '00000000-0000-4000-8000-000000000001', 'ads/d2300000-0000-4000-8000-0000000000a1/wrong.png', 'Wrong', 700, 100, 'd2300000-0000-4000-8000-0000000000a1');
+do $$ declare failed boolean := false; begin
+  begin
+    insert into public.media (site_id, storage_path, alt, width, height, owner_id)
+    values ('00000000-0000-4000-8000-000000000001', 'seed/anything.png', 'Elsewhere', 728, 90, 'd2300000-0000-4000-8000-0000000000a1');
+  exception when insufficient_privilege then failed := true; end;
+  assert failed, 'an advertiser cannot register media outside ads/<own id>/';
+  failed := false;
+  begin
+    insert into public.media (site_id, storage_path, alt, width, height, owner_id)
+    values ('00000000-0000-4000-8000-000000000001', 'ads/d2300000-0000-4000-8000-0000000000a2/x.png', 'Theirs', 728, 90, 'd2300000-0000-4000-8000-0000000000a2');
+  exception when insufficient_privilege then failed := true; end;
+  assert failed, 'an advertiser cannot register media as someone else';
+  assert (select count(*) from public.media where storage_path like 'ads/%') = 2, 'an advertiser reads their own uploads';
+  assert (select count(*) from public.media where storage_path not like 'ads/%') = 0, 'an advertiser reads nothing else in media';
+end $$;
+insert into storage.objects (bucket_id, name, owner) values ('media', 'ads/d2300000-0000-4000-8000-0000000000a1/lb.png', 'd2300000-0000-4000-8000-0000000000a1');
+do $$ declare failed boolean := false; begin
+  begin
+    insert into storage.objects (bucket_id, name, owner) values ('media', 'seed/x.png', 'd2300000-0000-4000-8000-0000000000a1');
+  exception when insufficient_privilege then failed := true; end;
+  assert failed, 'an advertiser cannot write outside ads/<own id>/ in the media bucket';
+end $$;
+reset role;
 
 -- House ------------------------------------------------------------------------------------
 
@@ -155,7 +181,7 @@ begin
     if not r.is_house then n := n + 1; end if;
   end loop;
   assert n = 20, format('the paid creative always beats the house ad, got %s/20', n);
-  assert r.image_path = 'ads/lb.png', 'the paid image serves';
+  assert r.image_path = 'ads/d2300000-0000-4000-8000-0000000000a1/lb.png', 'the paid image serves';
   select * into r from public.serve_ad('bigbox-1', 'directory');
   assert r.is_house, 'a slot the campaign has no creative for still shows house';
   perform public.record_ad_event(r.creative_id, 'bigbox-1', 'impression', repeat('a', 64), 'directory');

@@ -116,6 +116,11 @@ export default async function AccountPage({ searchParams }: PageProps<"/account"
         <h2 className="text-xl font-semibold">Jobs and classifieds</h2>
         <Link href="/account/postings" className="text-sm underline">Your postings</Link>
       </section>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="text-xl font-semibold">Advertising</h2>
+        <Link href="/account/advertise" className="text-sm underline">Your ad campaigns</Link>
+      </section>
     </main>
   );
 }
