@@ -1,0 +1,93 @@
+[
+ {
+  "file": "01-texas-capitol.jpg",
+  "key": "texas",
+  "alt": "Texas State Capitol, Austin",
+  "credit": "Photo: LoneStarMike, CC BY 3.0, via Wikimedia Commons",
+  "caption": "The Texas State Capitol in Austin."
+ },
+ {
+  "file": "02-lab-clinical.jpg",
+  "key": "lab",
+  "alt": "A drop forming at the tip of a laboratory pipette",
+  "credit": "Photo: Alexander Bogatyrev, CC BY 4.0, via Wikimedia Commons",
+  "caption": "Laboratory pipette."
+ },
+ {
+  "file": "03-cancun.jpg",
+  "key": "cancun",
+  "alt": "Beach at Cancún, Quintana Roo",
+  "credit": "Photo: Luka Peternel, CC BY-SA 4.0, via Wikimedia Commons",
+  "caption": "The beach at Cancún, Quintana Roo, Mexico."
+ },
+ {
+  "file": "04-border-tijuana.jpg",
+  "key": "border",
+  "alt": "The Mexico–US border at Tijuana",
+  "credit": "Photo: Tomascastelazo, CC BY-SA 4.0, via Wikimedia Commons",
+  "caption": "The border fence at Tijuana."
+ },
+ {
+  "file": "05-iboga-plant.jpg",
+  "key": "iboga",
+  "alt": "Tabernanthe iboga at Meise Botanic Garden, Belgium",
+  "credit": "Photo: Ji-Elle, CC BY-SA 4.0, via Wikimedia Commons",
+  "caption": "Tabernanthe iboga, the shrub whose root bark yields ibogaine."
+ },
+ {
+  "file": "06-publisher-column.jpg",
+  "key": "column",
+  "alt": "Fountain pen nib",
+  "credit": "Photo: 織原美津夫, CC BY-SA 4.0, via Wikimedia Commons",
+  "caption": "Fountain pen."
+ },
+ {
+  "file": "07-edition-cover.jpg",
+  "key": "cover",
+  "alt": "Playa Gaviota Azul, Cancún",
+  "credit": "Photo: ProtoplasmaKid, CC BY-SA 4.0, via Wikimedia Commons",
+  "caption": "Playa Gaviota Azul, Cancún."
+ },
+ {
+  "file": "08-transcend-dining.jpg",
+  "key": "transcend-dining",
+  "alt": "Dining room, Transcend Ibogaine Clinic, Cancún",
+  "credit": "Photo: Transcend Ibogaine Clinic",
+  "caption": "Dining room at Transcend Ibogaine Clinic."
+ },
+ {
+  "file": "09-transcend-patient-room.jpg",
+  "key": "transcend-room",
+  "alt": "Patient room, Transcend Ibogaine Clinic, Cancún",
+  "credit": "Photo: Transcend Ibogaine Clinic",
+  "caption": "A patient room at Transcend Ibogaine Clinic."
+ },
+ {
+  "file": "10-transcend-kitchen.jpg",
+  "key": "transcend-kitchen",
+  "alt": "Kitchen, Transcend Ibogaine Clinic, Cancún",
+  "credit": "Photo: Transcend Ibogaine Clinic",
+  "caption": "Kitchen at Transcend Ibogaine Clinic."
+ },
+ {
+  "file": "11-transcend-pool-garden.jpg",
+  "key": "transcend-pool",
+  "alt": "Pool and garden, Transcend Ibogaine Clinic, Cancún",
+  "credit": "Photo: Transcend Ibogaine Clinic",
+  "caption": "Pool and garden at Transcend Ibogaine Clinic."
+ },
+ {
+  "file": "12-jeff-davis.jpg",
+  "key": "jeff-davis",
+  "alt": "Jeff Davis, Editor and Publisher of Eye Today",
+  "credit": "Photo: courtesy Jeff Davis",
+  "caption": "Jeff Davis."
+ },
+ {
+  "file": "13-transcend-logo-square.png",
+  "key": "transcend-logo",
+  "alt": "Transcend Ibogaine Clinic logo",
+  "credit": "Transcend Ibogaine Clinic",
+  "caption": "Transcend Ibogaine Clinic butterfly mark."
+ }
+]
