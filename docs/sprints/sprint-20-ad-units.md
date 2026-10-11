@@ -28,10 +28,23 @@ Checked against `main` at `f780ad9` (0001–0021 in production, so 0022 is next)
 | 9 | low | Caching | Pages stay static; ads fetch client-side. | Unchanged. |
 
 ## Migrations
-`0022_ad_units.sql`: `mobile-banner` slot; `is_house`, `owner_id`, `months`, `stripe_session_id`, `paid_at` on campaigns; `ad_events.page_type`; owner RLS; `serve_ad(slot_key, page_type)`, `serve_sponsored_listing()`, `record_ad_event(..., page_type)`, `apply_ad_payment`, `ad_campaign_breakdown`; house campaign + six creatives seeded for `eyetoday`.
+Two files, because new enum values cannot be used in the transaction that adds them:
+- `0022_ad_campaign_status.sql`: `pending` and `rejected` on `ad_campaign_status`. **Apply first.**
+- `0023_ad_units.sql`: `mobile-banner` slot; `is_house`, `owner_id`, `months`, `click_url`, `stripe_session_id`, `paid_at`, `amount_cents`, `currency`, `reject_reason` on campaigns; `ad_events.page_type`; owner RLS on campaigns, creatives and events; advertisers may read `ad_slots` and may write only under `media/ads/<their id>/` (storage) with matching `media` rows; `_creative_media_fits()` trigger (own upload, exact unit size); `apply_ad_payment` (service role, idempotent); `decide_ad_campaign` (editors); `serve_ad(slot_key, page_type)` with house fallback; `serve_sponsored_listing()`; `record_ad_event(..., page_type)`; `ad_campaign_breakdown`; house campaign + six HTML creatives seeded for `eyetoday` (mirrored in `seed.sql`).
+
+SQL tests: `supabase/tests/0023_ad_units.sql` (plus `0008_ads.sql` updated to the new signatures).
 
 ## Env vars
 `STRIPE_PRICE_ROS_MONTHLY` (one-time price, $250, quantity = months). `STRIPE_PRICE_FEATURED_ANNUAL` ($240/yr subscription) already exists in `.env.example`. Both are no-ops when unset: the buy buttons say "coming soon".
 
 ## Build order
 1. Migration + SQL test + guarded script. 2. Placements, mobile banner, house ads, serve/event routes with page type (tonight: inventory visible for the demo). 3. Account → Advertise: campaign form, creative uploader, checkout, webhook. 4. Admin approval flips campaign active; breakdown report + CSV in both admin and account. 5. `/advertise` rate card; premium annual-only. 6. E2E: house ads on every page type; advertiser journey with Stripe mock → approve → serve → report.
+
+## Built (2026-10-10)
+- `src/lib/ads/placements.ts` (PLACEMENTS by page type, `pageTypeFromPath`), `src/components/public/page-ads.tsx` (`TopAds`, `SideAds`, `RiverAd`, `InlineAd`), `mobile-banner.tsx` in the public layout, `sponsored-listing.tsx` on section and article pages. Directory, events and jobs frames carry the leaderboard and big box, so their detail pages do too.
+- `src/lib/ads/{prices,checkout,webhook,report}.ts` + `commerce.test.ts`; `handleAdEvent` wired into `handleStripeEvent` before membership logic.
+- `src/app/account/advertise/` (list + create, campaign page with uploader, pay, report; `[id]/report` CSV). Creatives are uploaded by a server action (sniffed, size-checked against `SLOT_SIZES`, stored at `ads/<user>/<uuid>.<ext>`), 1 MB max.
+- Admin → Ads: "awaiting approval" queue, approve/reject panel (`decideCampaign` → `decide_ad_campaign`), breakdown table, breakdown CSV (`?breakdown=1`); events CSV gains `page_type`.
+- `/advertise` rate card; `featuredOffered` needs only `STRIPE_PRICE_FEATURED_ANNUAL`.
+- E2E `e2e/flows/ad-units.spec.ts`; `ads.spec.ts` now parks only non-house campaigns.
+- Left for later: self-serve creative deletion also removes the file; a monthly cap on how many campaigns one account may create; email to the advertiser on approve/reject.
