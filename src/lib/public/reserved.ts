@@ -3,7 +3,7 @@ export const RESERVED_SECTION_SLUGS = new Set([
   "account", "admin", "api", "articles", "auth", "author", "contribute", "login",
   "preview", "search", "tag", "write-for-us", "about", "contact", "advertise",
   "newsletter", "newsletters", "support", "editorial-policy", "corrections", "privacy", "terms",
-  "disclaimer", "ad-policy", "directory", "community-guidelines", "events", "events.ics", "jobs", "classifieds", "contests",
+  "disclaimer", "ad-policy", "directory", "community-guidelines", "events", "events.ics", "jobs", "classifieds", "contests", "editions",
 ]);
 
 export function isReservedSectionSlug(slug: string) {

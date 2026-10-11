@@ -12,6 +12,7 @@ import { cleanLine } from "@/lib/ai/text";
 import { type EditorContext, getEditorContext } from "@/lib/auth/editor";
 import { mailConfig, NOT_CONFIGURED, sendIssueEmail } from "@/lib/newsletter/provider";
 import { newDirectoryListings } from "@/lib/newsletter/directory";
+import { currentEdition } from "@/lib/newsletter/edition";
 import { renderIssueMessage, sendIssue } from "@/lib/newsletter/send";
 import { autoFillStories, liveStoriesById, MAX_STORIES, type StoryRow } from "@/lib/newsletter/stories";
 import { UNSUBSCRIBE_PLACEHOLDER } from "@/lib/newsletter/urls";
@@ -30,6 +31,7 @@ const issueInput = z.object({
   intro: z.string().trim().max(2000, "The intro is up to 2000 characters."),
   story_ids: z.array(z.uuid()).max(MAX_STORIES).refine((ids) => new Set(ids).size === ids.length, "A story is listed twice."),
   include_directory: z.boolean().default(false),
+  include_edition: z.boolean().default(false),
 });
 export type IssueInput = z.input<typeof issueInput>;
 
@@ -109,6 +111,7 @@ export async function saveIssue(raw: IssueInput): Promise<{ ok: true } | Fail> {
       intro: checked.input.intro,
       story_ids: checked.input.story_ids,
       include_directory: checked.input.include_directory,
+      include_edition: checked.input.include_edition,
     })
     .eq("id", checked.input.id);
   if (error) return { ok: false, error: "The issue could not be saved." };
@@ -152,12 +155,14 @@ async function message(ctx: EditorContext, raw: IssueInput) {
   if (!checked.ok) return checked;
   const cfg = mailConfig();
   const directory = checked.input.include_directory && cfg ? await newDirectoryListings(ctx.supabase, cfg.siteUrl) : [];
+  const edition = checked.input.include_edition && cfg ? await currentEdition(ctx.supabase, cfg.siteUrl) : null;
   const rendered = await renderIssueMessage({
     listName: checked.issue.newsletter_lists?.name ?? "Newsletter",
     preheader: checked.input.preheader,
     intro: checked.input.intro,
     stories: checked.stories,
     directory,
+    edition,
   });
   if ("error" in rendered) return { ok: false, error: rendered.error } as Fail;
   return { ok: true as const, checked, rendered };

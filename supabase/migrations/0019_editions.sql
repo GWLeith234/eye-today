@@ -65,6 +65,12 @@ create policy "editors manage edition items" on public.edition_items for all to 
 -- Covers reach readers through the definer reads below (path and alt), so media needs no new policy.
 
 -- ---------------------------------------------------------------------------
+-- Newsletter: "This month's issue" block, the same shape as include_directory.
+-- ---------------------------------------------------------------------------
+
+alter table public.newsletter_issues add column include_edition boolean not null default false;
+
+-- ---------------------------------------------------------------------------
 -- PDF storage: private bucket, editors write, nobody else reads directly.
 -- ---------------------------------------------------------------------------
 
