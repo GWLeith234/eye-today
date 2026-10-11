@@ -12,7 +12,7 @@ type Item = { file: string; key: string; alt: string; credit: string; caption: s
 // ONE-SHOT demo seed. Imports the images committed under public/seed-media into the media bucket and
 // records them. Each file goes to a fixed object path, seed/<key>.<ext>, and media has a unique index on
 // (site_id, storage_path), so the insert itself is the lock: a second call, or two concurrent ones, can
-// never create a duplicate row or object (upsert: false refuses a second object too). There is nothing to
+// never create a duplicate row; the object is upserted to the same path, so an interrupted run is simply retried. There is nothing to
 // pass in: it can only ever import the files in this build. Remove this route once the demo content is in.
 export async function POST() {
   const { createAdminClient } = await import("@/lib/supabase/admin");
@@ -46,7 +46,7 @@ export async function POST() {
     const objectPath = `seed/${item.key}.${EXTENSION_FOR[type]}`;
     const { error: uploadError } = await db.storage
       .from("media")
-      .upload(objectPath, bytes, { contentType: type, cacheControl: "31536000", upsert: false });
+      .upload(objectPath, bytes, { contentType: type, cacheControl: "31536000", upsert: true });
     if (uploadError) {
       result[item.key] = `upload failed: ${uploadError.message}`;
       continue;
