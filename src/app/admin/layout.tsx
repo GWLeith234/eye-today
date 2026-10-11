@@ -18,6 +18,7 @@ const NAV = [
   { href: "/admin/postings", label: "Jobs" },
   { href: "/admin/polls", label: "Polls" },
   { href: "/admin/contests", label: "Contests" },
+  { href: "/admin/editions", label: "Editions" },
   { href: "/admin/comments", label: "Comments" },
 ];
 

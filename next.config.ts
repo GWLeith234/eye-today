@@ -24,7 +24,7 @@ const nextConfig: NextConfig = {
     ...(localSupabase ? { dangerouslyAllowLocalIP: true } : {}),
   },
   // Server-side HTML generation and sanitizing use a DOM implementation; keep them out of the bundle.
-  serverExternalPackages: ["isomorphic-dompurify", "jsdom", "@tiptap/html", "happy-dom"],
+  serverExternalPackages: ["isomorphic-dompurify", "jsdom", "@tiptap/html", "happy-dom", "@react-pdf/renderer"],
   experimental: {
     // Avatar uploads are up to 2 MB plus multipart overhead.
     serverActions: { bodySizeLimit: "3mb" },

@@ -1,4 +1,4 @@
-import { Body, Container, Head, Heading, Hr, Html, Link, Preview, Section, Text } from "@react-email/components";
+import { Body, Container, Head, Heading, Hr, Html, Img, Link, Preview, Section, Text } from "@react-email/components";
 
 import { MEDICAL_DISCLAIMER } from "@/lib/public/disclaimer";
 
@@ -8,6 +8,8 @@ export type IssueStory = { title: string; dek: string | null; url: string; spons
 
 export type IssueDirectoryItem = { name: string; url: string; place: string; category: string };
 
+export type IssueEdition = { title: string; label: string; url: string; storyCount: number; coverUrl: string | null };
+
 export type IssueEmailProps = {
   listName: string;
   preheader: string;
@@ -15,13 +17,15 @@ export type IssueEmailProps = {
   stories: IssueStory[];
   // New directory listings. Empty or missing: the section is left out.
   directory?: IssueDirectoryItem[];
+  // "This month's issue". Missing: the section is left out.
+  edition?: IssueEdition | null;
   postalAddress: string;
   siteUrl: string;
   unsubscribeUrl: string;
 };
 
 // Every value here is text, and React escapes it: the intro and story titles are never HTML.
-export function IssueEmail({ listName, preheader, intro, stories, directory = [], postalAddress, siteUrl, unsubscribeUrl }: IssueEmailProps) {
+export function IssueEmail({ listName, preheader, intro, stories, directory = [], edition = null, postalAddress, siteUrl, unsubscribeUrl }: IssueEmailProps) {
   return (
     <Html lang="en">
       <Head />
@@ -55,6 +59,27 @@ export function IssueEmail({ listName, preheader, intro, stories, directory = []
               {story.dek ? <Text style={{ fontSize: 15, lineHeight: "22px", margin: "4px 0 0" }}>{story.dek}</Text> : null}
             </Section>
           ))}
+
+          {edition ? (
+            <Section style={{ margin: "0 0 22px" }}>
+              <Hr style={{ borderColor: COLORS.ink, borderTopWidth: 2, margin: "0 0 14px" }} />
+              <Heading as="h2" style={{ fontFamily: SERIF, fontSize: 22, margin: "0 0 8px" }}>
+                This month&rsquo;s issue
+              </Heading>
+              {edition.coverUrl ? (
+                <Link href={edition.url}>
+                  <Img src={edition.coverUrl} alt="" width={200} style={{ display: "block", margin: "0 0 10px", maxWidth: 200 }} />
+                </Link>
+              ) : null}
+              <Text style={{ fontSize: 15, lineHeight: "22px", margin: "0 0 8px" }}>
+                <Link href={edition.url} style={{ color: COLORS.accent, fontWeight: 700 }}>
+                  {edition.title}
+                </Link>
+                {" — "}
+                {edition.label}, {edition.storyCount} {edition.storyCount === 1 ? "story" : "stories"}. Read it online or download the PDF.
+              </Text>
+            </Section>
+          ) : null}
 
           {directory.length > 0 ? (
             <Section style={{ margin: "0 0 22px" }}>

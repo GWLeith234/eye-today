@@ -15,6 +15,7 @@ type IssueRow = {
   intro: string;
   story_ids: string[];
   include_directory: boolean;
+  include_edition: boolean;
   status: "draft" | "scheduled" | "sent";
   scheduled_for: string | null;
   sent_at: string | null;
@@ -30,7 +31,7 @@ export default async function IssuePage({ params }: PageProps<"/admin/newsletter
 
   const { data } = await supabase
     .from("newsletter_issues")
-    .select("id, list_id, subject, preheader, intro, story_ids, include_directory, status, scheduled_for, sent_at, newsletter_lists(name, slug)")
+    .select("id, list_id, subject, preheader, intro, story_ids, include_directory, include_edition, status, scheduled_for, sent_at, newsletter_lists(name, slug)")
     .eq("id", id)
     .maybeSingle();
   const issue = data as unknown as IssueRow | null;
@@ -65,6 +66,7 @@ export default async function IssuePage({ params }: PageProps<"/admin/newsletter
         intro: issue.intro,
         storyIds: issue.story_ids,
         includeDirectory: issue.include_directory,
+        includeEdition: issue.include_edition,
         status: issue.status,
         scheduledFor: issue.scheduled_for,
         sentAt: issue.sent_at,
