@@ -38,6 +38,9 @@ export type ListingCard = {
   description: string;
   logo_storage_path: string | null;
   logo_alt: string | null;
+  // First facility photo, for the list card. The detail read returns photo_paths instead.
+  photo_storage_path?: string | null;
+  photo_alt?: string | null;
   has_legal: boolean;
   lat: number | null;
   lng: number | null;
