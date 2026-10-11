@@ -29,7 +29,7 @@ export default async function WriteForUsPage({ searchParams }: PageProps<"/write
   return (
     <div className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-4 p-8">
       <h1 className="text-3xl font-bold">Write for Eye Today</h1>
-      <p>We publish reporting, research explainers and first-person stories about eye health. Tell us about yourself.</p>
+      <p>We publish reporting, research explainers and first-person stories about addiction treatment and ibogaine. Tell us about yourself.</p>
       {error ? <p role="alert" className="rounded border border-red-600 p-3 text-sm">{error}</p> : null}
 
       <form action={apply} className="flex flex-col gap-3">
