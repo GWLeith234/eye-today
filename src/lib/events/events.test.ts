@@ -44,7 +44,7 @@ test("a calendar has UTC times, a stable UID and escaped text", () => {
         starts_at: starts,
         ends_at: ends,
         updated_at: "2026-06-01T00:00:00Z",
-        url: "https://eyetoday.com/events/circle",
+        url: "https://theeye.today/events/circle",
         location: "Hall, Vancouver, Canada",
         description: "Bring water.",
       },

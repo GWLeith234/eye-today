@@ -39,4 +39,4 @@ We keep your account email to contact you about your posting. It is never publis
 
 ## Questions
 
-Write to newsroom@eyetoday.com.
+Write to newsroom@theeye.today.
