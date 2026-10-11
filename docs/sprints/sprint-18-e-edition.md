@@ -20,6 +20,10 @@ Checked against `main` at `897d00b` (0001–0018 in production, so 0019 is next)
 | 6 | medium | Status | A separate `scheduled` status duplicates `public_from`. | Status is `draft` or `published`. Scheduling is done with the dates. |
 | 7 | medium | Reader | Paging must work with keyboard, swipe, deep links and screen readers. | A client reader with one page per section (cover, contents, letter, each story), ←/→ keys, touch swipe, prev/next buttons, a `#story-slug` hash, `aria-live` page position, and the table of contents as real links. |
 | 8 | medium | Routes | `/editions` would be caught by `/[section]`. | Reserve `editions`. |
+| 9 | medium | Saving (Bugbot, PR #21) | Deleting then inserting the story list from the app left a window where a failed insert or overlapping saves could publish an empty issue. | `0020_edition_items_replace.sql`: `replace_edition_items(edition, ids[])` swaps the list in one row-locked statement, security invoker so RLS still applies. The action writes the list first, the edition row second, and removes a new edition whose list failed. |
+
+## Migrations
+`0019_editions.sql` (tables, visibility functions, private bucket, `newsletter_issues.include_edition`) and `0020_edition_items_replace.sql`.
 
 ## Env vars
 None new.

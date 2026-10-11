@@ -84,29 +84,32 @@ export async function saveEdition(_state: SaveState, formData: FormData): Promis
     supporters_from: publicFrom ? supportersFrom(publicFrom, parsed.data.early_days) : null,
   };
 
+  // The story list is swapped in one statement (replace_edition_items: delete + insert in a single
+  // transaction, row-locked), and before the edition row changes, so a failed list write leaves a
+  // published issue exactly as it was. A new edition that cannot take its list is removed again so a
+  // retry does not hit a slug conflict.
   let editionId = parsed.data.id;
-  let siteId: string | null = null;
-  if (editionId) {
-    const { data, error } = await ctx.supabase.from("editions").update(fields).eq("id", editionId).select("site_id").maybeSingle<{ site_id: string }>();
-    if (error) return { error: error.code === "23505" ? "Another edition already uses that slug." : "The edition could not be saved." };
-    if (!data) return { error: "The edition could not be saved." };
-    siteId = data.site_id;
-  } else {
-    siteId = await getSiteId(ctx.supabase);
+  if (!editionId) {
+    const siteId = await getSiteId(ctx.supabase);
     if (!siteId) return { error: "The site is not available." };
-    const { data, error } = await ctx.supabase.from("editions").insert({ ...fields, site_id: siteId, created_by: ctx.userId }).select("id").single<{ id: string }>();
+    const { data, error } = await ctx.supabase
+      .from("editions")
+      .insert({ ...fields, status: "draft", public_from: null, supporters_from: null, site_id: siteId, created_by: ctx.userId })
+      .select("id")
+      .single<{ id: string }>();
     if (error) return { error: error.code === "23505" ? "An edition for that month (or slug) already exists." : "The edition could not be created." };
     editionId = data.id;
   }
 
-  // Replace the item list in order. Sort values are unique per edition, so the old rows go first.
-  const { error: clearError } = await ctx.supabase.from("edition_items").delete().eq("edition_id", editionId);
-  if (clearError) return { error: "The story list could not be saved." };
-  if (unique.length > 0) {
-    const rows = unique.map((article_id, sort) => ({ site_id: siteId, edition_id: editionId, article_id, sort }));
-    const { error } = await ctx.supabase.from("edition_items").insert(rows);
-    if (error) return { error: "The story list could not be saved." };
+  const { error: itemsError } = await ctx.supabase.rpc("replace_edition_items", { p_edition: editionId, p_article_ids: unique });
+  if (itemsError) {
+    if (!parsed.data.id) await ctx.supabase.from("editions").delete().eq("id", editionId);
+    return { error: "The story list could not be saved. Nothing was changed." };
   }
+
+  const { data: saved, error } = await ctx.supabase.from("editions").update(fields).eq("id", editionId).select("id").maybeSingle<{ id: string }>();
+  if (error) return { error: error.code === "23505" ? "Another edition already uses that slug." : "The edition could not be saved." };
+  if (!saved) return { error: "The edition could not be saved." };
 
   revalidatePath("/sitemap.xml");
   redirect(`/admin/editions/${editionId}?saved=1`);
