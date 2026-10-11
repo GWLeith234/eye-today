@@ -21,24 +21,28 @@ export function VerificationBadge({ level }: { level: string }) {
   );
 }
 
+// Photo first, the way a community directory reads: the facility photo carries the card, the logo sits
+// small beside the name, and the description is a glimpse. Featured listings get the photo full-width.
+// No photo: the logo stands in; no logo: the category colour.
 export function ListingCardView({ card }: { card: ListingCard }) {
   const tone = CATEGORY_TONE[card.category_slug] ?? "bg-accent";
+  const href = `/directory/listing/${card.slug}`;
+  const photo = card.photo_storage_path ?? null;
+  const logo = card.logo_storage_path ?? null;
+  const wide = card.featured && !!photo;
+
   return (
-    <article data-testid="listing-card" className="flex gap-3 border-t border-rule py-4">
-      {card.logo_storage_path ? (
-        <div className="relative h-16 w-16 shrink-0">
-          <Image
-            src={mediaUrl(card.logo_storage_path, { width: 128 })}
-            alt={card.logo_alt || ""}
-            fill
-            sizes="64px"
-            className="object-contain"
-          />
-        </div>
-      ) : (
-        <span aria-hidden="true" className={`mt-1 inline-block h-4 w-4 shrink-0 ${tone}`} />
-      )}
-      <div className="flex min-w-0 flex-col gap-1">
+    <article data-testid="listing-card" className={`flex gap-4 border-t border-rule py-5 ${wide ? "flex-col" : "flex-col sm:flex-row"}`}>
+      <Link href={href} aria-hidden="true" tabIndex={-1} className={`relative block shrink-0 overflow-hidden bg-rule ${wide ? "aspect-[2/1] w-full" : "aspect-[3/2] w-full sm:w-56"}`}>
+        {photo ? (
+          <Image src={mediaUrl(photo, { width: wide ? 1600 : 640 })} alt={card.photo_alt ?? ""} fill sizes={wide ? "(min-width: 768px) 720px, 100vw" : "(min-width: 640px) 224px, 100vw"} className="object-cover" />
+        ) : logo ? (
+          <Image src={mediaUrl(logo, { width: 480 })} alt={card.logo_alt ?? ""} fill sizes="224px" className="object-contain p-6" />
+        ) : (
+          <span className={`absolute inset-0 ${tone} opacity-70`} />
+        )}
+      </Link>
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <p className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide">
           {card.featured ? (
             <span data-testid="featured-badge" className="bg-accent px-1.5 py-0.5 text-ink">Featured</span>
@@ -47,20 +51,30 @@ export function ListingCardView({ card }: { card: ListingCard }) {
           <span>{card.category_name}</span>
           <VerificationBadge level={card.verification_level} />
         </p>
-        <h2 className="font-serif text-xl font-bold leading-snug">
-          <Link href={`/directory/listing/${card.slug}`} className="hover:underline">{card.name}</Link>
-        </h2>
+        <div className="flex items-center gap-3">
+          {photo && logo ? (
+            <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-sm bg-paper">
+              <Image src={mediaUrl(logo, { width: 128 })} alt={card.logo_alt ?? ""} fill sizes="40px" className="object-contain" />
+            </span>
+          ) : null}
+          <h2 className="font-serif text-2xl font-bold leading-tight">
+            <Link href={href} className="hover:underline">{card.name}</Link>
+          </h2>
+        </div>
         <p className="text-sm text-muted">{place(card)}</p>
-        {card.description ? <p className="text-sm">{card.description}</p> : null}
+        {card.description ? <p className="line-clamp-2 text-sm">{card.description}</p> : null}
         {card.relationship_disclosure ? (
-          <p className="text-sm">
+          <p className="text-xs text-muted">
             <span className="font-semibold">Publisher relationship: </span>
             {card.relationship_disclosure}
           </p>
         ) : null}
-        <Link href={`/directory/${card.country_code.toLowerCase()}`} className="text-sm text-accent hover:underline">
-          Legal status in {countryName(card.country_code)}
-        </Link>
+        <p className="flex flex-wrap gap-x-4 text-sm">
+          <Link href={href} className="font-semibold underline">View listing</Link>
+          <Link href={`/directory/${card.country_code.toLowerCase()}`} className="text-accent hover:underline">
+            Legal status in {countryName(card.country_code)}
+          </Link>
+        </p>
       </div>
     </article>
   );
