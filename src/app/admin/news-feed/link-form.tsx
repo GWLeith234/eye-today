@@ -49,17 +49,17 @@ export function LinkForm({ values, notice }: { values: LinkValues; notice?: stri
       {notice ? <p role="status" className="rounded border border-green-600 p-2 text-sm">{notice}</p> : null}
       {state.error ? <p role="alert" className="rounded border border-red-600 p-2 text-sm">{state.error}</p> : null}
       <input type="hidden" name="id" value={values.id} />
-      <label className="flex flex-col gap-1 text-sm">
-        Link
+      <div className="flex flex-col gap-1 text-sm">
+        <label htmlFor="news-link-url">Link</label>
         <div className="flex gap-2">
-          <input name="url" type="url" required inputMode="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" className={`${field} flex-1`} />
+          <input id="news-link-url" name="url" type="url" required inputMode="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" className={`${field} flex-1`} />
           <button type="button" onClick={prefill} disabled={fetching || !url} className="rounded border border-rule px-3 py-2 text-sm disabled:opacity-50">
             {fetching ? "Fetching…" : "Fetch details"}
           </button>
         </div>
         <span className="text-xs text-muted">Fetch reads the page&rsquo;s own headline, outlet and date. Nothing is saved until you save the form.</span>
         {fetchError ? <span role="alert" className="text-xs text-red-700">{fetchError}</span> : null}
-      </label>
+      </div>
       <label className="flex flex-col gap-1 text-sm">
         Headline
         <input name="title" required maxLength={200} value={title} onChange={(e) => setTitle(e.target.value)} className={field} />

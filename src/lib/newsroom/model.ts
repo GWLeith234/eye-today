@@ -50,18 +50,18 @@ export function sourceFromUrl(url: string): string {
 }
 
 export function cleanTitle(value: string): string {
-  return value.replace(/\s+/g, " ").replace(/[<>]/g, "").trim().slice(0, 200);
+  return value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").replace(/[<>]/g, "").trim().slice(0, 200);
 }
 
 export function cleanBlurb(value: string): string {
-  return value.replace(/\s+/g, " ").replace(/[<>]/g, "").trim().slice(0, BLURB_MAX);
+  return value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").replace(/[<>]/g, "").trim().slice(0, BLURB_MAX);
 }
 
 // Comma or newline separated, lowercase, letters digits and hyphens.
 export function parseTags(value: string): string[] {
   const seen = new Set<string>();
   for (const raw of value.split(/[,\n]/)) {
-    const tag = raw.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "").replace(/^-+|-+$/g, "").slice(0, 40);
+    const tag = raw.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
     if (tag) seen.add(tag);
     if (seen.size >= MAX_TAGS) break;
   }
