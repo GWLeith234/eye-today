@@ -83,10 +83,10 @@ test("podcast directory, reader survey, single-CTA newsletter", async ({ page, b
     await editor.page.getByLabel("New issue for").selectOption({ index: 0 });
     await editor.page.getByRole("button", { name: "Create issue" }).click();
     await expect(editor.page).toHaveURL(/\/admin\/newsletters\/[0-9a-f-]{36}/i);
-    await editor.page.getByLabel("Heading").fill(`A quick favour ${stamp}`);
-    await editor.page.getByLabel("Text").fill("Ninety seconds that shape what we cover.");
-    await editor.page.getByLabel("Link").fill("https://theeye.today/survey");
-    await editor.page.getByLabel("Button").fill("Take the survey");
+    await editor.page.getByLabel("Call-to-action heading").fill(`A quick favour ${stamp}`);
+    await editor.page.getByLabel("Call-to-action text").fill("Ninety seconds that shape what we cover.");
+    await editor.page.getByLabel("Call-to-action link").fill("https://theeye.today/survey");
+    await editor.page.getByLabel("Button label").fill("Take the survey");
     await editor.page.getByRole("button", { name: "Save" }).click();
     await expect(editor.page.getByRole("status").last()).toContainText("Saved");
     await editor.page.getByRole("button", { name: "Preview" }).click();

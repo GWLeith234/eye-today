@@ -178,20 +178,20 @@ export function IssueBuilder({
           <legend className="px-1 text-sm font-semibold">One call to action (optional)</legend>
           <p className="text-xs opacity-70">Sits between your note and the stories. For a survey or a single ask, leave the stories empty and this is the whole email. Heading and link are required for it to show.</p>
           <label className="flex flex-col gap-1 text-sm">
-            Heading
+            Call-to-action heading
             <input value={cta.heading} maxLength={120} onChange={(e) => setCta({ ...cta, heading: e.target.value })} placeholder="A quick favour" className="rounded border px-3 py-2 text-base" />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            Text
+            Call-to-action text
             <textarea value={cta.text} maxLength={500} rows={2} onChange={(e) => setCta({ ...cta, text: e.target.value })} placeholder="Ninety seconds that shape what we cover." className="rounded border px-3 py-2 text-base" />
           </label>
           <div className="grid gap-2 sm:grid-cols-[1fr_12rem]">
             <label className="flex flex-col gap-1 text-sm">
-              Link
+              Call-to-action link
               <input value={cta.url} maxLength={500} onChange={(e) => setCta({ ...cta, url: e.target.value })} placeholder="https://theeye.today/survey" className="rounded border px-3 py-2 text-base" />
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              Button
+              Button label
               <input value={cta.button} maxLength={40} onChange={(e) => setCta({ ...cta, button: e.target.value })} placeholder="Take the survey" className="rounded border px-3 py-2 text-base" />
             </label>
           </div>
