@@ -53,6 +53,15 @@ export function sanitizeAdHtml(input: string | null | undefined): SanitizedAd {
 
 // Point every link at one URL (the click route), so a creative can only ever lead where its
 // stored click_url says. Works on this file's own output, where every link is `<a href="…"`.
+// An HTML creative that is really a picture (one <img>, maybe wrapped in a link, nothing else to say)
+// is served as an image creative: the unit renders the artwork edge to edge instead of a text box.
+export function imageFromHtml(sanitized: string): string | null {
+  const text = sanitized.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
+  const images = sanitized.match(/<img\b[^>]*>/gi) ?? [];
+  if (images.length !== 1 || text) return null;
+  return attribute(images[0], "src");
+}
+
 export function pointLinksAt(html: string, url: string): string {
   const escaped = url.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
   return html.replace(/<a href="[^"]*"/g, `<a href="${escaped}"`);

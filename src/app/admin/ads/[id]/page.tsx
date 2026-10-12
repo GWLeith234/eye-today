@@ -228,8 +228,8 @@ export default async function CampaignPage({ params, searchParams }: PageProps<"
             <input name="alt" maxLength={300} className="rounded border px-2 py-1" />
           </label>
           <label className="flex flex-col gap-1 text-sm">HTML instead of an image
-            <textarea name="html" rows={4} maxLength={5000} className="rounded border px-2 py-1 font-mono" placeholder="<p>Text with a <a href=&quot;https://…&quot;>link</a></p>" />
-            <span className="text-xs opacity-70">Only p, br, strong, em, a (https) and img are kept. Everything else is removed on save.</span>
+            <textarea name="html" rows={4} maxLength={5000} className="rounded border px-2 py-1 font-mono" placeholder="<a href=&quot;https://…&quot;><img src=&quot;https://…/creative-728x90.png&quot; alt=&quot;…&quot;></a>" />
+            <span className="text-xs opacity-70">Units show artwork only: give one https image at the unit&rsquo;s pixel size, optionally wrapped in a link. Text-only HTML is saved but never served.</span>
           </label>
           <button type="submit" className="self-start rounded bg-foreground px-4 py-2 text-background">Add creative</button>
         </form>

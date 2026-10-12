@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { capReached, parseFrequency, serializeFrequency, withServed } from "./frequency";
-import { pointLinksAt, sanitizeAdHtml } from "./sanitize";
+import { imageFromHtml, pointLinksAt, sanitizeAdHtml } from "./sanitize";
 
 test("a script and a javascript: link sanitize to nothing usable", () => {
   const result = sanitizeAdHtml('<script>alert(1)</script><a href="javascript:alert(2)"></a><img src="javascript:alert(3)">');
@@ -60,4 +60,15 @@ test("frequency cookie counts today's views and stops at the cap", () => {
   assert.deepEqual(parseFrequency(serializeFrequency(freq), "2026-09-30").counts, {});
   assert.deepEqual(parseFrequency("garbage", "2026-09-29").counts, {});
   assert.deepEqual(parseFrequency("2026-09-29_not-a-uuid~3", "2026-09-29").counts, {});
+});
+
+test("an HTML creative that is one picture serves as an image; text-only HTML does not", () => {
+  const picture = sanitizeAdHtml('<a href="https://clinic.example/"><img src="https://theeye.today/house-ads/leaderboard-728x90.png" alt="Eye Today"></a>');
+  assert.equal(imageFromHtml(picture.html), "https://theeye.today/house-ads/leaderboard-728x90.png");
+  const words = sanitizeAdHtml("<p><strong>Read this.</strong> <a href=\"https://x.example/\">Go</a></p>");
+  assert.equal(imageFromHtml(words.html), null);
+  const mixed = sanitizeAdHtml('<p>Caption <img src="https://x.example/a.png" alt=""></p>');
+  assert.equal(imageFromHtml(mixed.html), null);
+  const two = sanitizeAdHtml('<img src="https://x.example/a.png" alt=""><img src="https://x.example/b.png" alt="">');
+  assert.equal(imageFromHtml(two.html), null);
 });

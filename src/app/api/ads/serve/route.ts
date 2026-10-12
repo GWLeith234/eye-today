@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { FREQ_COOKIE, capReached, parseFrequency, serializeFrequency, utcDay, withServed } from "@/lib/ads/frequency";
-import { pointLinksAt, sanitizeAdHtml } from "@/lib/ads/sanitize";
+import { imageFromHtml, pointLinksAt, sanitizeAdHtml } from "@/lib/ads/sanitize";
 import { isAdSlotName, isPageType, SUPPORTER_HIDDEN } from "@/lib/ads/slots";
 import { getSession } from "@/lib/auth/session";
 import { mediaUrl } from "@/lib/media/url";
@@ -49,8 +49,13 @@ export async function GET(request: Request) {
   // through the click route; the destination comes from the stored click_url, never from here.
   const clickPath = `/api/ads/click/${row.creative_id}?page=${pageType}`;
   const html = row.html ? sanitizeAdHtml(row.html) : null;
-  const imageUrl = row.image_path ? mediaUrl(row.image_path, { width: 1200 }) : null;
-  if (!imageUrl && !(html && html.usable)) return empty();
+  // Display units only: an uploaded image, or an HTML creative that is a single picture. Text-only HTML
+  // (the old house ads) is no longer served, so a unit with no artwork stays empty.
+  const found = row.image_path ? mediaUrl(row.image_path, { width: 1200 }) : html && html.usable ? imageFromHtml(html.html) : null;
+  if (!found) return empty();
+  // House artwork is addressed by the canonical domain; until DNS lands (and on previews) it is served from
+  // wherever this request came in, so the picture always loads.
+  const imageUrl = found.startsWith("https://theeye.today/house-ads/") ? `${new URL(request.url).origin}${new URL(found).pathname}` : found;
 
   const response = NextResponse.json(
     {
@@ -58,7 +63,7 @@ export async function GET(request: Request) {
         id: row.creative_id,
         alt: row.alt ?? "",
         imageUrl,
-        html: imageUrl || !html ? null : pointLinksAt(html.html, clickPath),
+        html: null,
         house: row.is_house,
       },
     },
