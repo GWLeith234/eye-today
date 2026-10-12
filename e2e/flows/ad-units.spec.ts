@@ -13,6 +13,7 @@ test("house ads fill the units on every page type", async ({ page }) => {
     await page.goto(path);
     const leaderboard = page.locator('aside[data-ad-slot="leaderboard"]');
     await expect(leaderboard, path).toBeVisible();
+    if (path === "/") await expect(page.locator('aside[data-ad-slot="half-page"]'), "half page on the cover").toBeVisible();
     await expect(page.locator("aside[data-ad-house='1']").first(), `${path} shows a house ad`).toBeAttached();
   }
   // The mobile banner is for phones only.
