@@ -79,7 +79,10 @@ export async function updateAdCampaign(formData: FormData) {
   // RLS limits this to the caller's own draft or pending campaign; a paid campaign keeps its dates.
   const { data: current } = await supabase.from("ad_campaigns").select("paid_at").eq("id", id.data).eq("owner_id", user.id).maybeSingle<{ paid_at: string | null }>();
   if (!current) back(path, { error: "not_yours" });
-  const changes = current.paid_at ? { advertiser_name: parsed.data.advertiser_name, name: parsed.data.name, click_url: parsed.data.click_url } : parsed.data;
+  // The start date is sent only while the field is enabled (unpaid, not returning from Stripe). A form
+  // without it leaves the stored date alone, so a save during payment confirmation cannot wipe it.
+  const { starts_at, ...names } = parsed.data;
+  const changes = current.paid_at || !formData.has("starts_at") ? names : { ...names, starts_at };
   const { error } = await supabase.from("ad_campaigns").update(changes).eq("id", id.data).eq("owner_id", user.id);
   if (error) back(path, { error: "failed" });
   revalidatePath(path);
