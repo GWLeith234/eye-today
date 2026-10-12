@@ -24,3 +24,9 @@ Transcript ingestion, audio hosting, per-episode pages beyond the article, podca
 
 ## Rollback
 `git revert` the merge commit; a new migration drops the three columns, the category and the survey table.
+
+## Build notes (2026-10-12)
+- Shipped on PR #33. Migration 0028 also **grants select on the three new listing columns**: `directory_listings` is granted per column (0013 keeps `verification_note` private), and without it the editor's listing page could not read the row — caught by the e2e suite, asserted in `supabase/tests/0028_podcasts_survey.sql`.
+- Data to run after 0028, in the SQL editor: `supabase/data/podcast_listings.sql` (five published listings; "Where to listen" left for the editor where a platform link was not confirmed from the show's own site) and `supabase/data/podcast_episode_scientia_prima.sql` (episode 2 as a **draft** article in Podcasts — confirm the YouTube link and add a hero before publishing). Scientia Prima is Transcend Clinic's show, hosted by George Leith with Dr. Fernando Rivas Oliveras; episodes 1 and 2 went to YouTube on 27 Aug 2026.
+- Ad serve now rewrites `https://theeye.today/advertiser-ads/…` as well as `/house-ads/…` to the request origin, so the rendered OZCast and Shadow Warriors creatives load before DNS.
+- CI job logs are not readable from the session, but Playwright's `github` reporter writes failures as check-run annotations: `gh api repos/…/check-runs/<id>/annotations` is how to read a red e2e.
