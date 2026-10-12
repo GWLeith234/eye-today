@@ -86,13 +86,17 @@ export default async function ListingPage({ params }: PageProps<"/directory/list
           {listing.featured ? <span data-testid="featured-badge" className="bg-accent px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-ink">Featured</span> : null}
           <VerificationBadge level={listing.verification_level} />
         </p>
-        <h1 className="font-serif text-4xl font-bold">{listing.name}</h1>
-        <p>{place}</p>
-        {listing.logo_storage_path ? (
-          <div className="relative h-24 w-24">
-            <Image src={mediaUrl(listing.logo_storage_path, { width: 200 })} alt={listing.logo_alt || ""} fill sizes="96px" className="object-contain" />
+        <div className="flex items-center gap-5">
+          {listing.logo_storage_path ? (
+            <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded border border-rule bg-white sm:h-28 sm:w-28">
+              <Image src={mediaUrl(listing.logo_storage_path, { width: 400 })} alt={listing.logo_alt || `${listing.name} logo`} fill sizes="(min-width: 640px) 112px, 96px" className="object-contain p-3" priority />
+            </div>
+          ) : null}
+          <div className="flex min-w-0 flex-col gap-1">
+            <h1 className="font-serif text-4xl font-bold">{listing.name}</h1>
+            <p>{place}</p>
           </div>
-        ) : null}
+        </div>
         {listing.description ? <p className="max-w-2xl text-lg">{listing.description}</p> : null}
         <dl className="grid gap-2 text-sm sm:grid-cols-[10rem_1fr]">
           {listing.services && listing.services.length > 0 ? (

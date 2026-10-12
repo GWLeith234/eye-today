@@ -53,8 +53,8 @@ export function ListingCardView({ card }: { card: ListingCard }) {
         </p>
         <div className="flex items-center gap-3">
           {photo && logo ? (
-            <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-sm bg-paper">
-              <Image src={mediaUrl(logo, { width: 128 })} alt={card.logo_alt ?? ""} fill sizes="40px" className="object-contain" />
+            <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded border border-rule bg-white p-1.5">
+              <Image src={mediaUrl(logo, { width: 224 })} alt={card.logo_alt ?? ""} fill sizes="56px" className="object-contain p-1.5" />
             </span>
           ) : null}
           <h2 className="font-serif text-2xl font-bold leading-tight">

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import type { AdSlotName, PageType } from "@/lib/ads/slots";
+import { type AdSlotName, type PageType, SLOT_SIZES } from "@/lib/ads/slots";
 
 export type { AdSlotName };
 
@@ -68,28 +68,29 @@ export function AdSlot({ name, page = "other" }: { name: AdSlotName; page?: Page
 
   const clickHref = `/api/ads/click/${ad.id}?page=${encodeURIComponent(page)}`;
   const mobile = name === "mobile-banner";
-  const frame = mobile
-    ? "fixed inset-x-0 bottom-0 z-40 flex items-center justify-center gap-2 border-t border-rule bg-paper px-2 py-1 shadow-[0_-2px_8px_rgba(0,0,0,0.08)] sm:hidden"
-    : "flex w-full flex-col items-center gap-1 border border-rule bg-white/40 p-2";
-  return (
-    <aside ref={region} aria-label="Advertisement" data-ad-slot={name} data-ad-house={ad.house ? "1" : undefined} className={frame}>
-      {mobile ? (
-        <button type="button" onClick={() => setDismissed(true)} aria-label="Close advertisement" className="order-last shrink-0 rounded border border-rule px-1.5 text-xs leading-5">×</button>
-      ) : (
-        <p className="self-start text-[10px] uppercase tracking-widest text-muted">Advertisement</p>
-      )}
-      {ad.imageUrl ? (
-        <a href={clickHref} target="_blank" rel="sponsored noopener noreferrer">
-          {/* eslint-disable-next-line @next/next/no-img-element -- third-party ad creative, sized by the advertiser */}
-          <img src={ad.imageUrl} alt={ad.alt} loading="lazy" className="h-auto max-w-full" />
+  const { width, height } = SLOT_SIZES[name];
+  if (!ad.imageUrl) return null;
+
+  // The unit is the IAB box, the artwork fills it, and the only chrome is a hairline "Advertisement"
+  // above — the way a community daily runs display. The box never grows past the viewport.
+  if (mobile) {
+    return (
+      <aside ref={region} aria-label="Advertisement" data-ad-slot={name} data-ad-house={ad.house ? "1" : undefined} className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-center gap-2 border-t border-rule bg-paper px-2 py-1 shadow-[0_-2px_8px_rgba(0,0,0,0.08)] sm:hidden">
+        <a href={clickHref} target="_blank" rel="sponsored noopener noreferrer" className="block" style={{ width, height }}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- third-party ad creative at the unit's IAB size */}
+          <img src={ad.imageUrl} alt={ad.alt} width={width} height={height} loading="lazy" className="block h-full w-full object-contain" />
         </a>
-      ) : ad.html ? (
-        <div
-          className={`ad-html text-sm [&_a]:text-brand [&_a]:underline [&_img]:mx-auto [&_img]:block [&_img]:h-auto [&_img]:max-w-full ${mobile ? "min-w-0 flex-1 truncate [&_p]:m-0" : ""}`}
-          // Sanitized twice: when it was saved and again by /api/ads/serve.
-          dangerouslySetInnerHTML={{ __html: ad.html }}
-        />
-      ) : null}
+        <button type="button" onClick={() => setDismissed(true)} aria-label="Close advertisement" className="shrink-0 rounded border border-rule px-1.5 text-xs leading-5">×</button>
+      </aside>
+    );
+  }
+  return (
+    <aside ref={region} aria-label="Advertisement" data-ad-slot={name} data-ad-house={ad.house ? "1" : undefined} className="mx-auto flex w-full max-w-full flex-col items-center gap-1" style={{ maxWidth: width }}>
+      <p className="w-full text-center text-[10px] uppercase tracking-[0.2em] text-muted">Advertisement</p>
+      <a href={clickHref} target="_blank" rel="sponsored noopener noreferrer" className="block w-full" style={{ aspectRatio: `${width} / ${height}` }}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- third-party ad creative at the unit's IAB size */}
+        <img src={ad.imageUrl} alt={ad.alt} width={width} height={height} loading="lazy" className="block h-full w-full object-contain" />
+      </a>
     </aside>
   );
 }

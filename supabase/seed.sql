@@ -133,26 +133,21 @@ camp as (
    where not exists (select 1 from public.ad_campaigns h where h.site_id = site.id and h.is_house)
   returning id, site_id
 ),
-slot as (select id, key from public.ad_slots where site_id = (select id from site))
+slot as (select id, key, width, height from public.ad_slots where site_id = (select id from site))
 insert into public.ad_creatives (site_id, campaign_id, slot_id, click_url, alt, html, status, weight)
-select camp.site_id, camp.id, slot.id, v.click_url, v.alt, v.html, 'approved', 1
+select camp.site_id, camp.id, slot.id, v.click_url, v.alt,
+       '<a href="' || v.click_url || '"><img src="https://theeye.today/house-ads/' || slot.key || '-' || slot.width || 'x' || slot.height || '.png" alt="' || v.alt || '"></a>',
+       'approved', 1
   from camp
   cross join (values
-    ('leaderboard', 'https://theeye.today/editions', 'Read the monthly edition',
-     '<p><strong>The monthly edition.</strong> Every month, the stories that mattered, in one issue you can read online or download. <a href="https://theeye.today/editions">Read the first issue</a></p>'),
-    ('mobile-banner', 'https://theeye.today/newsletter', 'Get the newsletter',
-     '<p><strong>Eye Today in your inbox.</strong> <a href="https://theeye.today/newsletter">Subscribe</a></p>'),
-    ('bigbox-1', 'https://theeye.today/directory/submit', 'List your clinic in the directory',
-     '<p><strong>List your clinic.</strong> Verified listings in the only independent directory of ibogaine and addiction-treatment providers. <a href="https://theeye.today/directory/submit">Submit a listing</a></p>'),
-    ('bigbox-2', 'https://theeye.today/support', 'Support independent reporting',
-     '<p><strong>Independent reporting costs money.</strong> Supporters keep Eye Today free to read and free of provider influence. <a href="https://theeye.today/support">Become a supporter</a></p>'),
-    ('in-river', 'https://theeye.today/advertise', 'Advertise with Eye Today',
-     '<p><strong>Reach the people who make treatment decisions.</strong> Clinics, researchers, conferences and advocates read Eye Today. <a href="https://theeye.today/advertise">Advertise with us</a></p>'),
-    ('in-article', 'https://theeye.today/newsletter', 'Get the newsletter',
-     '<p><strong>Don''t miss the next story.</strong> News, research and policy on ibogaine and addiction treatment, in your inbox. <a href="https://theeye.today/newsletter">Subscribe to the newsletter</a></p>'),
-    ('half-page', 'https://theeye.today/tracker', 'Trials & Funding Tracker',
-     '<p><strong>Every ibogaine trial, grant and ruling, in one place.</strong> The Trials &amp; Funding Tracker is kept current by the newsroom. <a href="https://theeye.today/tracker">Open the tracker</a></p>')
-  ) as v(slot_key, click_url, alt, html)
+    ('leaderboard', 'https://theeye.today/editions', 'Read the monthly edition'),
+    ('mobile-banner', 'https://theeye.today/newsletter', 'Get the newsletter'),
+    ('bigbox-1', 'https://theeye.today/directory/submit', 'List your clinic in the directory'),
+    ('bigbox-2', 'https://theeye.today/support', 'Support independent reporting'),
+    ('in-river', 'https://theeye.today/advertise', 'Advertise with Eye Today'),
+    ('in-article', 'https://theeye.today/newsletter', 'Get the newsletter'),
+    ('half-page', 'https://theeye.today/tracker', 'Trials & Funding Tracker')
+  ) as v(slot_key, click_url, alt)
   join slot on slot.key = v.slot_key;
 
 -- Tracker (0025 seeds these for existing sites; on a fresh reset the site is created above, so seed them here too).
