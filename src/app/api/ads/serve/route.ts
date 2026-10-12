@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { FREQ_COOKIE, capReached, parseFrequency, serializeFrequency, utcDay, withServed } from "@/lib/ads/frequency";
-import { imageFromHtml, pointLinksAt, sanitizeAdHtml } from "@/lib/ads/sanitize";
+import { imageFromHtml, sanitizeAdHtml } from "@/lib/ads/sanitize";
 import { isAdSlotName, isPageType, SUPPORTER_HIDDEN } from "@/lib/ads/slots";
 import { getSession } from "@/lib/auth/session";
 import { mediaUrl } from "@/lib/media/url";
@@ -45,9 +45,8 @@ export async function GET(request: Request) {
   // House ads are never capped: they are the fallback, and an empty slot helps nobody.
   if (!row.is_house && capReached(freq, row.creative_id, row.freq_cap)) return empty();
 
-  // Rebuilt on the way out, so nothing stored can reach a page unsanitized. Links in HTML all go
-  // through the click route; the destination comes from the stored click_url, never from here.
-  const clickPath = `/api/ads/click/${row.creative_id}?page=${pageType}`;
+  // Rebuilt on the way out, so nothing stored can reach a page unsanitized. The reader's click goes through
+  // /api/ads/click, which reads the stored click_url; nothing from here decides the destination.
   const html = row.html ? sanitizeAdHtml(row.html) : null;
   // Display units only: an uploaded image, or an HTML creative that is a single picture. Text-only HTML
   // (the old house ads) is no longer served, so a unit with no artwork stays empty.

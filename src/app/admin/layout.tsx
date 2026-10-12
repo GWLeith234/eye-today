@@ -21,6 +21,7 @@ const NAV = [
   { href: "/admin/editions", label: "Editions" },
   { href: "/admin/news-feed", label: "News feed" },
   { href: "/admin/tracker", label: "Tracker" },
+  { href: "/admin/survey", label: "Survey" },
   { href: "/admin/comments", label: "Comments" },
 ];
 

@@ -5,6 +5,8 @@ const PATHS: Record<string, string> = {
   treatment: "M10 4h4v6h6v4h-6v6h-4v-6H4v-4h6V4z",
   stories: "M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 0-3 3V4zm0 16a5 5 0 0 1 3-1h11v2H8a3 3 0 0 0-3 3V20z",
   opinion: "M7 6h10v2H7V6zm0 4h10v2H7v-2zm0 4h7v2H7v-2zM4 4h2v16H4V4z",
+  // A microphone: capsule, stand, base.
+  podcast: "M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3zm-5 9h2a3 3 0 0 0 6 0h2a5 5 0 0 1-4 4.9V19h3v2H8v-2h3v-2.1A5 5 0 0 1 7 12z",
 };
 
 /** A short named icon stored on the section. Unknown names draw nothing. */

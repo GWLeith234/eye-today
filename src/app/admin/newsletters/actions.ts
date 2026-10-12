@@ -15,7 +15,7 @@ import { newDirectoryListings } from "@/lib/newsletter/directory";
 import { currentEdition } from "@/lib/newsletter/edition";
 import { recentNewsLinks } from "@/lib/newsletter/news";
 import { defaultSubject, newsletterIssueLabel } from "@/lib/newsletter/numbering";
-import { renderIssueMessage, sendIssue } from "@/lib/newsletter/send";
+import { ctaFrom, editorSignoff, renderIssueMessage, sendIssue } from "@/lib/newsletter/send";
 import { autoFillStories, liveStoriesById, MAX_STORIES, type StoryRow } from "@/lib/newsletter/stories";
 import { UNSUBSCRIBE_PLACEHOLDER } from "@/lib/newsletter/urls";
 
@@ -35,6 +35,10 @@ const issueInput = z.object({
   include_directory: z.boolean().default(false),
   include_edition: z.boolean().default(false),
   include_news: z.boolean().default(false),
+  cta_heading: oneLine.pipe(z.string().max(120)).default(""),
+  cta_text: z.string().trim().max(500).default(""),
+  cta_url: z.string().trim().max(500).refine((v) => v === "" || /^https:\/\/\S+$/.test(v), "The call-to-action link must start with https://").default(""),
+  cta_button: oneLine.pipe(z.string().max(40)).default(""),
 });
 export type IssueInput = z.input<typeof issueInput>;
 
@@ -126,6 +130,10 @@ export async function saveIssue(raw: IssueInput): Promise<{ ok: true } | Fail> {
       include_directory: checked.input.include_directory,
       include_edition: checked.input.include_edition,
       include_news: checked.input.include_news,
+      cta_heading: checked.input.cta_heading.replace(/[<>]/g, "") || null,
+      cta_text: checked.input.cta_text.replace(/[<>]/g, "") || null,
+      cta_url: checked.input.cta_url || null,
+      cta_button: checked.input.cta_button.replace(/[<>]/g, "") || null,
     })
     .eq("id", checked.input.id);
   if (error) return { ok: false, error: "The issue could not be saved." };
@@ -180,6 +188,8 @@ async function message(ctx: EditorContext, raw: IssueInput) {
     edition,
     news,
     issueLabel: newsletterIssueLabel(checked.issue.newsletter_lists?.slug ?? "", checked.issue.issue_number),
+    cta: ctaFrom({ cta_heading: checked.input.cta_heading || null, cta_text: checked.input.cta_text || null, cta_url: checked.input.cta_url || null, cta_button: checked.input.cta_button || null }),
+    signoff: await editorSignoff(ctx.supabase),
   });
   if ("error" in rendered) return { ok: false, error: rendered.error } as Fail;
   return { ok: true as const, checked, rendered };
@@ -242,7 +252,8 @@ export async function scheduleIssue(issueId: string, scheduledFor: string): Prom
   // The cron retries every due issue. One with no live stories never sends and blocks the queue.
   const storyIds = issue.story_ids ?? [];
   const stories = await liveStoriesById(ctx.supabase, storyIds);
-  if (stories.length === 0) return { ok: false, error: "Add at least one live story before scheduling." };
+  const { data: ctaRow } = await ctx.supabase.from("newsletter_issues").select("cta_heading, cta_text, cta_url, cta_button").eq("id", issue.id).maybeSingle<{ cta_heading: string | null; cta_text: string | null; cta_url: string | null; cta_button: string | null }>();
+  if (stories.length === 0 && !(ctaRow && ctaFrom(ctaRow))) return { ok: false, error: "Add at least one live story, or a call to action, before scheduling." };
   if (stories.length !== storyIds.length) return { ok: false, error: NOT_LIVE };
 
   // A sent issue is invisible to the update policy, and that update reports no error.

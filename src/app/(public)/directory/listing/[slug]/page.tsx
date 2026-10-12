@@ -10,6 +10,10 @@ import { VerificationBadge } from "@/components/public/listing-card";
 import { StoryList } from "@/components/public/story-card";
 import { countryName } from "@/lib/directory/countries";
 import { listingJsonLd } from "@/lib/directory/jsonld";
+import { latestEpisodes } from "@/lib/directory/feed";
+import { readPlatformLinks } from "@/lib/directory/podcast";
+import { PlatformButtons } from "@/components/public/platform-links";
+import { dateLabel } from "@/lib/newsroom/model";
 import { eventsForListing } from "@/lib/events/public";
 import { jobsForListing } from "@/lib/postings/public";
 import { getDirectoryListing, getListingStories } from "@/lib/directory/public";
@@ -65,11 +69,14 @@ export default async function ListingPage({ params }: PageProps<"/directory/list
     lat: listing.lat,
     lng: listing.lng,
   });
-  const [related, events, jobs] = await Promise.all([
+  const isPodcast = listing.category_slug === "podcast";
+  const [related, events, jobs, episodes] = await Promise.all([
     getListingStories(listing.id, listing.services ?? []),
     eventsForListing(listing.id, 4),
     jobsForListing(listing.id, 4),
+    isPodcast ? latestEpisodes(listing.feed_url, 5) : Promise.resolve([]),
   ]);
+  const platforms = isPodcast ? readPlatformLinks(listing.platform_links) : [];
   const when = reviewed(listing.last_reviewed_at);
   const place = [listing.city, listing.region, countryName(listing.country_code)].filter(Boolean).join(", ");
   const photos = (listing.photo_paths ?? []).map((path, index) => ({
@@ -98,6 +105,29 @@ export default async function ListingPage({ params }: PageProps<"/directory/list
           </div>
         </div>
         {listing.description ? <p className="max-w-2xl text-lg">{listing.description}</p> : null}
+        {isPodcast ? (
+          <section aria-labelledby="listen" className="flex flex-col gap-3 border border-rule p-4">
+            <h2 id="listen" className="font-serif text-2xl font-bold">Listen</h2>
+            {listing.host_names ? <p className="text-sm">Hosted by {listing.host_names}</p> : null}
+            {platforms.length > 0 ? <PlatformButtons links={platforms} size="md" /> : <p className="text-sm text-muted">Platform links are on their way.</p>}
+            {episodes.length > 0 ? (
+              <ol aria-label="Latest episodes" className="mt-2 flex flex-col divide-y divide-rule">
+                {episodes.map((episode) => (
+                  <li key={episode.url ?? episode.title} className="flex flex-col gap-0.5 py-2">
+                    {episode.url ? (
+                      <a href={episode.url} rel="noopener noreferrer" target="_blank" className="font-semibold hover:underline">{episode.title} ↗</a>
+                    ) : (
+                      <span className="font-semibold">{episode.title}</span>
+                    )}
+                    {episode.publishedOn ? <span className="text-xs text-muted">{dateLabel(episode.publishedOn)}</span> : null}
+                    {episode.summary ? <span className="text-sm">{episode.summary}</span> : null}
+                  </li>
+                ))}
+              </ol>
+            ) : null}
+            <p className="text-xs text-muted">Episodes are read from the show&rsquo;s own feed and open on the platform; Eye Today does not host them.</p>
+          </section>
+        ) : null}
         <dl className="grid gap-2 text-sm sm:grid-cols-[10rem_1fr]">
           {listing.services && listing.services.length > 0 ? (
             <>

@@ -12,7 +12,8 @@ values
   ('00000000-0000-4000-8000-000000000103', '00000000-0000-4000-8000-000000000001', 'policy-law', 'Policy & Law', 30, '#6B4C9A', 'policy'),
   ('00000000-0000-4000-8000-000000000104', '00000000-0000-4000-8000-000000000001', 'treatment-clinics', 'Treatment & Clinics', 40, '#A9472F', 'treatment'),
   ('00000000-0000-4000-8000-000000000105', '00000000-0000-4000-8000-000000000001', 'stories', 'Stories', 50, '#976912', 'stories'),
-  ('00000000-0000-4000-8000-000000000106', '00000000-0000-4000-8000-000000000001', 'opinion', 'Opinion', 60, '#3F3F46', 'opinion')
+  ('00000000-0000-4000-8000-000000000106', '00000000-0000-4000-8000-000000000001', 'opinion', 'Opinion', 60, '#3F3F46', 'opinion'),
+  ('00000000-0000-4000-8000-000000000107', '00000000-0000-4000-8000-000000000001', 'podcasts', 'Podcasts', 55, '#2E5E8C', 'podcast')
 on conflict do nothing;
 
 -- The site row is inserted above, after migrations, so 0012's update matches nothing on a fresh reset.
@@ -84,7 +85,8 @@ values
   ('00000000-0000-4000-8000-000000000001', 'harm-reduction', 'Harm-reduction service', 40),
   ('00000000-0000-4000-8000-000000000001', 'peer-support', 'Peer support group', 50),
   ('00000000-0000-4000-8000-000000000001', 'research-organisation', 'Research organisation', 60),
-  ('00000000-0000-4000-8000-000000000001', 'advocacy-group', 'Advocacy group', 70)
+  ('00000000-0000-4000-8000-000000000001', 'advocacy-group', 'Advocacy group', 70),
+  ('00000000-0000-4000-8000-000000000001', 'podcast', 'Podcast', 80)
 on conflict (site_id, slug) do nothing;
 
 insert into public.country_legal_status (site_id, country_code, title, summary_html, sources, status)

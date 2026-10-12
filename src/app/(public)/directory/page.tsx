@@ -8,7 +8,7 @@ import { DirectoryFrame } from "@/components/public/directory-frame";
 import { ListingCardView } from "@/components/public/listing-card";
 import { RiverAd } from "@/components/public/page-ads";
 import { countryName } from "@/lib/directory/countries";
-import { countDirectory, getDirectoryCategories, getDirectoryServices, searchDirectory } from "@/lib/directory/public";
+import { countDirectory, getDirectoryCategories, getDirectoryServices, searchDirectory, getPlatformLinks } from "@/lib/directory/public";
 import { directoryHref, parseDirectoryFilters, parseDirectoryView } from "@/lib/directory/query";
 import { DIRECTORY_PAGE_SIZE } from "@/lib/directory/types";
 
@@ -30,6 +30,7 @@ export default async function DirectoryPage({ searchParams }: PageProps<"/direct
     searchDirectory(filters),
     countDirectory(filters),
   ]);
+  const podcasts = await getPlatformLinks(cards.filter((card) => card.category_slug === "podcast").map((card) => card.slug));
   const pages = Math.max(1, Math.ceil(total / DIRECTORY_PAGE_SIZE));
   // The map and the list are built from this one result; the map only drops cards with no position.
   const pins = cards.flatMap((card) => (typeof card.lat === "number" && typeof card.lng === "number" ? [{ slug: card.slug, name: card.name, lat: card.lat, lng: card.lng }] : []));
@@ -55,7 +56,7 @@ export default async function DirectoryPage({ searchParams }: PageProps<"/direct
       <div data-testid="listing-results">
         {cards.map((card, index) => (
           <Fragment key={card.slug}>
-            <ListingCardView card={card} />
+            <ListingCardView card={card} podcast={card.category_slug === "podcast" ? (podcasts.get(card.slug) ?? null) : null} />
             <RiverAd page="directory" index={index} count={cards.length} className="my-4" />
           </Fragment>
         ))}

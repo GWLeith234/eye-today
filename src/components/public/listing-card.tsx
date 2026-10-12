@@ -4,6 +4,9 @@ import Link from "next/link";
 import { countryName } from "@/lib/directory/countries";
 import { CATEGORY_TONE, type ListingCard, verificationLabel } from "@/lib/directory/types";
 import { mediaUrl } from "@/lib/media/url";
+import { readPlatformLinks } from "@/lib/directory/podcast";
+
+import { PlatformButtons } from "./platform-links";
 
 function place(card: ListingCard): string {
   return [card.city, card.region, countryName(card.country_code)].filter(Boolean).join(", ");
@@ -24,7 +27,7 @@ export function VerificationBadge({ level }: { level: string }) {
 // Photo first, the way a community directory reads: the facility photo carries the card, the logo sits
 // small beside the name, and the description is a glimpse. Featured listings get the photo full-width.
 // No photo: the logo stands in; no logo: the category colour.
-export function ListingCardView({ card }: { card: ListingCard }) {
+export function ListingCardView({ card, podcast }: { card: ListingCard; podcast?: { platform_links: unknown; host_names: string | null } | null }) {
   const tone = CATEGORY_TONE[card.category_slug] ?? "bg-accent";
   const href = `/directory/listing/${card.slug}`;
   const photo = card.photo_storage_path ?? null;
@@ -61,8 +64,9 @@ export function ListingCardView({ card }: { card: ListingCard }) {
             <Link href={href} className="hover:underline">{card.name}</Link>
           </h2>
         </div>
-        <p className="text-sm text-muted">{place(card)}</p>
+        <p className="text-sm text-muted">{podcast?.host_names ? `Hosted by ${podcast.host_names} · ` : ""}{place(card)}</p>
         {card.description ? <p className="line-clamp-2 text-sm">{card.description}</p> : null}
+        {podcast ? <PlatformButtons links={readPlatformLinks(podcast.platform_links)} /> : null}
         {card.relationship_disclosure ? (
           <p className="text-xs text-muted">
             <span className="font-semibold">Publisher relationship: </span>
