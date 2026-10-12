@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { parkPaidCampaignsOn } from "../helpers/admin";
 import { signIn } from "../helpers/auth";
 
+// Units render artwork only (Sprint 22.1): the creative is a picture, and the reader sees it as an image link.
 test("an approved creative records an impression and a click", async ({ browser }) => {
   test.skip(process.env.E2E_FULL !== "1", "Needs a seeded local Supabase and a signed-in editor.");
   test.setTimeout(90_000);
@@ -27,7 +28,8 @@ test("an approved creative records an impression and a click", async ({ browser 
 
   await editor.page.getByLabel("Slot").selectOption({ label: "Leaderboard (leaderboard)" });
   await editor.page.getByLabel("Click URL (https)").fill("https://example.com/e2e-sponsor");
-  await editor.page.getByLabel("HTML instead of an image").fill(`<p><a href="https://example.com/e2e-sponsor">${sponsor}</a></p>`);
+  await editor.page.getByLabel("Alt text").fill(sponsor);
+  await editor.page.getByLabel("HTML instead of an image").fill(`<a href="https://example.com/e2e-sponsor"><img src="https://theeye.today/house-ads/leaderboard-728x90.png" alt="${sponsor}"></a>`);
   await editor.page.getByRole("button", { name: "Add creative" }).click();
   await expect(editor.page.getByText("Saved (creative).")).toBeVisible();
   await editor.page.getByRole("button", { name: "Approve" }).click();
@@ -36,8 +38,9 @@ test("an approved creative records an impression and a click", async ({ browser 
   const reader = await browser.newContext();
   const page = await reader.newPage();
   await page.goto("/");
-  const link = page.getByRole("link", { name: sponsor });
+  const link = page.locator('aside[data-ad-slot="leaderboard"]').getByRole("link", { name: sponsor });
   await expect(link).toBeVisible();
+  await expect(link.getByRole("img")).toHaveAttribute("src", /\/house-ads\/leaderboard-728x90\.png$/);
   // The leaderboard sits under the lead, so it may start below the fold.
   await link.scrollIntoViewIfNeeded();
   await page.waitForTimeout(1500);
