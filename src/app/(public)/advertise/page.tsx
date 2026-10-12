@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { type AudiencePanel, AudiencePanels } from "@/components/public/audience-panels";
 import { StaticPage } from "@/components/public/static-page";
 import { AD_SLOT_NAMES, MAX_CAMPAIGN_MONTHS, PREMIUM_LISTING_ANNUAL_USD, ROS_MONTHLY_USD, SLOT_SIZES } from "@/lib/ads/slots";
 
@@ -12,6 +13,49 @@ export const metadata: Metadata = {
 
 const CONTACT = "advertise@theeye.today";
 
+const PANELS: AudiencePanel[] = [
+  {
+    id: "clinics",
+    kicker: "Clinics & practitioners",
+    title: "Be found by people comparing treatment",
+    body: `A free directory listing is the baseline. A premium listing ($${PREMIUM_LISTING_ANNUAL_USD} a year) pins you to the top of the directory and your country page, and run-of-site advertising ($${ROS_MONTHLY_USD} a month) puts your creative in front of every reader. Neither changes how a listing is verified, and both are labelled.`,
+    links: [
+      { href: "/directory/submit", label: "Add a listing" },
+      { href: "/account/advertise", label: "Start a campaign" },
+    ],
+  },
+  {
+    id: "families",
+    kicker: "Families & patients",
+    title: "Why the reporting is free, and who pays for it",
+    body: "Nothing on Eye Today sits behind a paywall and no clinic can buy a story. Listings, job postings, supporters and labelled advertising pay the bills. If you want to help without buying placement, become a supporter.",
+    links: [
+      { href: "/support", label: "Become a supporter" },
+      { href: "/ad-policy", label: "How ads are labelled" },
+    ],
+  },
+  {
+    id: "researchers",
+    kicker: "Researchers & funders",
+    title: "Reach the people who run the trials",
+    body: "Study recruitment, grant calls, conference and job announcements reach the researchers and clinicians who read the Trials & Funding Tracker. Job postings go on the board and into the newsletter after an editor reads them.",
+    links: [
+      { href: "/tracker", label: "Trials & Funding Tracker" },
+      { href: "/account/postings/new?kind=job", label: "Post a job" },
+    ],
+  },
+  {
+    id: "policy",
+    kicker: "Policy & press",
+    title: "Briefings, the Legal Map and a newsroom you can call",
+    body: "Legislators, regulators, lobbyists and reporters use the Legal Map and our trackers for the primary sources behind the headlines. For briefings, interviews or a sponsored newsletter, write to the newsroom.",
+    links: [
+      { href: "/legal-map", label: "Legal Map" },
+      { href: "/contact", label: "Contact the newsroom" },
+    ],
+  },
+];
+
 export default function AdvertisePage() {
   return (
     <StaticPage title="Advertise">
@@ -20,6 +64,12 @@ export default function AdvertisePage() {
           Eye Today is read by clinics, researchers, conference organisers, advocates and the families weighing treatment. Four things pay for the reporting: premium
           directory listings, job postings, supporters, and run-of-site advertising. All four are self-serve, priced in US dollars, and labelled on the page.
         </p>
+
+        <AudiencePanels
+          heading="Who advertises on Eye Today, and why"
+          intro="Four audiences read us for four reasons. Find yours, then the rate card below."
+          panels={PANELS}
+        />
 
         <section aria-labelledby="products" className="flex flex-col gap-4">
           <h2 id="products" className="font-display text-2xl font-semibold">
