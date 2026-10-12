@@ -26,6 +26,15 @@ select 'd2800000-0000-4000-8000-000000000a01', '00000000-0000-4000-8000-00000000
        'https://example.org/feed.xml', '[{"platform":"spotify","url":"https://open.spotify.com/show/x"},{"platform":"apple","url":"https://podcasts.apple.com/x"}]', 'Test Host'
   from public.directory_categories c where c.site_id = '00000000-0000-4000-8000-000000000001' and c.slug = 'podcast';
 
+-- The editor's client reads the row by column (0013 grants select per column): the new columns must be granted.
+do $$
+begin
+  assert pg_catalog.has_column_privilege('authenticated', 'public.directory_listings', 'host_names', 'SELECT'), 'authenticated reads host_names';
+  assert pg_catalog.has_column_privilege('authenticated', 'public.directory_listings', 'platform_links', 'SELECT'), 'authenticated reads platform_links';
+  assert pg_catalog.has_column_privilege('anon', 'public.directory_listings', 'feed_url', 'SELECT'), 'anon reads feed_url';
+  assert not pg_catalog.has_column_privilege('authenticated', 'public.directory_listings', 'verification_note', 'SELECT'), 'verification_note stays private';
+end $$;
+
 do $$
 declare failed boolean := false;
 begin

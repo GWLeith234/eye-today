@@ -25,6 +25,10 @@ alter table public.directory_listings
   add column platform_links jsonb not null default '[]'::jsonb check (jsonb_typeof(platform_links) = 'array' and pg_catalog.jsonb_array_length(platform_links) <= 8),
   add column host_names text check (host_names is null or (char_length(host_names) <= 200 and host_names !~ '[<>]'));
 
+-- Select on directory_listings is granted per column (0013 keeps verification_note private), so the new columns
+-- must be granted too or the editor's listing page cannot read the row.
+grant select (feed_url, platform_links, host_names) on table public.directory_listings to anon, authenticated;
+
 drop function public.directory_listing(text);
 
 create function public.directory_listing(slug text)
