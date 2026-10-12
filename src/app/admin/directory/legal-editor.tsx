@@ -4,6 +4,8 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useActionState, useState } from "react";
 
+import { LEGAL_CATEGORIES, LEGAL_CATEGORY_LABELS, type LegalCategory } from "@/lib/directory/legal-map";
+
 import { saveLegal, type SaveState } from "./actions";
 
 const field = "rounded border px-3 py-2 text-base";
@@ -14,6 +16,7 @@ export function LegalEditor({
   html,
   sources,
   asOf,
+  category,
   status,
   notice,
 }: {
@@ -22,6 +25,7 @@ export function LegalEditor({
   html: string;
   sources: string;
   asOf: string;
+  category: LegalCategory;
   status: "draft" | "published";
   notice?: string;
 }) {
@@ -58,6 +62,15 @@ export function LegalEditor({
       <label className="flex flex-col gap-1 text-sm">
         As of
         <input name="as_of" type="date" defaultValue={asOf} className={field} />
+        <span className="text-xs opacity-70">Shown as &ldquo;Last reviewed&rdquo; on the Legal Map.</span>
+      </label>
+      <label className="flex flex-col gap-1 text-sm">
+        Legal Map category
+        <select name="legal_category" defaultValue={category} className={field}>
+          {LEGAL_CATEGORIES.map((value) => (
+            <option key={value} value={value}>{LEGAL_CATEGORY_LABELS[value]}</option>
+          ))}
+        </select>
       </label>
       <label className="flex flex-col gap-1 text-sm">
         Status

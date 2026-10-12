@@ -1,5 +1,7 @@
 import "server-only";
 
+import { isLegalCategory, type LegalMapRow } from "./legal-map";
+
 import { createAnonClient } from "@/lib/supabase/anon";
 
 import type { ArticleCard } from "@/lib/public/data";
@@ -119,6 +121,21 @@ async function loadLegal(country: string): Promise<LegalStatus | null> {
   }
   const rows = (data ?? []) as LegalStatus[];
   return rows[0] ?? null;
+}
+
+export function getLegalMap(): Promise<LegalMapRow[]> {
+  return within(loadLegalMap(), []);
+}
+
+async function loadLegalMap(): Promise<LegalMapRow[]> {
+  const supabase = client();
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("legal_map_public");
+  if (error) {
+    console.error("public read legal_map_public failed", error.code);
+    return [];
+  }
+  return ((data ?? []) as LegalMapRow[]).filter((row) => isLegalCategory(row.legal_category));
 }
 
 export function getDirectoryServices(): Promise<string[]> {
