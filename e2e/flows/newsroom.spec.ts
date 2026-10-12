@@ -45,9 +45,10 @@ test("newsroom products: news feed, legal map, tracker, issue numbers, segmented
   const titles = await page.locator("article h3").allTextContents();
   expect(titles.findIndex((t) => t.includes(`Second link ${stamp}`))).toBeLessThan(titles.findIndex((t) => t.includes(`Example Times on ibogaine ${stamp}`)));
 
+  // The cover is revalidated when an editor saves a link, so the editor's link is the one to look for.
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Ibogaine in the news" })).toBeVisible();
-  await expect(page.getByRole("link", { name: new RegExp(`Second link ${stamp}`) })).toBeVisible();
+  await expect(page.getByRole("link", { name: new RegExp(`Example Times on ibogaine ${stamp}`) })).toBeVisible();
 
   // --- Legal Map: a published country lands under its category ---------------------------------
   const { error: legalError } = await db
