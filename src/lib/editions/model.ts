@@ -18,6 +18,17 @@ export function issueLabel(issueMonth: string): string {
   return `${MONTHS[(month ?? 1) - 1] ?? ""} ${year}`.trim();
 }
 
+// "Issue No. 3" when a number is assigned; the archive and reader lead with it.
+export function issueNumberLabel(issueNumber: number | null | undefined): string | null {
+  return issueNumber && issueNumber >= 1 ? `Issue No. ${issueNumber}` : null;
+}
+
+// "Issue No. 3 · October 2026", or just the month before a number exists.
+export function issueHeading(issueNumber: number | null | undefined, issueMonth: string): string {
+  const number = issueNumberLabel(issueNumber);
+  return number ? `${number} · ${issueLabel(issueMonth)}` : issueLabel(issueMonth);
+}
+
 const DAY = 86_400_000;
 
 export function supportersFrom(publicFromIso: string, days: number): string {

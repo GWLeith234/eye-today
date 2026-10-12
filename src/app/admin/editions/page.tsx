@@ -1,9 +1,9 @@
 import Link from "next/link";
 
 import { requireArea } from "@/lib/auth/session";
-import { issueLabel } from "@/lib/editions/model";
+import { issueHeading } from "@/lib/editions/model";
 
-type Row = { id: string; slug: string; title: string; issue_month: string; status: string; public_from: string | null; supporters_from: string | null; pdf_generated_at: string | null };
+type Row = { id: string; slug: string; title: string; issue_month: string; issue_number: number | null; status: string; public_from: string | null; supporters_from: string | null; pdf_generated_at: string | null };
 
 function state(row: Row): string {
   if (row.status !== "published") return "Draft";
@@ -17,7 +17,7 @@ export default async function EditionsAdminPage() {
   const { supabase } = await requireArea("admin");
   const { data: editions } = await supabase
     .from("editions")
-    .select("id, slug, title, issue_month, status, public_from, supporters_from, pdf_generated_at")
+    .select("id, slug, title, issue_month, issue_number, status, public_from, supporters_from, pdf_generated_at")
     .order("issue_month", { ascending: false })
     .limit(200)
     .returns<Row[]>();
@@ -34,7 +34,7 @@ export default async function EditionsAdminPage() {
         {(editions ?? []).map((edition) => (
           <li key={edition.id} data-edition-row={edition.slug} className="flex flex-wrap items-baseline gap-3 border border-rule p-3 text-sm">
             <Link href={`/admin/editions/${edition.id}`} className="font-semibold underline">{edition.title}</Link>
-            <span className="text-muted">{issueLabel(edition.issue_month)}</span>
+            <span className="text-muted">{issueHeading(edition.issue_number, edition.issue_month)}</span>
             <span className="rounded border border-rule px-2 text-xs">{state(edition)}</span>
             <span className="text-xs text-muted">{edition.pdf_generated_at ? "PDF ready" : "No PDF"}</span>
             <Link href={`/editions/${edition.slug}`} className="ml-auto text-xs underline">View</Link>

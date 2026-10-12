@@ -9,7 +9,7 @@ import { mediaUrl } from "@/lib/media/url";
 import { MEDICAL_DISCLAIMER } from "@/lib/public/disclaimer";
 
 import { type Block, htmlToBlocks } from "./blocks";
-import { issueLabel } from "./model";
+import { issueHeading } from "./model";
 import type { EditionDetail, EditionStory } from "./public";
 
 // The issue as a PDF: cover, contents, the editor's letter, then one chapter per story. Fonts are the
@@ -82,7 +82,7 @@ type Props = { edition: EditionDetail; stories: EditionStory[]; siteUrl: string 
 function Footer({ edition, siteUrl }: { edition: EditionDetail; siteUrl: string }) {
   return (
     <View style={s.footer} fixed>
-      <Text>Eye Today · {issueLabel(edition.issue_month)}</Text>
+      <Text>Eye Today · {issueHeading(edition.issue_number, edition.issue_month)}</Text>
       <Text render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
       <Link src={`${siteUrl}/editions/${edition.slug}`} style={s.link}>
         {siteUrl.replace(/^https?:\/\//, "")}
@@ -118,7 +118,7 @@ const date = (iso: string) => new Intl.DateTimeFormat("en-US", { dateStyle: "lon
 
 export function EditionDocument({ edition, stories, siteUrl }: Props) {
   registerFonts();
-  const label = issueLabel(edition.issue_month);
+  const label = issueHeading(edition.issue_number, edition.issue_month);
   const letter = htmlToBlocks(edition.letter_html);
   return (
     <Document title={`${edition.title} — Eye Today, ${label}`} author="Eye Today" subject={`Eye Today e-edition, ${label}`} language="en">

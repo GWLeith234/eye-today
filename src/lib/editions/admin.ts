@@ -12,6 +12,7 @@ export type EditionRow = {
   slug: string;
   title: string;
   issue_month: string;
+  issue_number: number | null;
   cover_media_id: string | null;
   letter_html: string;
   status: "draft" | "published";
@@ -22,7 +23,7 @@ export type EditionRow = {
   updated_at: string;
 };
 
-export const EDITION_COLUMNS = "id, slug, title, issue_month, cover_media_id, letter_html, status, supporters_from, public_from, pdf_path, pdf_generated_at, updated_at";
+export const EDITION_COLUMNS = "id, slug, title, issue_month, issue_number, cover_media_id, letter_html, status, supporters_from, public_from, pdf_path, pdf_generated_at, updated_at";
 
 type ItemRow = {
   sort: number;
@@ -102,6 +103,7 @@ export function toDetail(row: EditionRow, cover: { storage_path: string; alt: st
     slug: row.slug,
     title: row.title,
     issue_month: row.issue_month,
+    issue_number: row.issue_number,
     cover_storage_path: cover?.storage_path ?? null,
     cover_alt: cover?.alt ?? null,
     letter_html: row.letter_html,

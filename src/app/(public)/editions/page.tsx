@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { issueLabel } from "@/lib/editions/model";
+import { issueHeading, issueLabel } from "@/lib/editions/model";
 import { listEditions } from "@/lib/editions/public";
 import { mediaUrl } from "@/lib/media/url";
 import { TopAds } from "@/components/public/page-ads";
@@ -34,7 +34,7 @@ export default async function EditionsPage() {
                 <div aria-hidden className="flex aspect-[3/4] w-full items-end bg-ink p-4 font-serif text-3xl font-bold text-paper">{issueLabel(edition.issue_month)}</div>
               )}
               <p className="text-xs font-semibold uppercase tracking-widest">
-                {issueLabel(edition.issue_month)}
+                {issueHeading(edition.issue_number, edition.issue_month)}
                 {edition.access === "early" ? " · Early access" : ""}
               </p>
               <h2 className="font-serif text-xl font-semibold group-hover:underline">{edition.title}</h2>
