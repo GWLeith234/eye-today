@@ -1,12 +1,14 @@
 "use server";
 
+import { lookup } from "node:dns/promises";
+
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { getEditorContext } from "@/lib/auth/editor";
 import { rateLimit } from "@/lib/http/rate-limit";
-import { BLURB_MAX, cleanBlurb, cleanLinkUrl, cleanTitle, isPrivateHost, type LinkPreview, parseLinkPreview, parseTags } from "@/lib/newsroom/model";
+import { BLURB_MAX, cleanBlurb, cleanLinkUrl, cleanTitle, isPrivateHost, isPrivateIp, type LinkPreview, parseLinkPreview, parseTags } from "@/lib/newsroom/model";
 import { getSiteId } from "@/lib/site";
 
 export type SaveState = { error: string | null };
@@ -88,25 +90,48 @@ export async function deleteNewsLink(formData: FormData) {
   redirect("/admin/news-feed?done=deleted");
 }
 
-// One fetch on an editor's click, text only, never stored until the editor saves the form. Private and
-// loopback hosts are refused so the server cannot be pointed at itself; the body is capped at 512 KB.
+// One fetch on an editor's click, text only, never stored until the editor saves the form. Redirects are
+// followed by hand (at most three) so every hop is checked: https only, no private, loopback or metadata
+// host by name, and no name that resolves to one. The body is capped at 512 KB.
+const MAX_HOPS = 3;
+const MAX_BYTES = 524_288;
+
+async function resolvesPrivately(hostname: string): Promise<boolean> {
+  if (isPrivateHost(hostname)) return true;
+  try {
+    const addresses = await lookup(hostname, { all: true });
+    return addresses.length === 0 || addresses.some((a) => isPrivateIp(a.address));
+  } catch {
+    return true;
+  }
+}
+
 export async function fetchLinkPreview(raw: string): Promise<{ ok: true; preview: LinkPreview } | { ok: false; error: string }> {
   const ctx = await getEditorContext();
   if (!ctx) return { ok: false, error: "Your session has expired. Sign in again." };
-  const url = cleanLinkUrl(raw);
-  if (!url) return { ok: false, error: "Paste a full https address first." };
-  if (isPrivateHost(new URL(url).hostname)) return { ok: false, error: "That address cannot be fetched." };
+  const start = cleanLinkUrl(raw);
+  if (!start) return { ok: false, error: "Paste a full https address first." };
   if (!rateLimit(`link-preview:${ctx.userId}`, 20, 60_000) || !rateLimit("link-preview:all", 2, 1100)) {
     return { ok: false, error: "Wait a moment and try again." };
   }
   const origin = process.env.SITE_URL?.trim().replace(/\/+$/, "") || "https://theeye.today";
+  const headers = { "User-Agent": `EyeTodayNewsroom/1.0 (+${origin})`, Accept: "text/html,application/xhtml+xml", "Accept-Language": "en" };
 
   try {
-    const response = await fetch(url, {
-      headers: { "User-Agent": `EyeTodayNewsroom/1.0 (+${origin})`, Accept: "text/html,application/xhtml+xml", "Accept-Language": "en" },
-      redirect: "follow",
-      signal: AbortSignal.timeout(8000),
-    });
+    let url = start;
+    let response: Response | null = null;
+    for (let hop = 0; hop <= MAX_HOPS; hop += 1) {
+      if (await resolvesPrivately(new URL(url).hostname)) return { ok: false, error: "That address cannot be fetched." };
+      response = await fetch(url, { headers, redirect: "manual", signal: AbortSignal.timeout(8000) });
+      if (response.status < 300 || response.status >= 400) break;
+      const next = cleanLinkUrl(new URL(response.headers.get("location") ?? "", url).toString());
+      await response.body?.cancel().catch(() => undefined);
+      if (!next) return { ok: false, error: "That page redirects somewhere we cannot fetch. Fill the details in by hand." };
+      if (hop === MAX_HOPS) return { ok: false, error: "That page redirects too many times. Fill the details in by hand." };
+      url = next;
+      response = null;
+    }
+    if (!response) return { ok: false, error: "The page did not answer. Fill the details in by hand." };
     if (!response.ok) return { ok: false, error: `The page answered ${response.status}. Fill the details in by hand.` };
     const type = response.headers.get("content-type") ?? "";
     if (!/text\/html|application\/xhtml/i.test(type)) return { ok: false, error: "That link is not a web page. Fill the details in by hand." };
@@ -114,7 +139,7 @@ export async function fetchLinkPreview(raw: string): Promise<{ ok: true; preview
     if (!reader) return { ok: false, error: "The page could not be read." };
     const chunks: Uint8Array[] = [];
     let size = 0;
-    while (size < 524_288) {
+    while (size < MAX_BYTES) {
       const { done, value } = await reader.read();
       if (done || !value) break;
       chunks.push(value);
@@ -122,7 +147,7 @@ export async function fetchLinkPreview(raw: string): Promise<{ ok: true; preview
     }
     await reader.cancel().catch(() => undefined);
     const html = new TextDecoder("utf-8", { fatal: false }).decode(Buffer.concat(chunks.map((c) => Buffer.from(c))));
-    const preview = parseLinkPreview(html, response.url || url);
+    const preview = parseLinkPreview(html, url);
     if (!preview.title) return { ok: false, error: "No headline found on that page. Fill the details in by hand." };
     return { ok: true, preview };
   } catch {

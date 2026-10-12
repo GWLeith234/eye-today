@@ -28,15 +28,43 @@ export function cleanLinkUrl(value: string): string | null {
   return url.toString();
 }
 
-// Hosts a link-preview fetch must never reach: loopback, private ranges, link-local, metadata.
-export function isPrivateHost(hostname: string): boolean {
-  const host = hostname.toLowerCase().replace(/\.$/, "");
-  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal")) return true;
-  if (/^\[?::1\]?$/.test(host) || host.startsWith("[fc") || host.startsWith("[fd") || host.startsWith("[fe80")) return true;
-  const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
+// Hosts a link-preview fetch must never reach: loopback, private and shared ranges, link-local, metadata,
+// and their IPv6 forms (including IPv4-mapped and NAT64 addresses). Pure, so it also runs in the browser bundle.
+export function isPrivateIpv4(ip: string): boolean {
+  const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ip);
   if (!m) return false;
   const [a, b] = [Number(m[1]), Number(m[2])];
-  return a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
+  if ([a, b, Number(m[3]), Number(m[4])].some((n) => n > 255)) return true;
+  return a === 10 || a === 127 || a === 0 || (a === 100 && b >= 64 && b <= 127) || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
+}
+
+// Expands "::ffff:7f00:1" / "::ffff:127.0.0.1" / "64:ff9b::7f00:1" to the IPv4 they carry, else null.
+function mappedIpv4(ip: string): string | null {
+  const lower = ip.toLowerCase();
+  const m = /^(?:::ffff:|64:ff9b::)(?:([0-9a-f]{1,4}):([0-9a-f]{1,4})|(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))$/.exec(lower);
+  if (!m) return null;
+  if (m[3]) return m[3];
+  const hi = Number.parseInt(m[1], 16);
+  const lo = Number.parseInt(m[2], 16);
+  return `${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`;
+}
+
+export function isPrivateIp(ip: string): boolean {
+  const bare = ip.replace(/^\[|\]$/g, "").toLowerCase().split("%")[0];
+  if (isPrivateIpv4(bare)) return true;
+  if (bare.includes(":")) {
+    if (bare === "::" || bare === "::1") return true;
+    const mapped = mappedIpv4(bare);
+    if (mapped) return isPrivateIpv4(mapped);
+    return /^(fc|fd|fe[89ab])/.test(bare) || bare.startsWith("::ffff:") || bare.startsWith("64:ff9b:");
+  }
+  return false;
+}
+
+export function isPrivateHost(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/\.$/, "");
+  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal") || host.endsWith(".home.arpa")) return true;
+  return isPrivateIp(host);
 }
 
 // "www.theguardian.com" -> "theguardian.com"; the editor can rename it.

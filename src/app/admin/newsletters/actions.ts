@@ -101,7 +101,11 @@ export async function createIssue(formData: FormData) {
   if (error || !data) redirect("/admin/newsletters?error=create");
   // The number is assigned by the database on insert, so the subject is written once it is known.
   if (data.issue_number) {
-    await ctx.supabase.from("newsletter_issues").update({ subject: defaultSubject(list.name, list.slug, data.issue_number, dateText) }).eq("id", data.id);
+    const { error: subjectError } = await ctx.supabase
+      .from("newsletter_issues")
+      .update({ subject: defaultSubject(list.name, list.slug, data.issue_number, dateText) })
+      .eq("id", data.id);
+    if (subjectError) console.error("newsletter subject update failed", subjectError.code);
   }
   redirect(`/admin/newsletters/${data.id}`);
 }

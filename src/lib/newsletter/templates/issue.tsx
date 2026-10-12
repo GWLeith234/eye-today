@@ -1,5 +1,6 @@
 import { Body, Container, Head, Heading, Hr, Html, Img, Link, Preview, Section, Text } from "@react-email/components";
 
+import { dateLabel } from "@/lib/newsroom/model";
 import { MEDICAL_DISCLAIMER } from "@/lib/public/disclaimer";
 
 import { COLORS, SANS, SERIF } from "./colors";
@@ -99,7 +100,7 @@ export function IssueEmail({ listName, preheader, intro, stories, directory = []
                     {item.title}
                   </Link>
                   {" — "}
-                  {item.source}, {item.date}
+                  {item.source}, {dateLabel(item.date)}
                 </Text>
               ))}
               <Text style={{ color: COLORS.muted, fontSize: 12, lineHeight: "18px", margin: "8px 0 0" }}>

@@ -6,7 +6,7 @@ import { issueHeading, issueNumberLabel } from "@/lib/editions/model";
 import { defaultSubject, newsletterIssueLabel } from "@/lib/newsletter/numbering";
 import { nextKeyDate, parseKeyDateLines, readKeyDates, trackerSlug } from "@/lib/tracker/model";
 
-import { BLURB_MAX, cleanBlurb, cleanLinkUrl, dateLabel, decodeEntities, isPrivateHost, parseLinkPreview, parseTags, sourceFromUrl } from "./model";
+import { BLURB_MAX, cleanBlurb, cleanLinkUrl, dateLabel, decodeEntities, isPrivateHost, isPrivateIp, parseLinkPreview, parseTags, sourceFromUrl } from "./model";
 
 test("news link urls are https, credential-free and lose their fragment", () => {
   assert.equal(cleanLinkUrl(" https://www.example.org/story?id=1#top "), "https://www.example.org/story?id=1");
@@ -18,12 +18,14 @@ test("news link urls are https, credential-free and lose their fragment", () => 
 });
 
 test("private, loopback and metadata hosts are refused for previews", () => {
-  for (const host of ["localhost", "api.localhost", "127.0.0.1", "10.1.2.3", "172.16.0.9", "192.168.1.1", "169.254.169.254", "0.0.0.0", "[::1]", "printer.local"]) {
+  for (const host of ["localhost", "api.localhost", "127.0.0.1", "10.1.2.3", "172.16.0.9", "192.168.1.1", "169.254.169.254", "0.0.0.0", "100.64.0.1", "[::1]", "[::]", "printer.local", "box.home.arpa", "[::ffff:7f00:1]", "[::ffff:127.0.0.1]", "[64:ff9b::a9fe:a9fe]", "[fd00::1]", "[fe80::1%eth0]"]) {
     assert.ok(isPrivateHost(host), host);
   }
-  for (const host of ["example.org", "172.32.0.1", "11.0.0.1", "www.theguardian.com"]) {
+  for (const host of ["example.org", "172.32.0.1", "11.0.0.1", "100.128.0.1", "www.theguardian.com", "[2606:4700::1111]"]) {
     assert.ok(!isPrivateHost(host), host);
   }
+  assert.ok(isPrivateIp("::ffff:a9fe:a9fe"));
+  assert.ok(!isPrivateIp("8.8.8.8"));
 });
 
 test("link preview reads og tags, falls back to <title> and the host, and never keeps markup", () => {

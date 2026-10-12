@@ -81,10 +81,19 @@ reset role;
 set local role authenticated;
 set local request.jwt.claims = '{"role": "authenticated", "sub": "d2500000-0000-4000-8000-0000000000a1"}';
 do $$
-declare n integer;
+declare n integer; failed boolean := false;
 begin
   select count(*) into n from public.news_links;
   assert n = 0, 'a reader sees no news_links rows under RLS';
+  begin
+    insert into public.news_links (site_id, url, title, source_name, published_on)
+    values ('00000000-0000-4000-8000-000000000001', 'https://example.org/reader', 'Reader', 'X', '2026-10-01');
+  exception when insufficient_privilege or check_violation then failed := true;
+  end;
+  assert failed, 'a reader cannot insert news links';
+  update public.news_links set title = 'changed' where id = 'd2500000-0000-4000-8000-000000000a01';
+  get diagnostics n = row_count;
+  assert n = 0, 'a reader cannot update news links';
 end $$;
 reset role;
 
@@ -173,6 +182,34 @@ begin
   exception when insufficient_privilege then failed := true;
   end;
   assert failed, 'anon has no table access to tracker_entries';
+end $$;
+reset role;
+
+set local role authenticated;
+set local request.jwt.claims = '{"role": "authenticated", "sub": "d2500000-0000-4000-8000-0000000000a1"}';
+do $$
+declare n integer; failed boolean := false;
+begin
+  select count(*) into n from public.tracker_entries;
+  assert n = 0, 'a reader sees no tracker rows under RLS';
+  begin
+    insert into public.tracker_entries (site_id, slug, kind, title) values ('00000000-0000-4000-8000-000000000001', 'np-reader', 'trial', 'Reader');
+  exception when insufficient_privilege or check_violation then failed := true;
+  end;
+  assert failed, 'a reader cannot insert tracker entries';
+end $$;
+reset role;
+
+set local role authenticated;
+set local request.jwt.claims = '{"role": "authenticated", "sub": "d2500000-0000-4000-8000-0000000000e1"}';
+do $$
+declare n integer;
+begin
+  select count(*) into n from public.tracker_entries where slug like 'np-%';
+  assert n = 3, 'an editor sees every tracker row';
+  update public.tracker_entries set status = 'published' where slug = 'np-hidden';
+  get diagnostics n = row_count;
+  assert n = 1, 'an editor can publish a tracker entry';
 end $$;
 reset role;
 \echo 'ok  tracker'

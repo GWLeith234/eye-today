@@ -203,7 +203,9 @@ select s.id, v.slug, v.kind, v.title, v.sponsor, v.stage, v.amount, v.jurisdicti
 on conflict (site_id, slug) do nothing;
 
 -- ---------------------------------------------------------------------------
--- Issue numbers. Editions count up by issue month per site; newsletters per list.
+-- Issue numbers. Existing editions are backfilled in month order (so the October 2026 issue is No. 1); from
+-- then on a number is taken in creation order per site, and newsletters per list. A back-dated edition created
+-- later therefore takes the next number, not an earlier one: numbers record the order of publication.
 -- ---------------------------------------------------------------------------
 
 alter table public.editions add column issue_number integer check (issue_number >= 1);
