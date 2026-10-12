@@ -56,7 +56,12 @@ test("legal pages omit the draft status and keep the publisher notes", async ({ 
   const privacy = await (await request.get("/privacy")).text();
   expect(privacy).not.toContain("draft-for-legal-review");
   expect(privacy).toContain("PIPEDA");
-  expect(await (await request.get("/editorial-policy")).text()).toContain("TODO for the publisher");
+  // The ownership disclosure is written; the remaining notes (crisis line, governing law, postal address) stay until a human signs them off.
+  const policy = await (await request.get("/editorial-policy")).text();
+  expect(policy).toContain("EvolveX360");
+  expect(policy).toContain("Transcend Ibogaine Clinic");
+  expect(policy).not.toContain("TODO for the publisher");
+  expect(await (await request.get("/about")).text()).toContain("Jeff Davis");
   expect(await (await request.get("/disclaimer")).text()).toContain("TODO for the publisher");
 });
 

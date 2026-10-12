@@ -1,6 +1,6 @@
 ---
 status: draft-for-legal-review
-updated: 2026-10-02
+updated: 2026-10-11
 ---
 
 Eye Today covers ibogaine, psychedelic medicine, policy, research and the people affected by them. This page is how the newsroom makes decisions.
@@ -27,4 +27,6 @@ When we are wrong we correct the record. The process is on the [corrections](/co
 
 ## Ownership and clinics
 
-> TODO for the publisher: disclose any ownership, investment, advisory role or other business relationship between Eye Today (or its owners) and treatment clinics, retreats or ibogaine providers. A human must write this paragraph before public launch. Do not publish the site without it.
+Eye Today is owned and published by EvolveX360, a digital-marketing company in Durban, South Africa. EvolveX360 provides marketing services to treatment providers, and one of those clients, **Transcend Ibogaine Clinic** in Cancún, Mexico, is listed in our directory and may be named in our reporting. That is a commercial relationship between the clinic and the publisher's marketing business, not with the newsroom. Transcend has no ownership of Eye Today, no seat on any editorial decision, and did not pay for its listing. The relationship is stated on the listing itself and in any story where the clinic appears.
+
+If EvolveX360 takes on another provider as a client, or if the owners of Eye Today acquire an interest in any clinic, retreat or ibogaine business, this paragraph and the affected pages will be updated before the next story about them runs. Readers who believe a relationship has gone undisclosed can write to [newsroom@theeye.today](mailto:newsroom@theeye.today) and the question will be answered on the [corrections](/corrections) page.
