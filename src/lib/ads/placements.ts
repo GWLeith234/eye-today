@@ -3,9 +3,9 @@ import type { AdSlotName, PageType } from "./slots";
 // Which units each page type carries. Placement is data so a page declares its type once and the
 // units follow; run of site means a campaign's creatives rotate through all of them.
 export const PLACEMENTS: Record<PageType, { top: AdSlotName[]; side: AdSlotName[]; river: AdSlotName | null; inline: AdSlotName | null }> = {
-  home: { top: ["leaderboard"], side: ["bigbox-1", "bigbox-2"], river: "in-river", inline: null },
-  section: { top: ["leaderboard"], side: ["bigbox-1"], river: "in-river", inline: null },
-  article: { top: ["leaderboard"], side: ["bigbox-1"], river: null, inline: "in-article" },
+  home: { top: ["leaderboard"], side: ["bigbox-1", "half-page"], river: "in-river", inline: null },
+  section: { top: ["leaderboard"], side: ["bigbox-1", "half-page"], river: "in-river", inline: null },
+  article: { top: ["leaderboard"], side: ["bigbox-1", "half-page"], river: null, inline: "in-article" },
   directory: { top: ["leaderboard"], side: ["bigbox-1"], river: "in-river", inline: null },
   events: { top: ["leaderboard"], side: ["bigbox-1"], river: "in-river", inline: null },
   jobs: { top: ["leaderboard"], side: ["bigbox-1"], river: "in-river", inline: null },

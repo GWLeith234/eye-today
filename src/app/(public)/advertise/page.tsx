@@ -145,13 +145,14 @@ export default function AdvertisePage() {
             Unit sizes
           </h2>
           <p className="text-sm">
-            One image per unit, at exactly this pixel size: JPEG, PNG, WebP or GIF, up to 1 MB. Cover as many units as you like; the leaderboard, big box and mobile
-            banner reach most readers.
+            One image per unit, at exactly this pixel size: JPEG, PNG, WebP or GIF, up to 1 MB. Cover as many units as you like; the leaderboard, medium rectangle and
+            mobile banner reach most readers, and the half page is the most-seen desktop unit.
           </p>
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b-2 border-ink">
                 <th className="py-1 pr-3">Unit</th>
+                <th className="pr-3">IAB size</th>
                 <th className="pr-3">Pixels</th>
                 <th>Where it appears</th>
               </tr>
@@ -160,6 +161,7 @@ export default function AdvertisePage() {
               {AD_SLOT_NAMES.map((name) => (
                 <tr key={name} className="border-t border-rule">
                   <td className="py-1 pr-3 font-semibold">{SLOT_SIZES[name].label}</td>
+                  <td className="pr-3">{SLOT_SIZES[name].iab}</td>
                   <td className="pr-3 whitespace-nowrap">
                     {SLOT_SIZES[name].width} × {SLOT_SIZES[name].height}
                   </td>
@@ -168,6 +170,7 @@ export default function AdvertisePage() {
               ))}
             </tbody>
           </table>
+          <p className="text-sm">Standard IAB sizes, so artwork you already run elsewhere fits here without a resize.</p>
         </section>
 
         <section aria-labelledby="how" className="flex flex-col gap-3">

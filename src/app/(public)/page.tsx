@@ -113,7 +113,7 @@ export default async function HomePage() {
             </ol>
           </section>
           <SupporterHidden>
-            <AdSlot name="bigbox-2" page="home" />
+            <AdSlot name="half-page" page="home" />
           </SupporterHidden>
         </aside>
       </div>

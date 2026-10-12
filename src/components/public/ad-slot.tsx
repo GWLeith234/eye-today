@@ -85,7 +85,7 @@ export function AdSlot({ name, page = "other" }: { name: AdSlotName; page?: Page
         </a>
       ) : ad.html ? (
         <div
-          className={`ad-html text-sm [&_a]:text-brand [&_a]:underline ${mobile ? "min-w-0 flex-1 truncate [&_p]:m-0" : ""}`}
+          className={`ad-html text-sm [&_a]:text-brand [&_a]:underline [&_img]:mx-auto [&_img]:block [&_img]:h-auto [&_img]:max-w-full ${mobile ? "min-w-0 flex-1 truncate [&_p]:m-0" : ""}`}
           // Sanitized twice: when it was saved and again by /api/ads/serve.
           dangerouslySetInnerHTML={{ __html: ad.html }}
         />

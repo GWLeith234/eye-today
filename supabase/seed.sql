@@ -55,8 +55,9 @@ values
   ('00000000-0000-4000-8000-000000000001', 'mobile-banner', 'Mobile banner', 320, 50),
   ('00000000-0000-4000-8000-000000000001', 'bigbox-1', 'Big box 1', 300, 250),
   ('00000000-0000-4000-8000-000000000001', 'bigbox-2', 'Big box 2', 300, 250),
-  ('00000000-0000-4000-8000-000000000001', 'in-river', 'In river', 640, 120),
-  ('00000000-0000-4000-8000-000000000001', 'in-article', 'In article', 640, 250)
+  ('00000000-0000-4000-8000-000000000001', 'in-river', 'In-feed leaderboard', 728, 90),
+  ('00000000-0000-4000-8000-000000000001', 'in-article', 'In-article rectangle', 300, 250),
+  ('00000000-0000-4000-8000-000000000001', 'half-page', 'Half page', 300, 600)
 on conflict (site_id, key) do nothing;
 
 -- Membership. 0009 seeds these for sites that already exist; on a fresh reset the site above is
@@ -148,7 +149,9 @@ select camp.site_id, camp.id, slot.id, v.click_url, v.alt, v.html, 'approved', 1
     ('in-river', 'https://theeye.today/advertise', 'Advertise with Eye Today',
      '<p><strong>Reach the people who make treatment decisions.</strong> Clinics, researchers, conferences and advocates read Eye Today. <a href="https://theeye.today/advertise">Advertise with us</a></p>'),
     ('in-article', 'https://theeye.today/newsletter', 'Get the newsletter',
-     '<p><strong>Don''t miss the next story.</strong> News, research and policy on ibogaine and addiction treatment, in your inbox. <a href="https://theeye.today/newsletter">Subscribe to the newsletter</a></p>')
+     '<p><strong>Don''t miss the next story.</strong> News, research and policy on ibogaine and addiction treatment, in your inbox. <a href="https://theeye.today/newsletter">Subscribe to the newsletter</a></p>'),
+    ('half-page', 'https://theeye.today/tracker', 'Trials & Funding Tracker',
+     '<p><strong>Every ibogaine trial, grant and ruling, in one place.</strong> The Trials &amp; Funding Tracker is kept current by the newsroom. <a href="https://theeye.today/tracker">Open the tracker</a></p>')
   ) as v(slot_key, click_url, alt, html)
   join slot on slot.key = v.slot_key;
 
