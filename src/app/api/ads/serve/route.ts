@@ -52,9 +52,10 @@ export async function GET(request: Request) {
   // (the old house ads) is no longer served, so a unit with no artwork stays empty.
   const found = row.image_path ? mediaUrl(row.image_path, { width: 1200 }) : html && html.usable ? imageFromHtml(html.html) : null;
   if (!found) return empty();
-  // House artwork is addressed by the canonical domain; until DNS lands (and on previews) it is served from
-  // wherever this request came in, so the picture always loads.
-  const imageUrl = found.startsWith("https://theeye.today/house-ads/") ? `${new URL(request.url).origin}${new URL(found).pathname}` : found;
+  // Artwork shipped in public/ (house creatives and rendered advertiser creatives) is addressed by the canonical
+  // domain; until DNS lands (and on previews) it is served from wherever this request came in, so the picture
+  // always loads.
+  const imageUrl = /^https:\/\/theeye\.today\/(house|advertiser)-ads\//.test(found) ? `${new URL(request.url).origin}${new URL(found).pathname}` : found;
 
   const response = NextResponse.json(
     {
