@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { requireArea } from "@/lib/auth/session";
 import { EDITION_COLUMNS, type EditionRow, editorItems } from "@/lib/editions/admin";
-import { earlyAccessDays, issueLabel } from "@/lib/editions/model";
+import { earlyAccessDays, issueHeading } from "@/lib/editions/model";
 
 import { coverChoices, storyChoices } from "../choices";
 import { EditionForm } from "../edition-form";
@@ -39,7 +39,7 @@ export default async function EditionAdminPage({ params, searchParams }: PagePro
       <p className="text-sm"><Link href="/admin/editions" className="underline">← All editions</Link></p>
       <h1 className="text-2xl font-semibold">{edition.title}</h1>
       <p className="text-sm text-muted">
-        {issueLabel(edition.issue_month)} · <Link href={`/editions/${edition.slug}`} className="underline">/editions/{edition.slug}</Link>
+        {issueHeading(edition.issue_number, edition.issue_month)} · <Link href={`/editions/${edition.slug}`} className="underline">/editions/{edition.slug}</Link>
         {edition.pdf_path ? <> · <a href={`/editions/${edition.slug}/pdf`} className="underline">Download PDF</a></> : null}
       </p>
       <EditionForm

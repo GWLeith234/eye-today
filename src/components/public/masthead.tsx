@@ -126,6 +126,8 @@ export function Masthead({ sections, dateLabel }: { sections: NavSection[]; date
         </nav>
         <div className="flex items-center gap-3 text-sm">
           <Link href="/directory" className="hover:underline">Directory</Link>
+          <Link href="/legal-map" className="hover:underline">Legal Map</Link>
+          <Link href="/tracker" className="hover:underline">Tracker</Link>
           <Link href="/events" className="hover:underline">Events</Link>
           <Link href="/jobs" className="hover:underline">Jobs</Link>
           <Link href="/search" className="hover:underline">Search</Link>
@@ -178,6 +180,9 @@ export function Masthead({ sections, dateLabel }: { sections: NavSection[]; date
             </nav>
             <div className="flex flex-col gap-3 border-t border-rule pt-3 text-sm">
               <Link href="/directory" className="hover:underline">Directory</Link>
+              <Link href="/news-feed" className="hover:underline">In the news</Link>
+              <Link href="/legal-map" className="hover:underline">Legal Map</Link>
+              <Link href="/tracker" className="hover:underline">Tracker</Link>
               <Link href="/events" className="hover:underline">Events</Link>
               <Link href="/jobs" className="hover:underline">Jobs</Link>
               <Link href="/classifieds" className="hover:underline">Classifieds</Link>

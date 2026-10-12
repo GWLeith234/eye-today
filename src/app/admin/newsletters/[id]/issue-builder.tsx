@@ -27,6 +27,8 @@ type Issue = {
   storyIds: string[];
   includeDirectory: boolean;
   includeEdition: boolean;
+  includeNews: boolean;
+  issueLabel: string | null;
   status: "draft" | "scheduled" | "sent";
   scheduledFor: string | null;
   sentAt: string | null;
@@ -76,6 +78,7 @@ export function IssueBuilder({
   const [storyIds, setStoryIds] = useState(issue.storyIds);
   const [includeDirectory, setIncludeDirectory] = useState(issue.includeDirectory);
   const [includeEdition, setIncludeEdition] = useState(issue.includeEdition);
+  const [includeNews, setIncludeNews] = useState(issue.includeNews);
   const [scheduleAt, setScheduleAt] = useState(toLocalInput(issue.scheduledFor));
   const [testTo, setTestTo] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
@@ -84,7 +87,7 @@ export function IssueBuilder({
   const sent = issue.status === "sent";
   const byId = new Map(stories.map((s) => [s.id, s]));
   const unselected = stories.filter((s) => s.live && !storyIds.includes(s.id));
-  const payload = { id: issue.id, subject, preheader, intro, story_ids: storyIds, include_directory: includeDirectory, include_edition: includeEdition };
+  const payload = { id: issue.id, subject, preheader, intro, story_ids: storyIds, include_directory: includeDirectory, include_edition: includeEdition, include_news: includeNews };
 
   function run<T extends { ok: boolean }>(work: () => Promise<T>, done: (result: Extract<T, { ok: true }>) => string | void) {
     setNote(null);
@@ -121,6 +124,7 @@ export function IssueBuilder({
     <div className="flex w-full max-w-3xl flex-col gap-5 p-6">
       <p className="text-sm">
         <Link href="/admin/newsletters" className="underline">Newsletters</Link> / {issue.listName}
+        {issue.issueLabel ? ` · ${issue.issueLabel}` : ""}
       </p>
       <h1 className="text-2xl font-bold">{issue.subject}</h1>
       <p className="text-sm" role="status">
@@ -159,6 +163,13 @@ export function IssueBuilder({
           <span>
             Add &ldquo;This month&rsquo;s issue&rdquo;
             <span className="block opacity-70">A card for the newest e-edition everyone can read. Left out when there is none.</span>
+          </span>
+        </label>
+        <label className="flex items-start gap-2 text-sm">
+          <input type="checkbox" checked={includeNews} onChange={(e) => setIncludeNews(e.target.checked)} className="mt-1" />
+          <span>
+            Add &ldquo;This week in the news&rdquo;
+            <span className="block opacity-70">The five newest links from the news feed, each credited to its outlet. Left out when there are none.</span>
           </span>
         </label>
         <label className="flex flex-col gap-1 text-sm">

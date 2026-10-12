@@ -14,7 +14,7 @@ test("?page accepts 1..100 only", () => {
 });
 
 test("app paths cannot be section slugs", () => {
-  for (const slug of ["admin", "api", "articles", "search", "author", "tag", "Privacy", "disclaimer", "ad-policy", "directory"]) {
+  for (const slug of ["admin", "api", "articles", "search", "author", "tag", "Privacy", "disclaimer", "ad-policy", "directory", "news-feed", "legal-map", "tracker"]) {
     assert.ok(isReservedSectionSlug(slug), slug);
   }
   assert.ok(!isReservedSectionSlug("news"));

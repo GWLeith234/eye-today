@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { EditionReader } from "@/components/editions/reader";
 import { htmlToBlocks } from "@/lib/editions/blocks";
-import { buildPages, issueLabel } from "@/lib/editions/model";
+import { buildPages, issueHeading, issueLabel } from "@/lib/editions/model";
 import { getEdition, getEditionStories } from "@/lib/editions/public";
 import { sanitizeArticleHtml } from "@/lib/editor/sanitize";
 import { mediaUrl } from "@/lib/media/url";
@@ -45,13 +45,13 @@ export default async function EditionPage({ params }: PageProps<"/editions/[slug
     words: htmlToBlocks(story.body_html ?? "").reduce((n, b) => n + (b.kind === "list" ? b.items.join(" ") : b.text).split(/\s+/).length, 0),
   }));
   const pages = buildPages(edition, stories);
-  const label = issueLabel(edition.issue_month);
+  const label = issueHeading(edition.issue_number, edition.issue_month);
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "PublicationIssue",
     name: edition.title,
-    issueNumber: edition.slug,
+    issueNumber: edition.issue_number ?? edition.slug,
     datePublished: edition.public_from,
     url: absoluteUrl(`/editions/${edition.slug}`),
     ...(edition.cover_storage_path ? { image: mediaUrl(edition.cover_storage_path, { width: 1200 }) } : {}),

@@ -11,6 +11,7 @@ import { loginPath } from "@/lib/auth/access";
 import { getEditorContext, type EditorContext } from "@/lib/auth/editor";
 import { publishVerificationError } from "@/lib/directory/publish";
 import { splitTags } from "@/lib/directory/query";
+import { isLegalCategory } from "@/lib/directory/legal-map";
 import { parseSourceLines } from "@/lib/directory/sources";
 import { LISTING_STATUSES, UNREVIEWED_SUBMISSION_NOTE, VERIFICATION_LEVELS } from "@/lib/directory/types";
 import { rateLimit } from "@/lib/http/rate-limit";
@@ -338,7 +339,9 @@ export async function saveLegal(_state: SaveState, formData: FormData): Promise<
   const html = sanitizeLegalHtml(String(formData.get("summary_html") ?? "")).slice(0, 20000);
   const sources = parseSourceLines(String(formData.get("sources") ?? ""));
   const asOf = String(formData.get("as_of") ?? "").trim();
+  const category = formData.get("legal_category");
   const status = formData.get("status") === "published" ? "published" : "draft";
+  if (!isLegalCategory(category)) return { error: "Pick a Legal Map category." };
   if (!/^[A-Z]{2}$/.test(code)) return { error: "Use a two-letter country code." };
   const text = html.replace(/<[^>]*>/g, "").trim();
   if (status === "published" && (!title || !text || !/^\d{4}-\d{2}-\d{2}$/.test(asOf) || sources.length === 0)) {
@@ -353,6 +356,7 @@ export async function saveLegal(_state: SaveState, formData: FormData): Promise<
       summary_html: html,
       sources,
       as_of: /^\d{4}-\d{2}-\d{2}$/.test(asOf) ? asOf : null,
+      legal_category: category,
       status,
     },
     { onConflict: "site_id,country_code" },
@@ -362,6 +366,7 @@ export async function saveLegal(_state: SaveState, formData: FormData): Promise<
     return { error: "The legal-status page could not be saved." };
   }
   revalidatePath(`/directory/${code.toLowerCase()}`);
+  revalidatePath("/legal-map");
   revalidatePath("/sitemap.xml");
   redirect(`/admin/directory/legal/${code}?saved=1`);
 }

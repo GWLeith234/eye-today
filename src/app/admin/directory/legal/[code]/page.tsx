@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { requireArea } from "@/lib/auth/session";
 import { countryName, isCountryCode } from "@/lib/directory/countries";
+import { isLegalCategory } from "@/lib/directory/legal-map";
 import { sourceLines } from "@/lib/directory/sources";
 
 import { LegalEditor } from "../../legal-editor";
@@ -12,6 +13,7 @@ type LegalRow = {
   summary_html: string;
   sources: unknown;
   as_of: string | null;
+  legal_category: string;
   status: string;
 };
 
@@ -23,7 +25,7 @@ export default async function LegalStatusPage({ params, searchParams }: PageProp
   const query = await searchParams;
   const { data } = await supabase
     .from("country_legal_status")
-    .select("title, summary_html, sources, as_of, status")
+    .select("title, summary_html, sources, as_of, legal_category, status")
     .eq("country_code", country)
     .maybeSingle<LegalRow>();
 
@@ -37,6 +39,7 @@ export default async function LegalStatusPage({ params, searchParams }: PageProp
         html={data?.summary_html ?? ""}
         sources={sourceLines(data?.sources)}
         asOf={data?.as_of ?? ""}
+        category={isLegalCategory(data?.legal_category) ? data.legal_category : "unclear"}
         status={data?.status === "published" ? "published" : "draft"}
         notice={query.saved === "1" ? "Saved." : undefined}
       />

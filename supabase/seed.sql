@@ -151,3 +151,39 @@ select camp.site_id, camp.id, slot.id, v.click_url, v.alt, v.html, 'approved', 1
      '<p><strong>Don''t miss the next story.</strong> News, research and policy on ibogaine and addiction treatment, in your inbox. <a href="https://theeye.today/newsletter">Subscribe to the newsletter</a></p>')
   ) as v(slot_key, click_url, alt, html)
   join slot on slot.key = v.slot_key;
+
+-- Tracker (0025 seeds these for existing sites; on a fresh reset the site is created above, so seed them here too).
+insert into public.tracker_entries (site_id, slug, kind, title, sponsor, stage, amount, jurisdiction, key_dates, links, notes, last_reviewed, status, sort)
+select s.id, v.slug, v.kind, v.title, v.sponsor, v.stage, v.amount, v.jurisdiction, v.key_dates::jsonb, v.links::jsonb, v.notes, v.last_reviewed::date, 'published', v.sort
+  from public.sites s
+  cross join (values
+    ('stanford-veterans-ibogaine-study', 'trial', 'Stanford veterans ibogaine study (MISTIC)', 'Stanford Medicine', 'Published; follow-up ongoing', '', 'United States / Mexico',
+     '[{"label":"Results published","date":"2024-01-05"}]',
+     '[{"title":"Nature Medicine paper","url":"https://www.nature.com/articles/s41591-023-02705-w"}]',
+     'Thirty special-operations veterans treated with magnesium-ibogaine at a clinic in Mexico; the study reported improvements in disability, PTSD, depression and anxiety at one month.', '2026-10-11', 10),
+    ('texas-sb-2308-ibogaine-programme', 'funding', 'Texas SB 2308 ibogaine clinical-trial programme', 'State of Texas', 'Enacted; grants in progress', 'USD 50 million', 'Texas, United States',
+     '[{"label":"Signed into law","date":"2025-06-11"}]',
+     '[{"title":"Texas Legislature Online","url":"https://capitol.texas.gov/BillLookup/History.aspx?LegSess=89R&Bill=SB2308"}]',
+     'State funding for FDA-regulated ibogaine trials run with Texas institutions, matched by private money. The state keeps a share of any drug-development revenue.', '2026-10-11', 10),
+    ('arpa-h-ascent-ibo', 'funding', 'ARPA-H ASCENT-IBO', 'ARPA-H', 'Programme announced', '', 'United States',
+     '[]',
+     '[{"title":"ARPA-H","url":"https://arpa-h.gov/"}]',
+     'Federal programme aimed at ibogaine-based treatments for addiction and traumatic brain injury.', '2026-10-11', 20),
+    ('fda-ibogaine-rfi-2026', 'regulatory', 'FDA request for information on ibogaine trial design', 'U.S. Food and Drug Administration', 'Open for comment', '', 'United States',
+     '[{"label":"Comments close","date":"2026-11-20"}]',
+     '[{"title":"Docket FDA-2026-N-10429","url":"https://www.regulations.gov/docket/FDA-2026-N-10429"}]',
+     'The agency is asking how ibogaine trials should be designed and monitored, including cardiac safety.', '2026-10-11', 10),
+    ('nimh-rapids-forecast', 'funding', 'NIMH RAPIDs funding opportunity (forecast)', 'National Institute of Mental Health', 'Forecast', '', 'United States',
+     '[]',
+     '[{"title":"NIMH funding","url":"https://www.nimh.nih.gov/funding"}]',
+     'Rapid-acting psychedelic and dissociative treatments research; ibogaine-relevant work expected to be eligible.', '2026-10-11', 30),
+    ('nida-oud-funding', 'funding', 'NIDA opioid-use-disorder medication development funding', 'National Institute on Drug Abuse', 'Open', '', 'United States',
+     '[]',
+     '[{"title":"NIDA funding","url":"https://nida.nih.gov/funding"}]',
+     'Standing programmes for new OUD medications under which ibogaine analogues have been funded.', '2026-10-11', 40),
+    ('noribogaine-ind-alcohol-use-disorder', 'trial', 'Noribogaine IND — alcohol use disorder', 'DemeRx / industry', 'IND stage', '', 'United States',
+     '[]',
+     '[{"title":"ClinicalTrials.gov","url":"https://clinicaltrials.gov/"}]',
+     'Noribogaine, the main metabolite of ibogaine, being developed for alcohol use disorder.', '2026-10-11', 20)
+  ) as v (slug, kind, title, sponsor, stage, amount, jurisdiction, key_dates, links, notes, last_reviewed, sort)
+on conflict (site_id, slug) do nothing;

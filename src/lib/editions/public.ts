@@ -12,6 +12,7 @@ export type EditionCard = {
   slug: string;
   title: string;
   issue_month: string;
+  issue_number: number | null;
   cover_storage_path: string | null;
   cover_alt: string | null;
   access: "public" | "early";
@@ -24,6 +25,7 @@ export type EditionDetail = {
   slug: string;
   title: string;
   issue_month: string;
+  issue_number: number | null;
   cover_storage_path: string | null;
   cover_alt: string | null;
   letter_html: string;
