@@ -10,6 +10,8 @@ export type IssueDirectoryItem = { name: string; url: string; place: string; cat
 
 export type IssueEdition = { title: string; label: string; url: string; storyCount: number; coverUrl: string | null };
 
+export type IssueNewsItem = { title: string; url: string; source: string; date: string };
+
 export type IssueEmailProps = {
   listName: string;
   preheader: string;
@@ -19,13 +21,17 @@ export type IssueEmailProps = {
   directory?: IssueDirectoryItem[];
   // "This month's issue". Missing: the section is left out.
   edition?: IssueEdition | null;
+  // "This week in the news": other outlets' coverage, credited. Empty or missing: the section is left out.
+  news?: IssueNewsItem[];
+  // "Week 12" or "No. 3", shown under the masthead. Missing: just the list name.
+  issueLabel?: string | null;
   postalAddress: string;
   siteUrl: string;
   unsubscribeUrl: string;
 };
 
 // Every value here is text, and React escapes it: the intro and story titles are never HTML.
-export function IssueEmail({ listName, preheader, intro, stories, directory = [], edition = null, postalAddress, siteUrl, unsubscribeUrl }: IssueEmailProps) {
+export function IssueEmail({ listName, preheader, intro, stories, directory = [], edition = null, news = [], issueLabel = null, postalAddress, siteUrl, unsubscribeUrl }: IssueEmailProps) {
   return (
     <Html lang="en">
       <Head />
@@ -38,7 +44,7 @@ export function IssueEmail({ listName, preheader, intro, stories, directory = []
             </Heading>
           </Link>
           <Text style={{ color: COLORS.muted, fontSize: 13, margin: "0 0 16px", textTransform: "uppercase", letterSpacing: 1 }}>
-            {listName}
+            {issueLabel ? `${listName} · ${issueLabel}` : listName}
           </Text>
           <Hr style={{ borderColor: COLORS.ink, borderTopWidth: 2, margin: "0 0 20px" }} />
 
@@ -77,6 +83,27 @@ export function IssueEmail({ listName, preheader, intro, stories, directory = []
                 </Link>
                 {" — "}
                 {edition.label}, {edition.storyCount} {edition.storyCount === 1 ? "story" : "stories"}. Read it online or download the PDF.
+              </Text>
+            </Section>
+          ) : null}
+
+          {news.length > 0 ? (
+            <Section style={{ margin: "0 0 22px" }}>
+              <Hr style={{ borderColor: COLORS.ink, borderTopWidth: 2, margin: "0 0 14px" }} />
+              <Heading as="h2" style={{ fontFamily: SERIF, fontSize: 22, margin: "0 0 8px" }}>
+                This week in the news
+              </Heading>
+              {news.map((item) => (
+                <Text key={item.url} style={{ fontSize: 15, lineHeight: "22px", margin: "0 0 8px" }}>
+                  <Link href={item.url} style={{ color: COLORS.accent, fontWeight: 700 }}>
+                    {item.title}
+                  </Link>
+                  {" — "}
+                  {item.source}, {item.date}
+                </Text>
+              ))}
+              <Text style={{ color: COLORS.muted, fontSize: 12, lineHeight: "18px", margin: "8px 0 0" }}>
+                Reporting by other outlets, chosen by our editors. Each link opens on the outlet&rsquo;s site.
               </Text>
             </Section>
           ) : null}

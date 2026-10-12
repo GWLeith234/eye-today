@@ -23,6 +23,9 @@ const PAGES = [
   "/jobs/policy",
   "/contests",
   "/editions",
+  "/news-feed",
+  "/legal-map",
+  "/tracker",
 ];
 
 test("public pages return 200", async ({ request }) => {

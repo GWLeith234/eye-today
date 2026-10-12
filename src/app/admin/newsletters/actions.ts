@@ -13,6 +13,8 @@ import { type EditorContext, getEditorContext } from "@/lib/auth/editor";
 import { mailConfig, NOT_CONFIGURED, sendIssueEmail } from "@/lib/newsletter/provider";
 import { newDirectoryListings } from "@/lib/newsletter/directory";
 import { currentEdition } from "@/lib/newsletter/edition";
+import { recentNewsLinks } from "@/lib/newsletter/news";
+import { defaultSubject, newsletterIssueLabel } from "@/lib/newsletter/numbering";
 import { renderIssueMessage, sendIssue } from "@/lib/newsletter/send";
 import { autoFillStories, liveStoriesById, MAX_STORIES, type StoryRow } from "@/lib/newsletter/stories";
 import { UNSUBSCRIBE_PLACEHOLDER } from "@/lib/newsletter/urls";
@@ -32,6 +34,7 @@ const issueInput = z.object({
   story_ids: z.array(z.uuid()).max(MAX_STORIES).refine((ids) => new Set(ids).size === ids.length, "A story is listed twice."),
   include_directory: z.boolean().default(false),
   include_edition: z.boolean().default(false),
+  include_news: z.boolean().default(false),
 });
 export type IssueInput = z.input<typeof issueInput>;
 
@@ -41,13 +44,14 @@ type IssueRecord = {
   list_id: string;
   status: "draft" | "scheduled" | "sent";
   story_ids: string[];
+  issue_number: number | null;
   newsletter_lists: { name: string; slug: string } | null;
 };
 
 async function loadIssue(ctx: EditorContext, id: string): Promise<IssueRecord | null> {
   const { data } = await ctx.supabase
     .from("newsletter_issues")
-    .select("id, site_id, list_id, status, story_ids, newsletter_lists(name, slug)")
+    .select("id, site_id, list_id, status, story_ids, issue_number, newsletter_lists(name, slug)")
     .eq("id", id)
     .maybeSingle();
   return (data as unknown as IssueRecord | null) ?? null;
@@ -83,17 +87,22 @@ export async function createIssue(formData: FormData) {
   if (!list) redirect("/admin/newsletters?error=list");
 
   const stories = await autoFillStories(ctx.supabase, list.slug);
+  const dateText = format(new Date(), "d MMM yyyy");
   const { data, error } = await ctx.supabase
     .from("newsletter_issues")
     .insert({
       site_id: list.site_id,
       list_id: list.id,
-      subject: `${list.name} — ${format(new Date(), "d MMM yyyy")}`,
+      subject: defaultSubject(list.name, list.slug, null, dateText),
       story_ids: stories.map((s) => s.id),
     })
-    .select("id")
-    .single<{ id: string }>();
+    .select("id, issue_number")
+    .single<{ id: string; issue_number: number | null }>();
   if (error || !data) redirect("/admin/newsletters?error=create");
+  // The number is assigned by the database on insert, so the subject is written once it is known.
+  if (data.issue_number) {
+    await ctx.supabase.from("newsletter_issues").update({ subject: defaultSubject(list.name, list.slug, data.issue_number, dateText) }).eq("id", data.id);
+  }
   redirect(`/admin/newsletters/${data.id}`);
 }
 
@@ -112,6 +121,7 @@ export async function saveIssue(raw: IssueInput): Promise<{ ok: true } | Fail> {
       story_ids: checked.input.story_ids,
       include_directory: checked.input.include_directory,
       include_edition: checked.input.include_edition,
+      include_news: checked.input.include_news,
     })
     .eq("id", checked.input.id);
   if (error) return { ok: false, error: "The issue could not be saved." };
@@ -156,6 +166,7 @@ async function message(ctx: EditorContext, raw: IssueInput) {
   const cfg = mailConfig();
   const directory = checked.input.include_directory && cfg ? await newDirectoryListings(ctx.supabase, cfg.siteUrl) : [];
   const edition = checked.input.include_edition && cfg ? await currentEdition(ctx.supabase, cfg.siteUrl) : null;
+  const news = checked.input.include_news ? await recentNewsLinks(ctx.supabase) : [];
   const rendered = await renderIssueMessage({
     listName: checked.issue.newsletter_lists?.name ?? "Newsletter",
     preheader: checked.input.preheader,
@@ -163,6 +174,8 @@ async function message(ctx: EditorContext, raw: IssueInput) {
     stories: checked.stories,
     directory,
     edition,
+    news,
+    issueLabel: newsletterIssueLabel(checked.issue.newsletter_lists?.slug ?? "", checked.issue.issue_number),
   });
   if ("error" in rendered) return { ok: false, error: rendered.error } as Fail;
   return { ok: true as const, checked, rendered };

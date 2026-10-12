@@ -15,6 +15,7 @@ const STATIC_PAGES = [
   "/about", "/contact", "/advertise", "/write-for-us", "/editorial-policy",
   "/corrections", "/disclaimer", "/ad-policy", "/privacy", "/terms", "/community-guidelines", "/newsletter", "/support",
   "/directory", "/directory/how-we-verify", "/directory/submit", "/events", "/jobs", "/classifieds", "/jobs/policy", "/contests", "/editions",
+  "/news-feed", "/legal-map", "/tracker",
 ];
 
 // Live articles only: the anon client never sees drafts or future schedules.
