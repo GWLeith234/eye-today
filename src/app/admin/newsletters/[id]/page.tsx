@@ -19,6 +19,10 @@ type IssueRow = {
   include_edition: boolean;
   include_news: boolean;
   issue_number: number | null;
+  cta_heading: string | null;
+  cta_text: string | null;
+  cta_url: string | null;
+  cta_button: string | null;
   status: "draft" | "scheduled" | "sent";
   scheduled_for: string | null;
   sent_at: string | null;
@@ -34,7 +38,7 @@ export default async function IssuePage({ params }: PageProps<"/admin/newsletter
 
   const { data } = await supabase
     .from("newsletter_issues")
-    .select("id, list_id, subject, preheader, intro, story_ids, include_directory, include_edition, include_news, issue_number, status, scheduled_for, sent_at, newsletter_lists(name, slug)")
+    .select("id, list_id, subject, preheader, intro, story_ids, include_directory, include_edition, include_news, issue_number, cta_heading, cta_text, cta_url, cta_button, status, scheduled_for, sent_at, newsletter_lists(name, slug)")
     .eq("id", id)
     .maybeSingle();
   const issue = data as unknown as IssueRow | null;
@@ -71,6 +75,7 @@ export default async function IssuePage({ params }: PageProps<"/admin/newsletter
         includeDirectory: issue.include_directory,
         includeEdition: issue.include_edition,
         includeNews: issue.include_news,
+        cta: { heading: issue.cta_heading ?? "", text: issue.cta_text ?? "", url: issue.cta_url ?? "", button: issue.cta_button ?? "" },
         issueLabel: newsletterIssueLabel(issue.newsletter_lists?.slug ?? "", issue.issue_number),
         status: issue.status,
         scheduledFor: issue.scheduled_for,

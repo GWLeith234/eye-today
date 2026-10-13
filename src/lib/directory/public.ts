@@ -138,6 +138,22 @@ async function loadLegalMap(): Promise<LegalMapRow[]> {
   return ((data ?? []) as LegalMapRow[]).filter((row) => isLegalCategory(row.legal_category));
 }
 
+// Platform links and hosts for the podcast cards on a results page, keyed by slug.
+export function getPlatformLinks(slugs: string[]): Promise<Map<string, { platform_links: unknown; host_names: string | null }>> {
+  return within(loadPlatformLinks(slugs), new Map());
+}
+
+async function loadPlatformLinks(slugs: string[]): Promise<Map<string, { platform_links: unknown; host_names: string | null }>> {
+  const supabase = client();
+  if (!supabase || slugs.length === 0) return new Map();
+  const { data, error } = await supabase.rpc("directory_platform_links", { p_slugs: slugs });
+  if (error) {
+    console.error("public read directory_platform_links failed", error.code);
+    return new Map();
+  }
+  return new Map(((data ?? []) as { slug: string; platform_links: unknown; host_names: string | null }[]).map((row) => [row.slug, row]));
+}
+
 export function getDirectoryServices(): Promise<string[]> {
   return within(loadServices(), []);
 }

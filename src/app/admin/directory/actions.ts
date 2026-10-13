@@ -12,6 +12,7 @@ import { getEditorContext, type EditorContext } from "@/lib/auth/editor";
 import { publishVerificationError } from "@/lib/directory/publish";
 import { splitTags } from "@/lib/directory/query";
 import { isLegalCategory } from "@/lib/directory/legal-map";
+import { parsePlatformLines } from "@/lib/directory/podcast";
 import { parseSourceLines } from "@/lib/directory/sources";
 import { LISTING_STATUSES, UNREVIEWED_SUBMISSION_NOTE, VERIFICATION_LEVELS } from "@/lib/directory/types";
 import { rateLimit } from "@/lib/http/rate-limit";
@@ -43,6 +44,9 @@ const listingSchema = z.object({
   verification_level: z.enum(VERIFICATION_LEVELS),
   verification_note: z.string().trim().min(1).max(500),
   relationship_disclosure: z.string().trim().max(1000),
+  feed_url: z.string().trim().max(500).refine((value) => value === "" || /^https:\/\/\S+$/.test(value)),
+  platform_links: z.string().max(4000),
+  host_names: z.string().trim().max(200),
   last_reviewed_at: z.string().trim(),
   status: z.enum(LISTING_STATUSES),
   lat: z.string().trim(),
@@ -87,6 +91,9 @@ export async function saveListing(_state: SaveState, formData: FormData): Promis
     verification_level: formData.get("verification_level") ?? "",
     verification_note: formData.get("verification_note") ?? "",
     relationship_disclosure: formData.get("relationship_disclosure") ?? "",
+    feed_url: formData.get("feed_url") ?? "",
+    platform_links: formData.get("platform_links") ?? "",
+    host_names: formData.get("host_names") ?? "",
     last_reviewed_at: formData.get("last_reviewed_at") ?? "",
     status: formData.get("status") ?? "",
     lat: formData.get("lat") ?? "",
@@ -141,6 +148,9 @@ export async function saveListing(_state: SaveState, formData: FormData): Promis
     verification_level: parsed.data.verification_level,
     verification_note: parsed.data.verification_note,
     relationship_disclosure: blank(parsed.data.relationship_disclosure),
+    feed_url: blank(parsed.data.feed_url),
+    platform_links: parsePlatformLines(parsed.data.platform_links),
+    host_names: blank(parsed.data.host_names.replace(/[<>]/g, "")),
     last_reviewed_at: reviewed,
     lat: coords.lat,
     lng: coords.lng,

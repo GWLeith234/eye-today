@@ -20,7 +20,7 @@ const RESERVED = new Set([
   "account", "admin", "api", "auth", "author", "contribute", "login", "preview", "search", "tag",
   "write-for-us", "about", "contact", "advertise", "newsletter", "newsletters", "support",
   "editorial-policy", "corrections", "privacy", "terms", "disclaimer", "ad-policy",
-  "community-guidelines", "classifieds", "contests", "news-feed", "legal-map", "tracker",
+  "community-guidelines", "classifieds", "contests", "news-feed", "legal-map", "tracker", "survey",
 ]);
 
 // The page type of a public path, for units that live in the layout and cannot be told by the

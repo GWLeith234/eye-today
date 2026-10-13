@@ -58,6 +58,9 @@ export type ListingDetail = ListingCard & {
   last_reviewed_at: string | null;
   photo_paths: string[] | null;
   photo_alts: string[] | null;
+  feed_url: string | null;
+  platform_links: unknown;
+  host_names: string | null;
 };
 
 export type LegalStatus = {

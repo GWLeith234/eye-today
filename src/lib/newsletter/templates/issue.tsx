@@ -13,6 +13,8 @@ export type IssueEdition = { title: string; label: string; url: string; storyCou
 
 export type IssueNewsItem = { title: string; url: string; source: string; date: string };
 
+export type IssueCta = { heading: string; text: string; url: string; button: string };
+
 export type IssueEmailProps = {
   listName: string;
   preheader: string;
@@ -26,13 +28,17 @@ export type IssueEmailProps = {
   news?: IssueNewsItem[];
   // "Week 12" or "No. 3", shown under the masthead. Missing: just the list name.
   issueLabel?: string | null;
+  // One call to action between the intro and the stories: a survey, an event, a single ask. Missing: left out.
+  cta?: IssueCta | null;
+  // The editor signing the issue. Missing: no signoff.
+  signoff?: { name: string; title: string } | null;
   postalAddress: string;
   siteUrl: string;
   unsubscribeUrl: string;
 };
 
 // Every value here is text, and React escapes it: the intro and story titles are never HTML.
-export function IssueEmail({ listName, preheader, intro, stories, directory = [], edition = null, news = [], issueLabel = null, postalAddress, siteUrl, unsubscribeUrl }: IssueEmailProps) {
+export function IssueEmail({ listName, preheader, intro, stories, directory = [], edition = null, news = [], issueLabel = null, cta = null, signoff = null, postalAddress, siteUrl, unsubscribeUrl }: IssueEmailProps) {
   return (
     <Html lang="en">
       <Head />
@@ -51,6 +57,21 @@ export function IssueEmail({ listName, preheader, intro, stories, directory = []
 
           {intro ? (
             <Text style={{ fontSize: 16, lineHeight: "24px", whiteSpace: "pre-wrap", margin: "0 0 24px" }}>{intro}</Text>
+          ) : null}
+
+          {cta ? (
+            <Section style={{ margin: "0 0 28px", padding: "18px 20px", border: `1px solid ${COLORS.ink}` }}>
+              <Heading as="h2" style={{ fontFamily: SERIF, fontSize: 22, margin: "0 0 8px" }}>
+                {cta.heading}
+              </Heading>
+              {cta.text ? <Text style={{ fontSize: 15, lineHeight: "22px", margin: "0 0 14px" }}>{cta.text}</Text> : null}
+              <Link
+                href={cta.url}
+                style={{ display: "inline-block", backgroundColor: COLORS.accent, color: COLORS.ink, fontWeight: 700, fontSize: 15, padding: "10px 16px", textDecoration: "none" }}
+              >
+                {cta.button}
+              </Link>
+            </Section>
           ) : null}
 
           {stories.map((story) => (
@@ -128,6 +149,15 @@ export function IssueEmail({ listName, preheader, intro, stories, directory = []
                 A listing is not an endorsement. {MEDICAL_DISCLAIMER}
               </Text>
             </Section>
+          ) : null}
+
+          {signoff ? (
+            <Text style={{ fontSize: 15, lineHeight: "22px", margin: "8px 0 0" }}>
+              Thanks for reading. Reply to this email with anything on your mind.
+              <br />
+              <strong>{signoff.name}</strong>
+              {signoff.title ? `, ${signoff.title}` : ""}
+            </Text>
           ) : null}
 
           <Hr style={{ borderColor: COLORS.rule, margin: "24px 0 16px" }} />

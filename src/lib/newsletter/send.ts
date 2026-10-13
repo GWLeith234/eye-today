@@ -24,6 +24,10 @@ export type IssueRow = {
   include_edition: boolean;
   include_news: boolean;
   issue_number: number | null;
+  cta_heading: string | null;
+  cta_text: string | null;
+  cta_url: string | null;
+  cta_button: string | null;
   status: "draft" | "scheduled" | "sent";
 };
 
@@ -36,6 +40,8 @@ export type IssueContent = {
   edition?: EditionItem | null;
   news?: NewsItem[];
   issueLabel?: string | null;
+  cta?: { heading: string; text: string; url: string; button: string } | null;
+  signoff?: { name: string; title: string } | null;
 };
 
 // The message with a placeholder where each recipient's unsubscribe link goes.
@@ -56,10 +62,27 @@ export async function renderIssueMessage(content: IssueContent): Promise<Rendere
     edition: content.edition ?? null,
     news: content.news ?? [],
     issueLabel: content.issueLabel ?? null,
+    cta: content.cta ?? null,
+    signoff: content.signoff ?? null,
     postalAddress: cfg.postalAddress,
     siteUrl: cfg.siteUrl,
     unsubscribeUrl: UNSUBSCRIBE_PLACEHOLDER,
   });
+}
+
+// The block renders only when all three parts are present; a half-filled CTA is left out rather than sent broken.
+export function ctaFrom(row: { cta_heading: string | null; cta_text: string | null; cta_url: string | null; cta_button: string | null }) {
+  if (!row.cta_heading || !row.cta_url || !/^https:\/\/\S+$/.test(row.cta_url)) return null;
+  return { heading: row.cta_heading, text: row.cta_text ?? "", url: row.cta_url, button: row.cta_button || "Open" };
+}
+
+// The issue is signed by the Editor and Publisher, whoever presses Send: newsletter_signoff() returns the
+// publisher's display name without exposing other profiles.
+export async function editorSignoff(supabase: SupabaseClient): Promise<{ name: string; title: string } | null> {
+  const { data, error } = await supabase.rpc("newsletter_signoff");
+  if (error) return null;
+  const name = ((data as { display_name: string }[] | null) ?? [])[0]?.display_name;
+  return name ? { name, title: "Editor and Publisher, Eye Today" } : null;
 }
 
 const withLink = (message: string, url: string) => message.split(UNSUBSCRIBE_PLACEHOLDER).join(url);
@@ -78,7 +101,7 @@ export async function sendIssue(supabase: SupabaseClient, issueId: string): Prom
 
   const { data: issue } = await supabase
     .from("newsletter_issues")
-    .select("id, site_id, list_id, subject, preheader, intro, story_ids, include_directory, include_edition, include_news, issue_number, status")
+    .select("id, site_id, list_id, subject, preheader, intro, story_ids, include_directory, include_edition, include_news, issue_number, cta_heading, cta_text, cta_url, cta_button, status")
     .eq("id", issueId)
     .maybeSingle<IssueRow>();
   if (!issue) return { ok: false, error: "That issue could not be found." };
@@ -88,7 +111,8 @@ export async function sendIssue(supabase: SupabaseClient, issueId: string): Prom
   if (!list) return { ok: false, error: "That issue's list could not be found." };
 
   const stories = await liveStoriesById(supabase, issue.story_ids);
-  if (stories.length === 0) return { ok: false, error: "Add at least one live story before sending." };
+  // A single-ask issue (a survey, say) carries a call to action and no stories; anything else needs a story.
+  if (stories.length === 0 && !ctaFrom(issue)) return { ok: false, error: "Add at least one live story, or a call to action, before sending." };
 
   const directory = issue.include_directory ? await newDirectoryListings(supabase, cfg.siteUrl) : [];
   const edition = issue.include_edition ? await currentEdition(supabase, cfg.siteUrl) : null;
@@ -102,6 +126,8 @@ export async function sendIssue(supabase: SupabaseClient, issueId: string): Prom
     edition,
     news,
     issueLabel: newsletterIssueLabel(list.slug, issue.issue_number),
+    cta: ctaFrom(issue),
+    signoff: await editorSignoff(supabase),
   });
   if ("error" in message) return { ok: false, error: message.error };
 

@@ -19,6 +19,7 @@ export const SECTION_COLORS: Record<string, string> = {
   "policy-law": "#6B4C9A",
   "treatment-clinics": "#A9472F",
   stories: STORIES,
+  podcasts: "#2E5E8C",
   opinion: "#3F3F46",
 };
 
@@ -28,10 +29,11 @@ export const SECTION_ICONS: Record<string, string> = {
   "policy-law": "policy",
   "treatment-clinics": "treatment",
   stories: "stories",
+  podcasts: "podcast",
   opinion: "opinion",
 };
 
-export const ICON_NAMES = ["news", "research", "policy", "treatment", "stories", "opinion"] as const;
+export const ICON_NAMES = ["news", "research", "policy", "treatment", "stories", "podcast", "opinion"] as const;
 
 export const HEX = /^#[0-9A-Fa-f]{6}$/;
 const SLUG = /^[a-z0-9-]+$/;

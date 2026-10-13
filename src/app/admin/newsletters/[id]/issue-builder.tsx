@@ -28,6 +28,7 @@ type Issue = {
   includeDirectory: boolean;
   includeEdition: boolean;
   includeNews: boolean;
+  cta: { heading: string; text: string; url: string; button: string };
   issueLabel: string | null;
   status: "draft" | "scheduled" | "sent";
   scheduledFor: string | null;
@@ -79,6 +80,7 @@ export function IssueBuilder({
   const [includeDirectory, setIncludeDirectory] = useState(issue.includeDirectory);
   const [includeEdition, setIncludeEdition] = useState(issue.includeEdition);
   const [includeNews, setIncludeNews] = useState(issue.includeNews);
+  const [cta, setCta] = useState(issue.cta);
   const [scheduleAt, setScheduleAt] = useState(toLocalInput(issue.scheduledFor));
   const [testTo, setTestTo] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
@@ -87,7 +89,7 @@ export function IssueBuilder({
   const sent = issue.status === "sent";
   const byId = new Map(stories.map((s) => [s.id, s]));
   const unselected = stories.filter((s) => s.live && !storyIds.includes(s.id));
-  const payload = { id: issue.id, subject, preheader, intro, story_ids: storyIds, include_directory: includeDirectory, include_edition: includeEdition, include_news: includeNews };
+  const payload = { id: issue.id, subject, preheader, intro, story_ids: storyIds, include_directory: includeDirectory, include_edition: includeEdition, include_news: includeNews, cta_heading: cta.heading, cta_text: cta.text, cta_url: cta.url, cta_button: cta.button };
 
   function run<T extends { ok: boolean }>(work: () => Promise<T>, done: (result: Extract<T, { ok: true }>) => string | void) {
     setNote(null);
@@ -172,6 +174,28 @@ export function IssueBuilder({
             <span className="block opacity-70">The five newest links from the news feed, each credited to its outlet. Left out when there are none.</span>
           </span>
         </label>
+        <fieldset className="flex flex-col gap-2 rounded border border-rule p-3">
+          <legend className="px-1 text-sm font-semibold">One call to action (optional)</legend>
+          <p className="text-xs opacity-70">Sits between your note and the stories. For a survey or a single ask, leave the stories empty and this is the whole email. Heading and link are required for it to show.</p>
+          <label className="flex flex-col gap-1 text-sm">
+            Call-to-action heading
+            <input value={cta.heading} maxLength={120} onChange={(e) => setCta({ ...cta, heading: e.target.value })} placeholder="A quick favour" className="rounded border px-3 py-2 text-base" />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            Call-to-action text
+            <textarea value={cta.text} maxLength={500} rows={2} onChange={(e) => setCta({ ...cta, text: e.target.value })} placeholder="Ninety seconds that shape what we cover." className="rounded border px-3 py-2 text-base" />
+          </label>
+          <div className="grid gap-2 sm:grid-cols-[1fr_12rem]">
+            <label className="flex flex-col gap-1 text-sm">
+              Call-to-action link
+              <input value={cta.url} maxLength={500} onChange={(e) => setCta({ ...cta, url: e.target.value })} placeholder="https://theeye.today/survey" className="rounded border px-3 py-2 text-base" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              Button label
+              <input value={cta.button} maxLength={40} onChange={(e) => setCta({ ...cta, button: e.target.value })} placeholder="Take the survey" className="rounded border px-3 py-2 text-base" />
+            </label>
+          </div>
+        </fieldset>
         <label className="flex flex-col gap-1 text-sm">
           Subject
           <input value={subject} maxLength={150} onChange={(e) => setSubject(e.target.value)} className="rounded border px-3 py-2 text-base" />

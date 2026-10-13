@@ -28,6 +28,9 @@ export type ListingFormValue = {
   verification_level: VerificationLevel;
   verification_note: string;
   relationship_disclosure: string;
+  feed_url: string;
+  platform_links: string; // "platform | https://…" per line
+  host_names: string;
   last_reviewed_at: string;
   status: ListingStatus;
   lat: string;
@@ -213,6 +216,23 @@ export function ListingForm({
         Relationship disclosure
         <textarea name="relationship_disclosure" defaultValue={listing.relationship_disclosure} maxLength={1000} rows={3} className={field} />
       </label>
+      <fieldset className="flex flex-col gap-3 rounded border border-rule p-3">
+        <legend className="px-1 text-sm font-semibold">Podcast (for the Podcast category)</legend>
+        <label className="flex flex-col gap-1 text-sm">
+          Hosts
+          <input name="host_names" defaultValue={listing.host_names} maxLength={200} placeholder="Mark “Oz” Geist" className={field} />
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          Where to listen
+          <textarea name="platform_links" defaultValue={listing.platform_links} rows={4} placeholder={"spotify | https://open.spotify.com/show/…\napple | https://podcasts.apple.com/…\nyoutube | https://www.youtube.com/@…"} className={field} />
+          <span className="text-xs opacity-70">One per line: platform | https://… (apple, spotify, youtube, amazon, rss, other). A bare URL is matched by its host.</span>
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          RSS feed
+          <input name="feed_url" defaultValue={listing.feed_url} maxLength={500} placeholder="https://feeds.…/rss" className={field} />
+          <span className="text-xs opacity-70">When set, the listing shows the five latest episodes from the feed.</span>
+        </label>
+      </fieldset>
       <label className="flex flex-col gap-1 text-sm">
         Last reviewed
         <input name="last_reviewed_at" type="date" defaultValue={listing.last_reviewed_at} className={field} />

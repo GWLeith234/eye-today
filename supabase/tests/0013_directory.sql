@@ -16,9 +16,10 @@ update public.profiles set role = 'editor' where id = 'd1200000-0000-4000-8000-0
 
 do $$
 begin
+  -- Seven from 0013, plus Podcast from 0028.
   assert (select count(*) from public.directory_categories
-           where site_id = '00000000-0000-4000-8000-000000000001') = 7,
-    'seven categories seeded';
+           where site_id = '00000000-0000-4000-8000-000000000001') = 8,
+    'eight categories seeded';
   assert (select count(*) from public.country_legal_status
            where site_id = '00000000-0000-4000-8000-000000000001'
              and status = 'draft'

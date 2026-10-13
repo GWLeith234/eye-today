@@ -6,6 +6,8 @@ import { requireArea } from "@/lib/auth/session";
 import type { ListingStatus, VerificationLevel } from "@/lib/directory/types";
 import { isVerificationLevel, LISTING_STATUSES } from "@/lib/directory/types";
 
+import { platformLines } from "@/lib/directory/podcast";
+
 import { ListingForm, type ListingFormValue } from "../listing-form";
 
 type ListingRow = {
@@ -27,6 +29,9 @@ type ListingRow = {
   verification_level: string;
   verification_note: string;
   relationship_disclosure: string | null;
+  feed_url: string | null;
+  platform_links: unknown;
+  host_names: string | null;
   last_reviewed_at: string | null;
   status: string;
   lat: number | null;
@@ -47,7 +52,7 @@ export default async function EditListingPage({ params, searchParams }: PageProp
   const [listingResult, noteResult, categories, media] = await Promise.all([
     supabase
       .from("directory_listings")
-      .select("id, name, slug, category_id, country_code, region, city, services, languages, website, public_email, public_phone, description, logo_media_id, photo_media_ids, verification_level, relationship_disclosure, last_reviewed_at, status, lat, lng")
+      .select("id, name, slug, category_id, country_code, region, city, services, languages, website, public_email, public_phone, description, logo_media_id, photo_media_ids, verification_level, relationship_disclosure, feed_url, platform_links, host_names, last_reviewed_at, status, lat, lng")
       .eq("id", id)
       .maybeSingle<Omit<ListingRow, "verification_note">>(),
     supabase.rpc("directory_editor_note", { p_id: id }),
@@ -77,6 +82,9 @@ export default async function EditListingPage({ params, searchParams }: PageProp
     verification_level: level,
     verification_note: noteResult.data,
     relationship_disclosure: row.relationship_disclosure ?? "",
+    feed_url: row.feed_url ?? "",
+    platform_links: platformLines(row.platform_links),
+    host_names: row.host_names ?? "",
     last_reviewed_at: row.last_reviewed_at ? row.last_reviewed_at.slice(0, 10) : "",
     status: isStatus(row.status) ? row.status : "draft",
     lat: row.lat === null ? "" : String(row.lat),
