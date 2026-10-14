@@ -53,9 +53,10 @@ export async function GET(request: Request) {
   const found = row.image_path ? mediaUrl(row.image_path, { width: 1200 }) : html && html.usable ? imageFromHtml(html.html) : null;
   if (!found) return empty();
   // Artwork shipped in public/ (house creatives and rendered advertiser creatives) is addressed by the canonical
-  // domain; until DNS lands (and on previews) it is served from wherever this request came in, so the picture
-  // always loads.
-  const imageUrl = /^https:\/\/theeye\.today\/(house|advertiser)-ads\//.test(found) ? `${new URL(request.url).origin}${new URL(found).pathname}` : found;
+  // domain; it is handed to the page as a path, so the browser loads it from whatever host the reader is on
+  // (the Railway host before DNS, previews, the canonical domain after). Behind the proxy request.url shows the
+  // container's own host, so the origin cannot be taken from it.
+  const imageUrl = /^https:\/\/theeye\.today\/(house|advertiser)-ads\//.test(found) ? new URL(found).pathname : found;
 
   const response = NextResponse.json(
     {
