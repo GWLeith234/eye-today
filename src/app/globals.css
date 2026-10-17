@@ -9,6 +9,16 @@
   --color-rule: #e3ded3;
   --color-muted: #5b625e;
 
+  /* Advertising chrome. The only cool neutrals in the system, so a unit reads as "not editorial" at a
+     glance: every ad sits on ad-ground inside an ad-line frame. The stage is what shows beside the page
+     column on wide screens when no skin is sold. */
+  --color-ad-ground: #e6e9ec;
+  --color-ad-line: #9aa6b2;
+  --color-stage: #e9e4d9;
+
+  /* The content column on desktop: the width the skin leaves plain (keep in step with PAGE_COLUMN_PX). */
+  --container-page: 73.75rem;
+
   /* Older admin screens use background/foreground. They pick up the brand, not a redesign. */
   --color-background: #faf8f3;
   --color-foreground: #14201b;
@@ -44,7 +54,7 @@
 }
 
 body {
-  background: var(--color-paper);
+  background: var(--color-stage);
   color: var(--color-ink);
   font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }

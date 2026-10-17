@@ -6,14 +6,21 @@ import { signIn } from "../helpers/auth";
 import { readStripeSessions } from "../helpers/mailbox";
 import { solidPng } from "../helpers/png";
 
-// Sprint 20: every page type carries ad units and a house ad fills any unit with no paid creative.
+// Sprint 20 / 24: every page type carries ad units and a house ad fills any unit with no paid creative. The
+// billboard is the top unit on desktop (Sprint 24); the leaderboard is the band between sections on the cover.
 test("house ads fill the units on every page type", async ({ page }) => {
   test.skip(process.env.E2E_FULL !== "1", "Needs the seeded local Supabase with the house campaign.");
   for (const path of ["/", "/news", "/news/welcome-to-eye-today", "/directory", "/events", "/jobs", "/editions"]) {
     await page.goto(path);
-    const leaderboard = page.locator('aside[data-ad-slot="leaderboard"]');
-    await expect(leaderboard, path).toBeVisible();
-    if (path === "/") await expect(page.locator('aside[data-ad-slot="half-page"]'), "half page on the cover").toBeVisible();
+    const billboard = page.locator('aside[data-ad-slot="billboard"]');
+    await expect(billboard, path).toBeVisible();
+    await expect(billboard.getByRole("img"), `${path} billboard is the house artwork`).toHaveAttribute("src", /\/house-ads\/billboard-970x250\.png$/);
+    if (path === "/") {
+      await expect(page.locator('aside[data-ad-slot="leaderboard"]'), "leaderboard band on the cover").toBeVisible();
+      await expect(page.locator('aside[data-ad-slot="half-page"]'), "half page on the cover").toBeVisible();
+    }
+    // There is no house skin: the takeover is sold or absent, never filled.
+    await expect(page.locator('aside[data-ad-slot="skin"]'), `${path} has no skin`).toHaveCount(0);
     await expect(page.locator("aside[data-ad-house='1']").first(), `${path} shows a house ad`).toBeAttached();
   }
   // The mobile banner is for phones only.

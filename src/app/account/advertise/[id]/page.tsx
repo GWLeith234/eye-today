@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { adCheckoutOffered } from "@/lib/ads/prices";
 import { type BreakdownRow, breakdownTotals, ctr } from "@/lib/ads/report";
-import { AD_SLOT_NAMES, MAX_CAMPAIGN_MONTHS, ROS_MONTHLY_USD, SLOT_SIZES } from "@/lib/ads/slots";
+import { MAX_CAMPAIGN_MONTHS, ROS_MONTHLY_USD, SELF_SERVE_SLOTS, SLOT_SIZES } from "@/lib/ads/slots";
 import { requireArea } from "@/lib/auth/session";
 import { mediaUrl } from "@/lib/media/url";
 
@@ -124,8 +124,8 @@ export default async function CampaignPage({ params, searchParams }: PageProps<"
             <input type="hidden" name="campaign_id" value={campaign.id} />
             <h3 className="font-semibold">Upload a creative</h3>
             <label className="flex flex-col gap-1 text-sm">Unit
-              <select name="slot" required className={field} defaultValue={AD_SLOT_NAMES.find((n) => !covered.has(n)) ?? "leaderboard"}>
-                {AD_SLOT_NAMES.map((name) => (
+              <select name="slot" required className={field} defaultValue={SELF_SERVE_SLOTS.find((n) => !covered.has(n)) ?? "leaderboard"}>
+                {SELF_SERVE_SLOTS.map((name) => (
                   <option key={name} value={name} disabled={covered.has(name)}>
                     {SLOT_SIZES[name].label} — {SLOT_SIZES[name].width} × {SLOT_SIZES[name].height} ({SLOT_SIZES[name].where}){covered.has(name) ? " · uploaded" : ""}
                   </option>

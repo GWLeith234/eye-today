@@ -115,7 +115,7 @@ export function Masthead({ sections, dateLabel }: { sections: NavSection[]; date
       <div className={`border-b border-rule text-center text-xs font-semibold uppercase tracking-[0.18em] text-muted ${compact ? "hidden" : "px-4 py-1.5"}`}>
         <p>{dateLabel}</p>
       </div>
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2">
+      <div className="mx-auto flex max-w-page flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2">
         <Link href="/" className="text-ink">
           <Wordmark className={compact ? "h-7" : "h-9"} />
         </Link>
