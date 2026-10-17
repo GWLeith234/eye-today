@@ -44,6 +44,7 @@ const COVERAGE = [
   { date: "20 April", outlet: "Stars and Stripes", note: "Executive order, ex-SEALs at the signing" },
   { date: "27 June", outlet: "ABC13 Houston", note: "The Texans who went to Mexico" },
   { date: "4 October", outlet: "Fox News", note: "$20,000 clinic rooms, and the heart" },
+  { date: "6 October", outlet: "Stanford Medicine", note: "One year on &mdash; and what it cannot prove" },
 ];
 
 const coverage = (f) => shell(f, `
@@ -54,10 +55,10 @@ const coverage = (f) => shell(f, `
     </div>
     <div style="display:flex;flex-direction:column">
       ${COVERAGE.map((c, i) => `
-        <div style="display:grid;grid-template-columns:230px 1fr;gap:40px;align-items:baseline;padding:28px 0;${i ? `border-top:1px solid ${RULE};` : ""}">
+        <div style="display:grid;grid-template-columns:230px 1fr;gap:40px;align-items:baseline;padding:22px 0;${i ? `border-top:1px solid ${RULE};` : ""}">
           <span class="serif" style="font-size:34px;color:${ACCENT}">${c.date}</span>
           <div style="display:flex;flex-direction:column;gap:9px">
-            <span class="serif" style="font-size:46px;line-height:1">${c.outlet}</span>
+            <span class="serif" style="font-size:42px;line-height:1">${c.outlet}</span>
             <span style="font-size:23px;color:${MUTED}">${c.note}</span>
           </div>
         </div>`).join("")}
