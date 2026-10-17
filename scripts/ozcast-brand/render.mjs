@@ -30,6 +30,16 @@ const STEEL = "#8A96A0";
 const HOST = "Mark &ldquo;Oz&rdquo; Geist";
 const TAGLINE = "Stories from the shadows.";
 const LAUNCH = "First episode 11 November";
+// The platforms are named in type, not drawn. Spotify, Apple and YouTube each publish their own badge
+// artwork with clear-space and colour rules, so the official files get composited here once supplied; a
+// redrawn mark would be off-spec and is theirs, not ours.
+const PLATFORMS = "Spotify &nbsp;&middot;&nbsp; Apple Podcasts &nbsp;&middot;&nbsp; YouTube";
+
+const listenOn = ({ label = 11, name = 14, gap = 6, align = "flex-start" }) => `
+  <div style="display:flex;flex-direction:column;gap:${gap}px;align-items:${align}">
+    <span class="kicker" style="font-size:${label}px;color:${STEEL}">Listen on</span>
+    <span style="font-family:Archivo;font-weight:700;font-size:${name}px;white-space:nowrap">${PLATFORMS}</span>
+  </div>`;
 
 async function font(file) {
   const data = await readFile(path.join(root, "node_modules/@fontsource", file));
@@ -117,6 +127,7 @@ function unitHtml(fonts, s) {
         ${wordmark({ size: 52 })}
         <span style="font-family:Archivo;font-weight:700;font-size:30px;line-height:1.1">${TAGLINE}</span>
         <span style="font-size:15px" class="host">${HOST} &middot; ${LAUNCH}</span>
+        ${listenOn({ label: 11, name: 15 })}
       </div>
       <span class="cta" style="font-size:18px;padding:16px 24px">Follow the show →</span>
     </div>`);
@@ -128,6 +139,7 @@ function unitHtml(fonts, s) {
     <span style="font-family:Archivo;font-weight:700;font-size:${tall ? 30 : 21}px;line-height:1.15">${TAGLINE}</span>
     ${tall ? `<span style="font-size:15px;line-height:1.45" class="host">${HOST} talks with the people who were there &mdash; the contractors, medics and families who served where nobody was watching.</span>` : ""}
     <span class="kicker" style="font-size:${tall ? 12 : 10}px;margin-top:auto">${LAUNCH}</span>
+    ${listenOn({ label: tall ? 11 : 9, name: tall ? 14 : 10.5, gap: tall ? 6 : 4 })}
     <span class="cta" style="font-size:${tall ? 15 : 13}px;padding:${tall ? "13px 18px" : "10px 14px"};align-self:flex-start">Follow the show →</span>
   </div>`);
 }
@@ -144,6 +156,7 @@ const BRAND = [
         ${wordmark({ size: 420 })}
         <span style="font-family:Archivo;font-weight:700;font-size:150px;line-height:1.1">${TAGLINE}</span>
         <span style="font-size:96px" class="host">with ${HOST}</span>
+        ${listenOn({ label: 58, name: 72, gap: 24 })}
       </div>
     </div>`,
   },
@@ -171,6 +184,7 @@ const BRAND = [
         <div style="display:flex;flex-direction:column;gap:10px">
           <span class="kicker" style="font-size:26px">First episode</span>
           <span style="font-family:Archivo;font-weight:900;font-size:86px;line-height:1">11 NOVEMBER</span>
+          ${listenOn({ label: 21, name: 25, gap: 10 })}
         </div>
         ${signalO({ size: 150, waves: true })}
       </div>
