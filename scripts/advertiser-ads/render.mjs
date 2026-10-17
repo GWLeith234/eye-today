@@ -21,6 +21,7 @@ const SIZES = [
 ];
 
 // Each advertiser: a wordmark (image URL or text), background, ink, a line, a CTA.
+// OZCast is not here: its creatives carry its own brand and are rendered by scripts/ozcast-brand/render.mjs.
 const ADVERTISERS = [
   {
     slug: "shadow-warriors",
@@ -33,12 +34,22 @@ const ADVERTISERS = [
     cta: "Stand with them",
   },
   {
-    slug: "ozcast",
-    mark: { text: "OZCAST", sub: "with Mark “Oz” Geist" },
-    bg: "#111111", ink: "#ffffff", accent: "#e63946",
-    kicker: "Coming soon",
-    line: "Spotify · YouTube · Apple Podcasts",
-    cta: "Be first to listen",
+    // The store half of Shadow Warriors' buy: real products and prices from shadowwarriorsproject.org/store,
+    // rotating against the donate creatives in the same campaign.
+    slug: "shadow-warriors-store",
+    mark: { text: "SHADOW WARRIORS", sub: "STORE" },
+    bg: "#0f172a", ink: "#f8fafc", accent: "#c8a24a",
+    kicker: "Help a warrior",
+    line: "13 Hours, signed by Oz.",
+    cta: "Shop the store",
+    products: [
+      ["13 Hours, autographed", "$50"],
+      ["Shadow Warrior Hoodie", "$45"],
+      ["SWP Tumbler", "$35"],
+      ["Ty &amp; Glen Bracelet", "$35"],
+      ["Shield Tee", "$30"],
+      ["SWP Logo Patch", "$10"],
+    ],
   },
 ];
 
@@ -105,9 +116,17 @@ function html(a, s) {
     .kicker { font-size:${tiny ? 9 : billboard ? 14 : 11}px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:${a.accent}; }
     .line { font-size:${tiny ? 11 : wide ? 15 : billboard ? 26 : tall ? 22 : 17}px; line-height:1.25; ${wide || tiny ? "white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" : ""} }
     .cta { display:inline-block; ${tall ? "margin-top:auto;" : ""} background:${a.accent}; color:${a.bg}; font-weight:800; font-size:${tiny ? 10 : billboard ? 18 : 13}px; padding:${tiny ? "4px 8px" : wide ? "8px 12px" : billboard ? "16px 24px" : "10px 14px"}; white-space:nowrap; ${wide || tiny || billboard ? "margin-left:auto;" : "align-self:flex-start;"} }
+    .items { display:flex; flex-direction:column; gap:7px; margin-top:4px; }
+    .item { display:flex; justify-content:space-between; gap:12px; font-size:${tall ? 15 : 13}px; border-bottom:1px solid ${a.ink}22; padding-bottom:6px; }
+    .item b { font-weight:800; color:${a.accent}; }
+    .chips { display:flex; gap:10px; margin-top:6px; }
+    .chip { border:1px solid ${a.accent}; color:${a.accent}; font-size:13px; font-weight:700; padding:6px 10px; white-space:nowrap; }
   </style></head><body><div class="ad">
     ${markHtml}
-    ${tiny ? "" : `<div class="text"><div class="kicker">${a.kicker}</div><div class="line">${a.line}</div></div>`}
+    ${tiny ? "" : `<div class="text"><div class="kicker">${a.kicker}</div><div class="line">${a.line}</div>${
+      a.products && tall ? `<div class="items">${a.products.slice(0, 5).map(([n, pr]) => `<div class="item"><span>${n}</span><b>${pr}</b></div>`).join("")}</div>`
+      : a.products && billboard ? `<div class="chips">${a.products.slice(0, 3).map(([n, pr]) => `<span class="chip">${n} · ${pr}</span>`).join("")}</div>` : ""
+    }</div>`}
     <span class="cta">${a.cta} →</span>
   </div></body></html>`;
 }
