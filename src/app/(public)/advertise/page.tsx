@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { type AudiencePanel, AudiencePanels } from "@/components/public/audience-panels";
 import { StaticPage } from "@/components/public/static-page";
-import { AD_SLOT_NAMES, MAX_CAMPAIGN_MONTHS, PREMIUM_LISTING_ANNUAL_USD, ROS_MONTHLY_USD, SLOT_SIZES } from "@/lib/ads/slots";
+import { AD_SLOT_NAMES, MAX_CAMPAIGN_MONTHS, PAGE_COLUMN_PX, PREMIUM_LISTING_ANNUAL_USD, ROS_MONTHLY_USD, SLOT_SIZES, TAKEOVER_SLOTS } from "@/lib/ads/slots";
 
 export const metadata: Metadata = {
   title: "Advertise",
@@ -111,6 +111,22 @@ export default function AdvertisePage() {
               </p>
             </article>
             <article className="flex flex-col gap-2 border border-rule p-4">
+              <h3 className="font-semibold">Page takeover</h3>
+              <p className="font-display text-3xl font-semibold">
+                By the day<span className="text-base font-normal"> or the week</span>
+              </p>
+              <p className="text-sm">
+                The whole desktop page is yours: the skin behind the page, with both gutters clicking through, and the billboard under the navigation on every
+                page. One advertiser at a time. Sold by the newsroom, not online; artwork is {SLOT_SIZES.skin.width} × {SLOT_SIZES.skin.height} for the skin
+                (the centre {PAGE_COLUMN_PX} px left plain for the page) and {SLOT_SIZES.billboard.width} × {SLOT_SIZES.billboard.height} for the billboard.
+              </p>
+              <p className="text-sm">
+                <a href={`mailto:${CONTACT}?subject=Page%20takeover`} className="font-semibold underline">
+                  Ask about dates
+                </a>
+              </p>
+            </article>
+            <article className="flex flex-col gap-2 border border-rule p-4">
               <h3 className="font-semibold">Job postings</h3>
               <p className="text-sm">
                 Roles at clinics, research groups and harm-reduction services, read by an editor before they appear, on the jobs board and in the newsletter. Priced per
@@ -145,8 +161,8 @@ export default function AdvertisePage() {
             Unit sizes
           </h2>
           <p className="text-sm">
-            One image per unit, at exactly this pixel size: JPEG, PNG, WebP or GIF, up to 1 MB. Cover as many units as you like; the leaderboard, medium rectangle and
-            mobile banner reach most readers, and the half page is the most-seen desktop unit.
+            One image per unit, at exactly this pixel size: JPEG, PNG, WebP or GIF, up to 1 MB. Cover as many units as you like; the medium rectangle and mobile
+            banner reach most readers, and the half page is the most-seen desktop unit. The skin and the billboard are the takeover, booked through the newsroom.
           </p>
           <table className="w-full text-left text-sm">
             <thead>
@@ -165,7 +181,7 @@ export default function AdvertisePage() {
                   <td className="pr-3 whitespace-nowrap">
                     {SLOT_SIZES[name].width} × {SLOT_SIZES[name].height}
                   </td>
-                  <td>{SLOT_SIZES[name].where}</td>
+                  <td>{SLOT_SIZES[name].where}{TAKEOVER_SLOTS.includes(name) ? " · takeover" : ""}</td>
                 </tr>
               ))}
             </tbody>

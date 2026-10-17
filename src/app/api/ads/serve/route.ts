@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { FREQ_COOKIE, capReached, parseFrequency, serializeFrequency, utcDay, withServed } from "@/lib/ads/frequency";
 import { imageFromHtml, sanitizeAdHtml } from "@/lib/ads/sanitize";
-import { isAdSlotName, isPageType, SUPPORTER_HIDDEN } from "@/lib/ads/slots";
+import { isAdSlotName, isPageType, SLOT_SIZES, SUPPORTER_HIDDEN } from "@/lib/ads/slots";
 import { getSession } from "@/lib/auth/session";
 import { mediaUrl } from "@/lib/media/url";
 import { createAnonClient } from "@/lib/supabase/anon";
@@ -50,7 +50,8 @@ export async function GET(request: Request) {
   const html = row.html ? sanitizeAdHtml(row.html) : null;
   // Display units only: an uploaded image, or an HTML creative that is a single picture. Text-only HTML
   // (the old house ads) is no longer served, so a unit with no artwork stays empty.
-  const found = row.image_path ? mediaUrl(row.image_path, { width: 1200 }) : html && html.usable ? imageFromHtml(html.html) : null;
+  // Uploaded artwork is served at the unit's own width (the skin is 1920 wide; no unit is wider than that).
+  const found = row.image_path ? mediaUrl(row.image_path, { width: Math.max(1200, SLOT_SIZES[slot].width) }) : html && html.usable ? imageFromHtml(html.html) : null;
   if (!found) return empty();
   // Artwork shipped in public/ (house creatives and rendered advertiser creatives) is addressed by the canonical
   // domain; it is handed to the page as a path, so the browser loads it from whatever host the reader is on

@@ -58,7 +58,9 @@ values
   ('00000000-0000-4000-8000-000000000001', 'bigbox-2', 'Big box 2', 300, 250),
   ('00000000-0000-4000-8000-000000000001', 'in-river', 'In-feed leaderboard', 728, 90),
   ('00000000-0000-4000-8000-000000000001', 'in-article', 'In-article rectangle', 300, 250),
-  ('00000000-0000-4000-8000-000000000001', 'half-page', 'Half page', 300, 600)
+  ('00000000-0000-4000-8000-000000000001', 'half-page', 'Half page', 300, 600),
+  ('00000000-0000-4000-8000-000000000001', 'billboard', 'Billboard', 970, 250),
+  ('00000000-0000-4000-8000-000000000001', 'skin', 'Skin (page takeover)', 1920, 1400)
 on conflict (site_id, key) do nothing;
 
 -- Membership. 0009 seeds these for sites that already exist; on a fresh reset the site above is
@@ -148,7 +150,8 @@ select camp.site_id, camp.id, slot.id, v.click_url, v.alt,
     ('bigbox-2', 'https://theeye.today/support', 'Support independent reporting'),
     ('in-river', 'https://theeye.today/advertise', 'Advertise with Eye Today'),
     ('in-article', 'https://theeye.today/newsletter', 'Get the newsletter'),
-    ('half-page', 'https://theeye.today/tracker', 'Trials & Funding Tracker')
+    ('half-page', 'https://theeye.today/tracker', 'Trials & Funding Tracker'),
+    ('billboard', 'https://theeye.today/editions', 'Read the monthly edition')
   ) as v(slot_key, click_url, alt)
   join slot on slot.key = v.slot_key;
 

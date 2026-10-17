@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { runAdCheckout } from "@/lib/ads/checkout";
-import { isAdSlotName, SLOT_SIZES } from "@/lib/ads/slots";
+import { isAdSlotName, SLOT_SIZES, TAKEOVER_SLOTS } from "@/lib/ads/slots";
 import { requireArea } from "@/lib/auth/session";
 import { rateLimit } from "@/lib/http/rate-limit";
 import { EXTENSION_FOR, readDimensions, sniffRaster } from "@/lib/media/sniff";
@@ -109,7 +109,8 @@ export async function uploadAdCreative(formData: FormData) {
   if (!rateLimit(`ad-creative:${user.id}`, 60, 60 * 60 * 1000)) back(path, { error: "limited" });
 
   const slot = field(formData, "slot");
-  if (!isAdSlotName(slot)) back(path, { error: "invalid" });
+  // The takeover units are sold by the newsroom, never through the self-serve form.
+  if (!isAdSlotName(slot) || TAKEOVER_SLOTS.includes(slot)) back(path, { error: "invalid" });
   const alt = field(formData, "alt").trim();
   if (!alt || alt.length > 300) back(path, { error: "alt" });
   const file = formData.get("file");

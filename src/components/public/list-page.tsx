@@ -40,30 +40,35 @@ export function ListPage({
   return (
     <div className="flex w-full flex-col">
       <header className="px-4 py-8" style={{ background: tone, color: onBand(tone) }}>
-        <div className="mx-auto flex max-w-7xl items-center gap-3">
+        <div className="mx-auto flex max-w-page items-center gap-3">
           <SectionIcon name={sectionIconName(slug, icon)} className="size-8" />
           <h1 className="font-display text-4xl font-semibold sm:text-5xl">{title}</h1>
         </div>
       </header>
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8">
+      <div className="mx-auto flex w-full max-w-page flex-col gap-8 px-4 py-8">
         {intro}
         <TopAds page={ads} />
-        {lead ? <StoryCard card={lead} variant="lead" priority /> : null}
-        {rest.length ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {rest.map((card, index) => (
-              <Fragment key={`${card.section_slug}/${card.article_slug}`}>
-                <StoryCard card={card} variant="standard" />
-                {/* The in-river unit takes a full row of the grid. */}
-                <RiverAd page={ads} index={index} count={rest.length} className="sm:col-span-2 lg:col-span-3" />
-              </Fragment>
-            ))}
+        {/* The stories in the wide column, the rail beside them on desktop (the half page stays in view). */}
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-6">
+          <div className="flex min-w-0 flex-col gap-8">
+            {lead ? <StoryCard card={lead} variant="lead" priority /> : null}
+            {rest.length ? (
+              <div className="grid gap-6 sm:grid-cols-2">
+                {rest.map((card, index) => (
+                  <Fragment key={`${card.section_slug}/${card.article_slug}`}>
+                    <StoryCard card={card} variant="standard" />
+                    {/* The in-river unit takes a full row of the grid. */}
+                    <RiverAd page={ads} index={index} count={rest.length} className="sm:col-span-2" />
+                  </Fragment>
+                ))}
+              </div>
+            ) : null}
+            {cards.length ? null : <p className="text-muted">No stories here yet.</p>}
+            {sponsored}
+            <Pagination basePath={basePath} page={page} total={total} />
           </div>
-        ) : null}
-        {cards.length ? null : <p className="text-muted">No stories here yet.</p>}
-        {sponsored}
-        <SideAds page={ads} />
-        <Pagination basePath={basePath} page={page} total={total} />
+          <SideAds page={ads} className="mx-auto flex w-full max-w-[300px] flex-col gap-6 lg:mx-0" />
+        </div>
       </div>
     </div>
   );
