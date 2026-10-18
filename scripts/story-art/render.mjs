@@ -89,6 +89,43 @@ const money = (f) => shell(f, `
     </div>
   </div>`);
 
+// ---------------------------------------------------------------------------
+// 3. Durability: the one-month improvement against what was still there at twelve months. Two honest
+// columns and the caveat in the band, because the caveat is the story.
+// ---------------------------------------------------------------------------
+const DURABILITY = [
+  { label: "PTSD", month: 88, year: 84 },
+  { label: "Depression", month: 87, year: 66 },
+  { label: "Anxiety", month: 81, year: 61 },
+];
+const RESEARCH = "#2f6fa3";
+
+const durability = (f) => shell(f, `
+  <div style="width:1600px;height:900px;padding:70px 96px;display:flex;flex-direction:column;gap:34px;border-top:14px solid ${RESEARCH}">
+    <div style="display:flex;align-items:baseline;justify-content:space-between">
+      <span class="kicker" style="color:${RESEARCH}">Magnesium&ndash;ibogaine, 30 veterans</span>
+      <span style="font-size:21px;color:${MUTED}">25 completed the year</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:70px;flex:1;align-content:center">
+      ${[["At 1 month", "Average symptom improvement", DURABILITY.map((d) => [d.label, d.month]), MUTED],
+         ["At 12 months", "Chance of holding remission, among those who reached it", DURABILITY.map((d) => [d.label, d.year]), RESEARCH]]
+        .map(([when, what, rows, tone]) => `
+        <div style="display:flex;flex-direction:column;gap:18px;border-left:8px solid ${tone};padding-left:30px">
+          <span class="kicker" style="color:${tone}">${when}</span>
+          <span style="font-size:20px;line-height:1.35;color:${MUTED};min-height:54px">${what}</span>
+          ${rows.map(([label, n]) => `
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:20px;border-top:1px solid ${RULE};padding-top:14px">
+              <span class="serif" style="font-size:34px">${label}</span>
+              <span class="serif" style="font-size:64px;line-height:1">${n}%</span>
+            </div>`).join("")}
+        </div>`).join("")}
+    </div>
+    <div style="background:${INK};color:${PAPER};padding:26px 36px;display:flex;align-items:center;gap:28px">
+      <span class="serif" style="font-size:38px;white-space:nowrap">Two different measures</span>
+      <span style="font-size:20px;line-height:1.4">Not a before and after. Observational, no control group; in the eleven months that followed, 23 of the 25 took at least one other psychedelic. The researchers do not attribute the one-year result to ibogaine alone.</span>
+    </div>
+  </div>`);
+
 const f = {
   fraunces: await font("fraunces/files/fraunces-latin-600-normal.woff2"),
   frauncesItalic: await font("fraunces/files/fraunces-latin-400-italic.woff2"),
@@ -99,7 +136,7 @@ const f = {
 await mkdir(out, { recursive: true });
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 const page = await browser.newPage({ viewport: { width: 1600, height: 900 }, deviceScaleFactor: 1.5 });
-for (const [key, html] of [["ibogaine-coverage-2026", coverage(f)], ["ibogaine-fifty-million-schedule-one", money(f)]]) {
+for (const [key, html] of [["ibogaine-coverage-2026", coverage(f)], ["ibogaine-fifty-million-schedule-one", money(f)], ["ibogaine-durability-twelve-months", durability(f)]]) {
   await page.setContent(html, { waitUntil: "load" });
   await page.evaluate(() => document.fonts.ready);
   const file = path.join(out, `${key}-1600x900.png`);
