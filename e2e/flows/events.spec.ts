@@ -58,10 +58,13 @@ test("an organiser submits an event, an editor approves it, and it appears every
   await page.goto("/events");
   const link = page.getByRole("link", { name: title, exact: true });
   await expect(link).toBeVisible();
+  // An event with no uploaded picture still carries a plate, on the list and on its own page.
+  await expect(page.locator('[data-testid="event-poster"]').first()).toBeVisible();
   await link.click();
   await expect(page).toHaveURL(/\/events\/e2e-circle-/);
   const slug = new URL(page.url()).pathname.split("/").pop()!;
   await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
+  await expect(page.locator('[data-testid="event-poster"]')).toBeVisible();
   await expect(page.getByRole("note")).toContainText("Information only — not medical advice.");
   await expect(page.getByRole("link", { name: "Zed Clinic" })).toBeVisible();
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { ListPage } from "@/components/public/list-page";
+import { PodcastShows } from "@/components/public/podcast-shows";
 import { SponsoredListing } from "@/components/public/sponsored-listing";
 import { sectionPaint } from "@/lib/brand/palette";
 import { getSection, getSectionArticles, getSectionCount } from "@/lib/public/data";
@@ -45,6 +46,7 @@ export default async function SectionPage({ params, searchParams }: PageProps<"/
       icon={section.icon}
       slug={section.slug}
       sponsored={<SponsoredListing />}
+      beforeList={section.slug === "podcasts" ? <PodcastShows /> : null}
     />
   );
 }

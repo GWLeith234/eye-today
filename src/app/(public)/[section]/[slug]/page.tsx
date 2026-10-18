@@ -8,6 +8,7 @@ import { cache } from "react";
 import { PollMounts } from "@/components/polls/poll-mounts";
 import { Comments } from "@/components/public/comments";
 import { AuthorFace } from "@/components/public/author-face";
+import { FallbackArt } from "@/components/public/fallback-art";
 import { ShareRow } from "@/components/public/share-row";
 import { SponsoredListing } from "@/components/public/sponsored-listing";
 import { StoryCard } from "@/components/public/story-card";
@@ -227,7 +228,11 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
         </p>
       </div>
 
-      {hero ? (
+      {!hero ? (
+        // A story with no photograph opened straight into body text while its own card on the cover
+        // carried a tile. It gets the same tile here.
+        <FallbackArt slug={article.sections.slug} title={article.title} />
+      ) : (
         <figure className="flex flex-col gap-2">
           <div className="relative aspect-[3/2] w-full overflow-hidden bg-rule">
             <Image
@@ -247,7 +252,7 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
             </figcaption>
           ) : null}
         </figure>
-      ) : null}
+      )}
 
       <ShareRow path={path} title={article.title} origin={origin} />
 

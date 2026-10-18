@@ -22,12 +22,15 @@ function CardMedia({
   card,
   sizes,
   priority = false,
+  art = "full",
 }: {
   card: ArticleCard;
   sizes: string;
   priority?: boolean;
+  // The compact thumbnail is 7rem wide — too small to set a headline in, so it gets the mark alone.
+  art?: "full" | "tile";
 }) {
-  if (!card.hero_storage_path) return <FallbackArt slug={card.section_slug} label={card.section_name} />;
+  if (!card.hero_storage_path) return <FallbackArt slug={card.section_slug} title={card.title} size={art} />;
   return (
     <div className="relative aspect-[3/2] w-full overflow-hidden bg-rule">
       <Image
@@ -99,7 +102,7 @@ export function StoryCard({
     return (
       <article className="grid grid-cols-[7rem_1fr] gap-3 border-t border-rule pt-3">
         <Link href={href} tabIndex={-1} aria-hidden="true" className="block">
-          <CardMedia card={card} sizes={sizes} />
+          <CardMedia card={card} sizes={sizes} art="tile" />
         </Link>
         <div className="flex flex-col gap-1">
           <Kicker card={card} />
