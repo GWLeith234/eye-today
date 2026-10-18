@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter, Source_Serif_4 } from "next/font/google";
 
+import { ServiceWorker } from "@/components/public/service-worker";
 import { SITE_DESCRIPTION, SITE_NAME, siteOrigin } from "@/lib/public/site";
 
 import "./globals.css";
@@ -33,12 +34,22 @@ export const metadata: Metadata = {
   title: { default: SITE_NAME, template: `%s — ${SITE_NAME}` },
   description: SITE_DESCRIPTION,
   alternates: { types: { "application/rss+xml": "/rss.xml" } },
+  manifest: "/manifest.webmanifest",
+  // Installed on a phone, the app opens without browser chrome and keeps the paper status bar.
+  appleWebApp: { capable: true, title: SITE_NAME, statusBarStyle: "default" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#faf8f3",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${sans.variable} ${serif.variable} ${display.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        {children}
+        <ServiceWorker />
+      </body>
     </html>
   );
 }
