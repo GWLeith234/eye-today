@@ -23,6 +23,21 @@ export const SECTION_COLORS: Record<string, string> = {
   opinion: "#3F3F46",
 };
 
+/**
+ * The field colour behind an event's date plate, keyed to the section palette so the events page
+ * sits in the same colour world as the paper. Here rather than in the component so palette.test.ts
+ * holds these to the same AA bar as everything else — a new event type must not ship a plate whose
+ * date cannot be read.
+ */
+export const EVENT_TYPE_COLORS: Record<string, string> = {
+  conference: BRAND,
+  retreat: STORIES,
+  webinar: "#2F6FA3",
+  integration_circle: "#6B4C9A",
+  training: "#A9472F",
+  other: "#3F3F46",
+};
+
 export const SECTION_ICONS: Record<string, string> = {
   news: "news",
   "research-science": "research",

@@ -54,6 +54,8 @@ export default async function AuthorPage({ params, searchParams }: PageProps<"/a
       total={total}
       basePath={`/author/${author.slug}`}
       tone={BRAND}
+      // "other", to match pageTypeFromPath: see the note on /tag.
+      ads="other"
     />
   );
 }

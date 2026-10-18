@@ -1,16 +1,33 @@
 // Eye Today service worker.
 //
-// A news site must never serve yesterday's front page because a cache said so, so this is deliberately
-// modest: every navigation goes to the network, and the cache exists only to put something readable on the
-// screen when the phone has no signal. Build output under /_next/static/ is content-hashed and immutable, so
-// that alone is cache-first.
+// A news site must never serve yesterday's front page because a cache said so, so this is
+// deliberately modest: every navigation goes to the network, and the cache exists only to put
+// something readable on the screen when the phone has no signal.
 //
-// Anything that reads or writes a reader's own data — the API, admin, account, sign-in, previews — is not
-// touched at all.
+// It does NOT cache build output. An earlier version kept every /_next/static/ asset here, which was
+// both redundant — those filenames are content-hashed and the browser's own HTTP cache already holds
+// them as immutable — and unbounded: this file never changes between deploys, so `activate` never
+// re-runs, so nothing was ever evicted and an installed reader accumulated every build ever shipped.
+// The only things cached now are the offline card and one icon, which is all the offline case needs.
 //
-// To retire this worker, ship a sw.js whose install handler calls self.registration.unregister().
+// Anything that reads or writes a reader's own data — the API, admin, account, sign-in, previews —
+// is not touched at all.
+//
+// To retire this worker, ship a sw.js whose `activate` handler deletes every cache, claims the open
+// clients and then unregisters — in that order. Unregistering from `install` does not work: the old
+// worker stays in control of every open client until all of them close, which for a home-screen app
+// can be weeks, and `unregister()` on its own leaves Cache Storage behind:
+//
+//   self.addEventListener("activate", (event) => {
+//     event.waitUntil(
+//       caches.keys()
+//         .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+//         .then(() => self.clients.claim())
+//         .then(() => self.registration.unregister()),
+//     );
+//   });
 
-const VERSION = "v1";
+const VERSION = "v2";
 const SHELL = `eye-today-${VERSION}`;
 const OFFLINE = "/offline.html";
 const PRECACHE = [OFFLINE, "/icons/icon-192.png"];
@@ -26,6 +43,7 @@ self.addEventListener("install", (event) => {
   );
 });
 
+// Drops every older cache, including v1's accumulated build output.
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
@@ -38,27 +56,13 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;
+  // Pages only. Everything else — build output, images, fonts — goes straight to the network and is
+  // left to the browser's own HTTP cache, which already knows how long each one may be kept.
+  if (request.mode !== "navigate") return;
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
   if (BYPASS.test(url.pathname)) return;
 
-  // Pages: always the network. Offline, show the offline card rather than a browser error.
-  if (request.mode === "navigate") {
-    event.respondWith(fetch(request).catch(() => caches.match(OFFLINE).then((hit) => hit ?? Response.error())));
-    return;
-  }
-
-  // Immutable build output and the app icons.
-  if (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icons/")) {
-    event.respondWith(
-      caches.open(SHELL).then(async (cache) => {
-        const hit = await cache.match(request);
-        if (hit) return hit;
-        const response = await fetch(request);
-        if (response.ok) cache.put(request, response.clone());
-        return response;
-      }),
-    );
-  }
+  event.respondWith(fetch(request).catch(() => caches.match(OFFLINE).then((hit) => hit ?? Response.error())));
 });

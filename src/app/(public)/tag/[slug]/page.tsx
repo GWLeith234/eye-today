@@ -26,5 +26,7 @@ export default async function TagPage({ params, searchParams }: PageProps<"/tag/
   if (!tag) notFound();
   const page = parsePage((await searchParams).page);
   const [cards, total] = await Promise.all([getTagArticles(tag.slug, page), getTagCount(tag.slug)]);
-  return <ListPage title={tag.name} cards={cards} page={page} total={total} basePath={`/tag/${tag.slug}`} tone={BRAND} />;
+  // "other", not the ListPage default of "section": pageTypeFromPath files /tag under "other", and a
+  // page whose units report two different page types splits one pageview across an advertiser's report.
+  return <ListPage title={tag.name} cards={cards} page={page} total={total} basePath={`/tag/${tag.slug}`} tone={BRAND} ads="other" />;
 }

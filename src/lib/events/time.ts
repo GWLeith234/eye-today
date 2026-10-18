@@ -66,6 +66,42 @@ export function formatRange(startIso: string, endIso: string, tz: string): strin
   return format.formatRange(new Date(startIso), new Date(endIso));
 }
 
+// The pieces the events page's date plate sets in type, worked out in the event's own zone.
+//
+// `end` is null for a single-day event. When an event runs on, `end.month` is null if it finishes in
+// the same month as it started — the plate prints "27–29 JAN" — and set when it does not, so a
+// 30 January to 2 February conference prints both months instead of claiming to be one day long.
+//
+// An event ending exactly at midnight does not run into the next day, so the end is nudged back 1ms:
+// the same rule the calendar grid uses.
+export type PlateDate = {
+  start: { day: string; month: string };
+  end: { day: string; month: string | null } | null;
+  year: string;
+};
+
+export function plateDate(startsAt: string, endsAt: string, tz: string): PlateDate {
+  const part = (iso: string, options: Intl.DateTimeFormatOptions) =>
+    new Intl.DateTimeFormat("en-US", { timeZone: isTimeZone(tz) ? tz : "UTC", ...options }).format(new Date(iso));
+
+  const lastInstant = new Date(new Date(endsAt).getTime() - 1).toISOString();
+  const start = { day: part(startsAt, { day: "numeric" }), month: part(startsAt, { month: "short" }) };
+  const year = part(startsAt, { year: "numeric" });
+
+  const startKey = dayInZone(startsAt, tz);
+  const endKey = dayInZone(lastInstant, tz);
+  if (endKey <= startKey) return { start, end: null, year };
+
+  const endMonth = part(lastInstant, { month: "short" });
+  const endYear = part(lastInstant, { year: "numeric" });
+  const sameMonth = endMonth === start.month && endYear === year;
+  return {
+    start,
+    end: { day: part(lastInstant, { day: "numeric" }), month: sameMonth ? null : endMonth },
+    year,
+  };
+}
+
 // The calendar date (YYYY-MM-DD) an instant falls on in a zone.
 export function dayInZone(iso: string, tz: string): string {
   const zone = isTimeZone(tz) ? tz : "UTC";

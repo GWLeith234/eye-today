@@ -11,4 +11,4 @@ Laws differ by country, province and state. A practice described in a story may 
 
 If you need medical care, talk to a qualified clinician who can see you. Do not use this website as a substitute for that.
 
-> TODO for the publisher: confirm the crisis-resources line before launch (which services, which countries, and the wording we are allowed to print). Do not leave this paragraph as the public guidance.
+If you are in crisis, or thinking about harming yourself, please get help now rather than from a web page: call your local emergency number, or contact a crisis line in your country. If someone has taken ibogaine and is unwell — chest pain, fainting, an irregular heartbeat, a seizure — treat it as a medical emergency and call for an ambulance.

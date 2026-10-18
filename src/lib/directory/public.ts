@@ -16,10 +16,20 @@ function client() {
 
 // A hung database must not hold the page open. A live Supabase answers well
 // inside this window; the placeholder host used in local smoke does not.
-function within<T>(work: Promise<T>, fallback: T): Promise<T> {
-  const settled = work.catch(() => fallback);
+//
+// The fallback is a lie the reader can see — an empty directory reads as "we list no clinics", not
+// as "something went wrong" — so taking it has to leave a trace. Silent fallbacks are how the
+// directory served one listing out of four with nothing in the logs to say why.
+function within<T>(label: string, work: Promise<T>, fallback: T): Promise<T> {
+  const settled = work.catch((error) => {
+    console.error("public read threw", label, error instanceof Error ? error.message : String(error));
+    return fallback;
+  });
   return new Promise((resolve) => {
-    const timer = setTimeout(() => resolve(fallback), 4000);
+    const timer = setTimeout(() => {
+      console.error("public read timed out after 4s, serving the empty fallback", label);
+      resolve(fallback);
+    }, 4000);
     void settled.then((value) => {
       clearTimeout(timer);
       resolve(value);
@@ -27,13 +37,20 @@ function within<T>(work: Promise<T>, fallback: T): Promise<T> {
   });
 }
 
+// Every read goes through the anon client; when the environment has no Supabase configured at all,
+// every page on the site quietly renders empty. Worth one line in the log rather than none.
+function noClient<T>(label: string, fallback: T): T {
+  console.error("public read has no Supabase client", label);
+  return fallback;
+}
+
 export function getDirectoryCategories(): Promise<DirectoryCategory[]> {
-  return within(loadCategories(), []);
+  return within("loadCategories", loadCategories(), []);
 }
 
 async function loadCategories(): Promise<DirectoryCategory[]> {
   const supabase = client();
-  if (!supabase) return [];
+  if (!supabase) return noClient("loadCategories", []);
   const { data, error } = await supabase
     .from("directory_categories")
     .select("slug, name, sort")
@@ -49,12 +66,12 @@ async function loadCategories(): Promise<DirectoryCategory[]> {
 }
 
 export function searchDirectory(filters: DirectoryFilters): Promise<ListingCard[]> {
-  return within(loadSearch(filters), []);
+  return within("loadSearch", loadSearch(filters), []);
 }
 
 async function loadSearch(filters: DirectoryFilters): Promise<ListingCard[]> {
   const supabase = client();
-  if (!supabase) return [];
+  if (!supabase) return noClient("loadSearch", []);
   const { data, error } = await supabase.rpc("directory_search", {
     q: filters.q,
     country_code: filters.country,
@@ -67,16 +84,22 @@ async function loadSearch(filters: DirectoryFilters): Promise<ListingCard[]> {
     console.error("public read directory_search failed", error.code);
     return [];
   }
-  return (data ?? []) as ListingCard[];
+  const rows = (data ?? []) as ListingCard[];
+  // TEMPORARY (2026-10-18): production serves one listing where the same RPC run as `anon` in SQL
+  // returns four, and the category filter appears to do nothing. Nothing is logged today because
+  // the call succeeds — so log what we asked for and what came back, read one real request, and
+  // take this line out again.
+  console.log("directory_search", JSON.stringify(filters), "->", rows.length, "rows");
+  return rows;
 }
 
 export function countDirectory(filters: DirectoryFilters): Promise<number> {
-  return within(loadCount(filters), 0);
+  return within("loadCount", loadCount(filters), 0);
 }
 
 async function loadCount(filters: DirectoryFilters): Promise<number> {
   const supabase = client();
-  if (!supabase) return 0;
+  if (!supabase) return noClient("loadCount", 0);
   const { data, error } = await supabase.rpc("directory_search_count", {
     q: filters.q,
     country_code: filters.country,
@@ -92,12 +115,12 @@ async function loadCount(filters: DirectoryFilters): Promise<number> {
 }
 
 export function getDirectoryListing(slug: string): Promise<ListingDetail | null> {
-  return within(loadListing(slug), null);
+  return within("loadListing", loadListing(slug), null);
 }
 
 async function loadListing(slug: string): Promise<ListingDetail | null> {
   const supabase = client();
-  if (!supabase) return null;
+  if (!supabase) return noClient("loadListing", null);
   const { data, error } = await supabase.rpc("directory_listing", { slug });
   if (error) {
     console.error("public read directory_listing failed", error.code);
@@ -108,12 +131,12 @@ async function loadListing(slug: string): Promise<ListingDetail | null> {
 }
 
 export function getLegalStatus(country: string): Promise<LegalStatus | null> {
-  return within(loadLegal(country), null);
+  return within("loadLegal", loadLegal(country), null);
 }
 
 async function loadLegal(country: string): Promise<LegalStatus | null> {
   const supabase = client();
-  if (!supabase) return null;
+  if (!supabase) return noClient("loadLegal", null);
   const { data, error } = await supabase.rpc("directory_legal", { country_code: country });
   if (error) {
     console.error("public read directory_legal failed", error.code);
@@ -124,12 +147,12 @@ async function loadLegal(country: string): Promise<LegalStatus | null> {
 }
 
 export function getLegalMap(): Promise<LegalMapRow[]> {
-  return within(loadLegalMap(), []);
+  return within("loadLegalMap", loadLegalMap(), []);
 }
 
 async function loadLegalMap(): Promise<LegalMapRow[]> {
   const supabase = client();
-  if (!supabase) return [];
+  if (!supabase) return noClient("loadLegalMap", []);
   const { data, error } = await supabase.rpc("legal_map_public");
   if (error) {
     console.error("public read legal_map_public failed", error.code);
@@ -140,7 +163,7 @@ async function loadLegalMap(): Promise<LegalMapRow[]> {
 
 // Platform links and hosts for the podcast cards on a results page, keyed by slug.
 export function getPlatformLinks(slugs: string[]): Promise<Map<string, { platform_links: unknown; host_names: string | null }>> {
-  return within(loadPlatformLinks(slugs), new Map());
+  return within("loadPlatformLinks", loadPlatformLinks(slugs), new Map());
 }
 
 async function loadPlatformLinks(slugs: string[]): Promise<Map<string, { platform_links: unknown; host_names: string | null }>> {
@@ -155,12 +178,12 @@ async function loadPlatformLinks(slugs: string[]): Promise<Map<string, { platfor
 }
 
 export function getDirectoryServices(): Promise<string[]> {
-  return within(loadServices(), []);
+  return within("loadServices", loadServices(), []);
 }
 
 async function loadServices(): Promise<string[]> {
   const supabase = client();
-  if (!supabase) return [];
+  if (!supabase) return noClient("loadServices", []);
   const { data, error } = await supabase.rpc("directory_services");
   if (error) {
     console.error("public read directory_services failed", error.code);
@@ -170,14 +193,14 @@ async function loadServices(): Promise<string[]> {
 }
 
 export function getRelatedStories(services: string[]): Promise<ArticleCard[]> {
-  return within(loadRelated(services), []);
+  return within("loadRelated", loadRelated(services), []);
 }
 
 async function loadRelated(services: string[]): Promise<ArticleCard[]> {
   const slugs = serviceSlugs(services);
   if (slugs.length === 0) return [];
   const supabase = client();
-  if (!supabase) return [];
+  if (!supabase) return noClient("loadRelated", []);
   const { data, error } = await supabase.rpc("directory_related_stories", { service_slugs: slugs });
   if (error) {
     console.error("public read directory_related_stories failed", error.code);
@@ -187,12 +210,12 @@ async function loadRelated(services: string[]): Promise<ArticleCard[]> {
 }
 
 export function getDirectorySitemap(): Promise<{ kind: string; slug: string; updated_at: string }[]> {
-  return within(loadSitemap(), []);
+  return within("loadSitemap", loadSitemap(), []);
 }
 
 async function loadSitemap(): Promise<{ kind: string; slug: string; updated_at: string }[]> {
   const supabase = client();
-  if (!supabase) return [];
+  if (!supabase) return noClient("loadSitemap", []);
   const { data, error } = await supabase.rpc("directory_sitemap");
   if (error) {
     console.error("public read directory_sitemap failed", error.code);
@@ -202,12 +225,12 @@ async function loadSitemap(): Promise<{ kind: string; slug: string; updated_at: 
 }
 
 export function getArticleListings(articleId: string): Promise<ListingCard[]> {
-  return within(loadArticleListings(articleId), []);
+  return within("loadArticleListings", loadArticleListings(articleId), []);
 }
 
 async function loadArticleListings(articleId: string): Promise<ListingCard[]> {
   const supabase = client();
-  if (!supabase) return [];
+  if (!supabase) return noClient("loadArticleListings", []);
   const { data, error } = await supabase.rpc("article_directory_cards", { p_article: articleId });
   if (error) {
     console.error("public read article_directory_cards failed", error.code);
@@ -218,12 +241,12 @@ async function loadArticleListings(articleId: string): Promise<ListingCard[]> {
 
 // Stories by the listing's service tags plus the ones an editor attached to it.
 export function getListingStories(listingId: string, services: string[]): Promise<ArticleCard[]> {
-  return within(loadListingStories(listingId, services), []);
+  return within("loadListingStories", loadListingStories(listingId, services), []);
 }
 
 async function loadListingStories(listingId: string, services: string[]): Promise<ArticleCard[]> {
   const supabase = client();
-  if (!supabase) return [];
+  if (!supabase) return noClient("loadListingStories", []);
   const { data, error } = await supabase.rpc("directory_listing_stories", { p_listing: listingId, service_slugs: serviceSlugs(services) });
   if (error) {
     console.error("public read directory_listing_stories failed", error.code);
@@ -235,12 +258,12 @@ async function loadListingStories(listingId: string, services: string[]): Promis
 // One active premium listing, chosen at random, for the labelled sponsored card on section and
 // article pages. Null when nobody has bought one.
 export function getSponsoredListing(): Promise<ListingCard | null> {
-  return within(loadSponsoredListing(), null);
+  return within("loadSponsoredListing", loadSponsoredListing(), null);
 }
 
 async function loadSponsoredListing(): Promise<ListingCard | null> {
   const supabase = client();
-  if (!supabase) return null;
+  if (!supabase) return noClient("loadSponsoredListing", null);
   const { data, error } = await supabase.rpc("serve_sponsored_listing");
   if (error) {
     console.error("public read serve_sponsored_listing failed", error.code);
