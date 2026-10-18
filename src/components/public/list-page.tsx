@@ -21,6 +21,7 @@ export function ListPage({
   slug = "",
   ads = "section",
   sponsored = null,
+  beforeList = null,
 }: {
   title: string;
   intro?: React.ReactNode;
@@ -34,6 +35,9 @@ export function ListPage({
   // The page type the ad units report under; "other" pages still carry the leaderboard.
   ads?: PageType;
   sponsored?: React.ReactNode;
+  // Content that leads the page, under the ad band and above the stories — what a section is
+  // about before it is a list of articles. The Podcasts section puts its shows here.
+  beforeList?: React.ReactNode;
 }) {
   const lead = page === 1 ? cards[0] : undefined;
   const rest = page === 1 ? cards.slice(1) : cards;
@@ -48,6 +52,8 @@ export function ListPage({
       <div className="mx-auto flex w-full max-w-page flex-col gap-8 px-4 py-8">
         {intro}
         <TopAds page={ads} />
+        {/* Full width, above the two columns: what a section leads with is the page, not a column of it. */}
+        {beforeList}
         {/* The stories in the wide column, the rail beside them on desktop (the half page stays in view). */}
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-6">
           <div className="flex min-w-0 flex-col gap-8">
@@ -63,7 +69,8 @@ export function ListPage({
                 ))}
               </div>
             ) : null}
-            {cards.length ? null : <p className="text-muted">No stories here yet.</p>}
+            {/* A section that leads with something else is not empty just because no article has run yet. */}
+            {cards.length || beforeList ? null : <p className="text-muted">No stories here yet.</p>}
             {sponsored}
             <Pagination basePath={basePath} page={page} total={total} />
           </div>

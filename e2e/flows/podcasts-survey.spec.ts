@@ -58,6 +58,11 @@ test("podcast directory, reader survey, single-CTA newsletter", async ({ page, b
     const response = await page.goto("/podcasts");
     expect(response?.status()).toBe(200);
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Podcasts");
+    // The shows lead the page: a reader looking for podcasts should not have to find the directory
+    // and filter it down to the podcast category.
+    const shows = page.getByRole("region", { name: "The shows" });
+    await expect(shows.getByRole("link", { name: `E2E Podcast ${stamp}`, exact: true })).toBeVisible();
+    await expect(shows.getByRole("link", { name: /Spotify/ }).first()).toHaveAttribute("href", "https://open.spotify.com/show/e2e");
 
     // --- Survey -----------------------------------------------------------------------------------
     await page.goto("/survey");
