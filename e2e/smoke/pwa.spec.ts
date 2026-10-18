@@ -51,8 +51,11 @@ test("the service worker and its offline card are served", async ({ request }) =
   expect(html).toContain("offline");
 });
 
-test("the cover links the manifest and names itself for iOS", async ({ page }) => {
+test("the cover links the manifest and declares itself installable", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator('link[rel="manifest"]')).toHaveCount(1);
-  await expect(page.locator('meta[name="apple-mobile-web-app-capable"]')).toHaveAttribute("content", "yes");
+  // This Next emits the standard `mobile-web-app-capable` for metadata.appleWebApp, not the old
+  // apple-prefixed name — see node_modules/next/dist/docs, generate-metadata.md.
+  await expect(page.locator('meta[name="mobile-web-app-capable"]')).toHaveAttribute("content", "yes");
+  await expect(page.locator('meta[name="apple-mobile-web-app-title"]')).toHaveAttribute("content", "Eye Today");
 });
