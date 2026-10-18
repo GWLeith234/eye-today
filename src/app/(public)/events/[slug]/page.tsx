@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PromotedBadge } from "@/components/events/event-list";
+import { EventPoster } from "@/components/events/event-poster";
 import { EventsFrame } from "@/components/events/events-frame";
 import { sanitizeArticleHtml } from "@/lib/editor/sanitize";
 import { googleCalendarUrl, htmlToText } from "@/lib/events/ics";
@@ -73,11 +74,13 @@ export default async function EventPage({ params }: PageProps<"/events/[slug]">)
           {event.promoted ? <PromotedBadge /> : null}
         </p>
         <h1 className={`font-serif text-4xl font-bold ${cancelled ? "line-through decoration-2" : ""}`}>{event.title}</h1>
-        {imageUrl ? (
-          <div className="relative aspect-[16/9] w-full max-w-3xl">
+        <div className="relative aspect-[16/9] w-full max-w-3xl overflow-hidden">
+          {imageUrl ? (
             <Image src={imageUrl} alt={event.image_alt || ""} fill sizes="(min-width: 768px) 48rem, 100vw" className="object-cover" priority />
-          </div>
-        ) : null}
+          ) : (
+            <EventPoster event={event} />
+          )}
+        </div>
         <dl className="grid gap-2 text-sm sm:grid-cols-[10rem_1fr]">
           <dt className="font-semibold">When</dt>
           <dd>{formatRange(event.starts_at, event.ends_at, event.tz)}</dd>

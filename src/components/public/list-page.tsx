@@ -21,6 +21,7 @@ export function ListPage({
   slug = "",
   ads = "section",
   sponsored = null,
+  beforeList = null,
 }: {
   title: string;
   intro?: React.ReactNode;
@@ -34,6 +35,9 @@ export function ListPage({
   // The page type the ad units report under; "other" pages still carry the leaderboard.
   ads?: PageType;
   sponsored?: React.ReactNode;
+  // Content that leads the page, under the ad band and above the stories — what a section is
+  // about before it is a list of articles. The Podcasts section puts its shows here.
+  beforeList?: React.ReactNode;
 }) {
   const lead = page === 1 ? cards[0] : undefined;
   const rest = page === 1 ? cards.slice(1) : cards;
@@ -48,6 +52,7 @@ export function ListPage({
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8">
         {intro}
         <TopAds page={ads} />
+        {beforeList}
         {lead ? <StoryCard card={lead} variant="lead" priority /> : null}
         {rest.length ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -60,7 +65,8 @@ export function ListPage({
             ))}
           </div>
         ) : null}
-        {cards.length ? null : <p className="text-muted">No stories here yet.</p>}
+        {/* A section that leads with something else is not empty just because no article has run yet. */}
+        {cards.length || beforeList ? null : <p className="text-muted">No stories here yet.</p>}
         {sponsored}
         <SideAds page={ads} />
         <Pagination basePath={basePath} page={page} total={total} />
