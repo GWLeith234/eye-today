@@ -15,7 +15,8 @@ begin
   select count(*) into bad
     from public.ad_slots s
    where s.site_id = '00000000-0000-4000-8000-000000000001'
-     and (s.width, s.height) not in ((728, 90), (320, 50), (300, 250), (300, 600));
+     and s.key <> 'skin'  -- the skin (0029) is the wallpaper behind the page, not an IAB unit
+     and (s.width, s.height) not in ((970, 250), (728, 90), (320, 50), (300, 250), (300, 600));
   assert bad = 0, bad || ' slot(s) are not an IAB size';
   assert (select (width, height) from public.ad_slots where site_id = '00000000-0000-4000-8000-000000000001' and key = 'in-river') = (728, 90), 'in-river is the in-feed leaderboard';
   assert (select (width, height) from public.ad_slots where site_id = '00000000-0000-4000-8000-000000000001' and key = 'in-article') = (300, 250), 'in-article is a medium rectangle';

@@ -72,3 +72,24 @@ test("an HTML creative that is one picture serves as an image; text-only HTML do
   const two = sanitizeAdHtml('<img src="https://x.example/a.png" alt=""><img src="https://x.example/b.png" alt="">');
   assert.equal(imageFromHtml(two.html), null);
 });
+
+// Sprint 24: the takeover units and the placement model.
+test("the billboard tops every page type and the takeover is never self-serve", async () => {
+  const { PLACEMENTS } = await import("./placements");
+  const { AD_SLOT_NAMES, PAGE_TYPES, SELF_SERVE_SLOTS, SLOT_SIZES, SUPPORTER_HIDDEN, TAKEOVER_SLOTS } = await import("./slots");
+  for (const page of PAGE_TYPES) assert.deepEqual(PLACEMENTS[page].top, ["billboard"], `${page} carries the billboard`);
+  assert.equal(PLACEMENTS.home.band, "leaderboard", "the cover has the leaderboard band");
+  assert.equal(PLACEMENTS.home.river, null, "the cover's Latest column is too narrow for an in-feed leaderboard");
+  assert.deepEqual([...TAKEOVER_SLOTS], ["skin", "billboard"]);
+  for (const slot of TAKEOVER_SLOTS) assert.ok(!SELF_SERVE_SLOTS.includes(slot), `${slot} is not self-serve`);
+  assert.equal(SELF_SERVE_SLOTS.length + TAKEOVER_SLOTS.length, AD_SLOT_NAMES.length);
+  assert.ok(SUPPORTER_HIDDEN.includes("skin"), "supporters do not see the skin");
+  assert.deepEqual([SLOT_SIZES.billboard.width, SLOT_SIZES.billboard.height], [970, 250]);
+  assert.deepEqual([SLOT_SIZES.skin.width, SLOT_SIZES.skin.height], [1920, 1400]);
+  // Every unit but the skin is an IAB standard size.
+  const iab = new Set(["970x250", "728x90", "300x250", "300x600", "320x50"]);
+  for (const name of AD_SLOT_NAMES) {
+    if (name === "skin") continue;
+    assert.ok(iab.has(`${SLOT_SIZES[name].width}x${SLOT_SIZES[name].height}`), `${name} is an IAB size`);
+  }
+});

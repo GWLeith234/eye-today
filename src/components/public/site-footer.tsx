@@ -41,7 +41,7 @@ export function SiteFooter({ sections }: { sections: Section[] }) {
   const share = origin ? encodeURIComponent(origin) : null;
   return (
     <footer className="mt-12 border-t-2 border-ink bg-paper">
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 text-sm sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mx-auto grid max-w-page gap-8 px-4 py-10 text-sm sm:grid-cols-2 lg:grid-cols-3">
         <nav aria-label="Footer sections">
           <h2 className="mb-3 font-display text-lg font-semibold">Sections</h2>
           <ul className="flex flex-col gap-2">
@@ -83,7 +83,7 @@ export function SiteFooter({ sections }: { sections: Section[] }) {
         </div>
       </div>
       <div className="border-t border-rule">
-        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-4 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto flex max-w-page flex-col gap-2 px-4 py-4 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
           <p>Published by EvolveX360</p>
           <p>
             <Link href="/disclaimer" className="hover:underline">Information only — not medical advice.</Link>

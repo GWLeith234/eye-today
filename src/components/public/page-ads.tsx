@@ -7,18 +7,26 @@ import { SupporterHidden } from "./supporter-hidden";
 // The units a page type carries, read from PLACEMENTS so a page declares its type once. Every
 // unit is empty until a creative arrives, so an unfilled one adds no gap.
 
+// The billboard band under the navigation. Desktop only: on a phone the mobile banner carries the top of
+// the page, and a billboard squeezed to 360 px is a strip nobody can read.
 export function TopAds({ page }: { page: PageType }) {
   return (
     <>
       {PLACEMENTS[page].top.map((name) => (
-        <AdSlot key={name} name={name} page={page} />
+        <AdSlot key={name} name={name} page={page} className="hidden md:flex" />
       ))}
     </>
   );
 }
 
-// Big boxes: beside the content where there is a sidebar, otherwise centred under it. Supporters
-// never see them.
+// The leaderboard band between major sections of a page.
+export function BandAd({ page }: { page: PageType }) {
+  const name = PLACEMENTS[page].band;
+  return name ? <AdSlot name={name} page={page} className="hidden md:flex" /> : null;
+}
+
+// The rail: a big box at the top, and the half page at the bottom, which stays in view while the reader
+// scrolls the column beside it. Supporters never see them.
 export function SideAds({ page, className = "mx-auto flex w-full max-w-[300px] flex-col gap-6" }: { page: PageType; className?: string }) {
   const names = PLACEMENTS[page].side;
   if (!names.length) return null;
@@ -26,7 +34,7 @@ export function SideAds({ page, className = "mx-auto flex w-full max-w-[300px] f
     <div className={className}>
       {names.map((name) => (
         <SupporterHidden key={name}>
-          <AdSlot name={name} page={page} />
+          <AdSlot name={name} page={page} className={name === "half-page" ? "lg:sticky lg:top-24" : ""} />
         </SupporterHidden>
       ))}
     </div>
@@ -47,5 +55,5 @@ export function RiverAd({ page, index, count, className }: { page: PageType; ind
 
 export function InlineAd({ page }: { page: PageType }) {
   const name = PLACEMENTS[page].inline;
-  return name ? <AdSlot name={name} page={page} /> : null;
+  return name ? <AdSlot name={name} page={page} className="my-2" /> : null;
 }

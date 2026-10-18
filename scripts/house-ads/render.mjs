@@ -19,6 +19,7 @@ async function font(file) {
 
 // One message per unit. Short enough to read at a glance; the same four house lines the site already sells.
 const CREATIVES = [
+  { key: "billboard", w: 970, h: 250, kicker: "The monthly edition", line: "Every story that mattered, in one issue.", cta: "Read Issue No. 1", url: "/editions" },
   { key: "leaderboard", w: 728, h: 90, kicker: "The monthly edition", line: "Every story that mattered, in one issue.", cta: "Read Issue No. 1", url: "/editions" },
   { key: "in-river", w: 728, h: 90, kicker: "Advertise with Eye Today", line: "Reach the people who decide on treatment.", cta: "Rate card", url: "/advertise" },
   { key: "mobile-banner", w: 320, h: 50, kicker: "Eye Today", line: "Get the newsletter.", cta: "Subscribe", url: "/newsletter" },
@@ -31,8 +32,9 @@ const CREATIVES = [
 function layout(c) {
   const wide = c.h <= 90;
   const tall = c.h >= 600;
-  const kickerSize = wide ? (c.w < 400 ? 11 : 13) : 13;
-  const lineSize = wide ? (c.w < 400 ? 15 : 22) : tall ? 30 : 24;
+  const billboard = c.w >= 970;
+  const kickerSize = wide ? (c.w < 400 ? 11 : 13) : billboard ? 16 : 13;
+  const lineSize = wide ? (c.w < 400 ? 15 : 22) : billboard ? 44 : tall ? 30 : 24;
   const ctaSize = wide ? 13 : 14;
   return `
   <html><head><style>
@@ -42,15 +44,15 @@ function layout(c) {
     @font-face { font-family: Inter; font-weight: 700; src: ${c.fonts.interBold}; }
     * { margin: 0; box-sizing: border-box; }
     body { width: ${c.w}px; height: ${c.h}px; overflow: hidden; background: ${PAPER}; color: ${INK}; font-family: Inter, sans-serif; }
-    .ad { position: relative; width: ${c.w}px; height: ${c.h}px; border: 1px solid ${INK}; display: flex; ${wide ? "flex-direction: row; align-items: center;" : tall ? "flex-direction: column; justify-content: flex-start;" : "flex-direction: column; justify-content: space-between;"} padding: ${wide ? "0 14px" : tall ? "28px 24px" : "18px 20px"}; gap: ${wide ? "16px" : tall ? "22px" : "12px"}; }
-    .ad::before { content: ""; position: absolute; left: 0; top: 0; ${wide ? `width: 6px; height: 100%;` : `width: 100%; height: 6px;`} background: ${BRAND}; }
-    .mark { display: flex; align-items: center; gap: 8px; font-family: Fraunces, serif; font-weight: 700; font-size: ${wide ? 18 : tall ? 26 : 20}px; letter-spacing: -0.01em; white-space: nowrap; }
+    .ad { position: relative; width: ${c.w}px; height: ${c.h}px; border: 1px solid ${INK}; display: flex; ${wide || billboard ? "flex-direction: row; align-items: center;" : tall ? "flex-direction: column; justify-content: flex-start;" : "flex-direction: column; justify-content: space-between;"} padding: ${wide ? "0 14px" : billboard ? "0 40px" : tall ? "28px 24px" : "18px 20px"}; gap: ${wide ? "16px" : billboard ? "40px" : tall ? "22px" : "12px"}; }
+    .ad::before { content: ""; position: absolute; left: 0; top: 0; ${wide || billboard ? `width: ${billboard ? 10 : 6}px; height: 100%;` : `width: 100%; height: 6px;`} background: ${BRAND}; }
+    .mark { display: flex; align-items: center; gap: 8px; font-family: Fraunces, serif; font-weight: 700; font-size: ${wide ? 18 : billboard ? 34 : tall ? 26 : 20}px; letter-spacing: -0.01em; white-space: nowrap; }
     .eye { width: ${wide ? 18 : 22}px; height: ${wide ? 18 : 22}px; border-radius: 50%; border: 2px solid ${INK}; position: relative; }
     .eye::after { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: ${INK}; }
     .kicker { font-size: ${kickerSize}px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: ${BRAND}; }
     .line { font-family: Fraunces, serif; font-weight: 400; font-style: italic; font-size: ${lineSize}px; line-height: 1.15; ${wide ? "white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" : ""} }
-    .cta { display: inline-block; background: ${ACCENT}; color: ${INK}; font-weight: 700; font-size: ${ctaSize}px; padding: ${wide ? "7px 12px" : "10px 14px"}; white-space: nowrap; ${wide ? "margin-left: auto;" : "align-self: flex-start;"} }
-    .text { display: flex; flex-direction: column; gap: ${wide ? 2 : 10}px; min-width: 0; ${wide ? "flex: 1;" : ""} }
+    .cta { display: inline-block; background: ${ACCENT}; color: ${INK}; font-weight: 700; font-size: ${billboard ? 20 : ctaSize}px; padding: ${wide ? "7px 12px" : billboard ? "16px 24px" : "10px 14px"}; white-space: nowrap; ${wide || billboard ? "margin-left: auto;" : "align-self: flex-start;"} }
+    .text { display: flex; flex-direction: column; gap: ${wide ? 2 : billboard ? 12 : 10}px; min-width: 0; ${wide || billboard ? "flex: 1;" : ""} }
     .foot { font-size: 11px; color: #5b665f; margin-top: auto; }
   </style></head><body>
   <div class="ad">

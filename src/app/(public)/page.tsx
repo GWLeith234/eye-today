@@ -6,7 +6,7 @@ import { LatestJobs } from "@/components/postings/posting-list";
 import { AdSlot } from "@/components/public/ad-slot";
 import { AuthorFace } from "@/components/public/author-face";
 import { NewsletterForm } from "@/components/public/newsletter-form";
-import { RiverAd, TopAds } from "@/components/public/page-ads";
+import { BandAd, TopAds } from "@/components/public/page-ads";
 import { SectionIcon } from "@/components/public/section-icon";
 import { StoryCard } from "@/components/public/story-card";
 import { SupporterHidden } from "@/components/public/supporter-hidden";
@@ -18,8 +18,6 @@ import { type ArticleCard, getHomepage, getLatest, getMostRead, getSectionArticl
 import { isReservedSectionSlug } from "@/lib/public/reserved";
 
 export const revalidate = 60;
-
-// The in-river ad sits after this many stories in The Latest.
 
 function Rail({ title, href, slug, icon, cards }: { title: string; href: string; slug: string; icon: string | null; cards: ArticleCard[] }) {
   if (!cards.length) return null;
@@ -71,34 +69,37 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-6">
-      {lead ? <StoryCard card={lead} variant="lead" priority /> : null}
-
-      {secondary.length ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {secondary.map((card) => (
-            <StoryCard key={card.article_slug} card={card} variant="feature" />
-          ))}
-        </div>
-      ) : null}
-
-      {/* Empty until a creative arrives, so an unfilled slot adds no gap. */}
+    <div className="mx-auto flex w-full max-w-page flex-col gap-10 px-4 py-6">
+      {/* Billboard under the navigation (desktop). Empty until a creative arrives, so an unfilled slot adds no gap. */}
       <TopAds page="home" />
 
-      <div className="grid gap-10 lg:grid-cols-3">
-        <section aria-labelledby="latest" className="flex flex-col gap-4 lg:col-span-2">
+      {/* The cover: The Latest down the left, the lead and its features in the middle, the rail on the right —
+          the community-daily front page. On a phone the lead comes first, then The Latest, then the rail. */}
+      <div className="grid gap-8 lg:grid-cols-[300px_minmax(0,1fr)_300px] lg:gap-6">
+        <section aria-labelledby="latest" className="order-2 flex flex-col gap-3 lg:order-1">
           <h2 id="latest" className="border-b-2 border-ink pb-1 font-display text-2xl font-semibold">The Latest</h2>
-          <div className="flex flex-col gap-4">
-            {latest.map((card, index) => (
-              <div key={card.article_slug} className="flex flex-col gap-4">
+          <div className="flex flex-col divide-y divide-rule">
+            {latest.map((card) => (
+              <div key={card.article_slug} className="py-3 first:pt-0">
                 <StoryCard card={card} variant="compact" />
-                <RiverAd page="home" index={index} count={latest.length} />
               </div>
             ))}
           </div>
+          <Link href="/news" className="text-sm font-semibold text-brand hover:underline">More stories →</Link>
         </section>
 
-        <aside className="flex flex-col gap-6" aria-label="Most read and advertising">
+        <section aria-label="Cover story" className="order-1 flex flex-col gap-6 lg:order-2">
+          {lead ? <StoryCard card={lead} variant="lead" priority /> : null}
+          {secondary.length ? (
+            <div className="grid gap-6 border-t border-rule pt-6 sm:grid-cols-2">
+              {secondary.map((card) => (
+                <StoryCard key={card.article_slug} card={card} variant="feature" />
+              ))}
+            </div>
+          ) : null}
+        </section>
+
+        <aside className="order-3 flex flex-col gap-6" aria-label="Most read and advertising">
           <SupporterHidden>
             <AdSlot name="bigbox-1" page="home" />
           </SupporterHidden>
@@ -113,10 +114,13 @@ export default async function HomePage() {
             </ol>
           </section>
           <SupporterHidden>
-            <AdSlot name="half-page" page="home" />
+            <AdSlot name="half-page" page="home" className="lg:sticky lg:top-24" />
           </SupporterHidden>
         </aside>
       </div>
+
+      {/* Leaderboard band between the cover and the section rails (desktop). */}
+      <BandAd page="home" />
 
       <InTheNews links={news} />
       <UpcomingEvents events={events} />
@@ -148,7 +152,7 @@ export default async function HomePage() {
       ) : null}
 
       <section aria-label="Newsletter" className="bg-brand px-4 py-8 text-paper">
-        <div className="mx-auto grid max-w-7xl items-center gap-6 md:grid-cols-2">
+        <div className="mx-auto grid max-w-page items-center gap-6 md:grid-cols-2">
           <div>
             <h2 className="font-display text-3xl font-semibold">Get Eye Today by email</h2>
             <p className="mt-2">The day&rsquo;s stories, once a day. The week&rsquo;s best, once a week.</p>

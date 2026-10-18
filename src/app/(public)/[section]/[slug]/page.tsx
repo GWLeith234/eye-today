@@ -170,7 +170,9 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
   const tone = sectionPaint(article.sections.slug, article.sections.color);
 
   return (
-    <article className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
+    <article className="mx-auto flex w-full max-w-page flex-col gap-6 px-4 py-8">
+      {/* Billboard under the navigation (desktop), above the headline. */}
+      <TopAds page="article" />
       <script
         type="application/ld+json"
         // JSON.stringify escapes quotes; escaping < keeps "</script>" in a title from closing the tag.
@@ -256,8 +258,10 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
 
       <ShareRow path={path} title={article.title} origin={origin} />
 
-      <TopAds page="article" />
-
+      {/* The story and its rail: the body in the reading column, the big box and the half page beside it on
+          desktop (the half page stays in view as the reader scrolls); on a phone the rail follows the story. */}
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-10">
+      <div className="flex min-w-0 flex-col gap-6">
       {/* body_html is sanitized when saved and again here in case a row was written elsewhere. */}
       <div className="article-body mx-auto flex w-full max-w-3xl flex-col gap-4" dangerouslySetInnerHTML={{ __html: sanitizeArticleHtml(article.body_html ?? "", { sponsored: article.is_sponsored }) }} />
       <PollMounts />
@@ -284,7 +288,9 @@ export default async function ArticlePage({ params }: PageProps<"/[section]/[slu
         <Link href="/disclaimer" className="underline">Read the full disclaimer</Link>
       </p>
 
-      <SideAds page="article" />
+      </div>
+      <SideAds page="article" className="mx-auto flex w-full max-w-[300px] flex-col gap-6 lg:mx-0" />
+      </div>
 
       {commentsOpen ? <Comments articleId={article.id} /> : null}
 
