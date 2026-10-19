@@ -21,7 +21,7 @@ test("house ads fill the units on every page type", async ({ page }) => {
     }
     // There is no house skin: the takeover is sold or absent, never filled.
     await expect(page.locator('[data-ad-slot="skin"]'), `${path} has no skin`).toHaveCount(0);
-    await expect(page.locator("aside[data-ad-house='1']").first(), `${path} shows a house ad`).toBeAttached();
+    await expect(page.locator("[data-ad-house='1']").first(), `${path} shows a house ad`).toBeAttached();
   }
   // The mobile banner is for phones only.
   await page.setViewportSize({ width: 390, height: 800 });
