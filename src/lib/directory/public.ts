@@ -89,7 +89,12 @@ async function loadSearch(filters: DirectoryFilters): Promise<ListingCard[]> {
   // returns four, and the category filter appears to do nothing. Nothing is logged today because
   // the call succeeds — so log what we asked for and what came back, read one real request, and
   // take this line out again.
-  console.log("directory_search", JSON.stringify(filters), "->", rows.length, "rows");
+  //
+  // console.error, not console.log: Railway's deploy stream carries stderr. The first version of
+  // this line used console.log and produced nothing, which read like "the page never rendered" —
+  // a wrong conclusion that a control request to /podcasts (fresh, correct, and equally silent)
+  // caught. Anything written here to be read later goes to stderr.
+  console.error("directory_search", JSON.stringify(filters), "->", rows.length, "rows");
   return rows;
 }
 
