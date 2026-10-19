@@ -9,7 +9,9 @@ const CSP = [
   "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://plausible.io https://*.sentry.io",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://*.supabase.co https://i.ytimg.com https://tile.openstreetmap.org",
-  "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://platform.twitter.com https://www.instagram.com https://challenges.cloudflare.com",
+  // No www.youtube.com: the sanitizer rewrites every YouTube embed to youtube-nocookie, and leaving
+  // the cookie-setting host in the policy would quietly permit one that slipped past it.
+  "frame-src 'self' https://www.youtube-nocookie.com https://platform.twitter.com https://www.instagram.com https://challenges.cloudflare.com",
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://plausible.io https://*.ingest.sentry.io https://*.sentry.io",
   "font-src 'self'",
   "object-src 'none'",

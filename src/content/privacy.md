@@ -35,15 +35,31 @@ Account data stays while the account exists. Newsletter records stay while you a
 
 We do not sell personal information.
 
-## Cookies
+## Cookies and local storage
 
-Plausible is cookieless. It does not set an analytics cookie.
+**We do not ask you to accept cookies, because we do not set any that you would need to refuse.**
+There is no advertising cookie, no tracking pixel and no third-party analytics script on this site.
 
-The cookies we do set are essential:
+Our analytics is Plausible, which is cookieless and hosted in the EU. It counts a pageview without
+storing anything on your device and without building a profile of you. Advertising on Eye Today is
+measured on our own server against a one-way hash of your IP address, so that an advertiser can be
+told how many times an ad was seen — never who saw it. Neither sets a cookie.
 
-- An auth session cookie when you sign in.
-- A Cloudflare Turnstile cookie on the write-for-us form.
-- A short-lived cookie that caps how often the same ad is shown to one browser.
+What we do store on your device, all of it necessary for something you asked for:
+
+- **A sign-in session**, only if you have an account and sign in. It keeps you signed in, and it is cleared when you sign out.
+- **`et_voter`**, only when you vote in a poll. A random value so that one browser votes once. We store only a salted hash of it — never the value itself, and never your IP address.
+- **A Cloudflare Turnstile cookie**, only on pages with a form. It tells people apart from bots so the forms stay usable.
+- **A dismissal note**, only if you dismiss the support note under a story. It remembers that you dismissed it, for 30 days, so we do not ask again. It stays in your browser and is never sent to us.
+
+You can clear all of these in your browser at any time. Clearing them signs you out and lets you see
+the support note again; nothing else about the site changes.
+
+If a story embeds a video or a post from another site, that embed is served by them and may set
+their cookies when it loads. We rewrite every YouTube embed to the no-cookie host so that watching a
+video here does not hand YouTube an advertising profile of you.
+
+If we ever add something that does need your consent, we will ask for it before it loads — not after.
 
 ## Access and correction
 

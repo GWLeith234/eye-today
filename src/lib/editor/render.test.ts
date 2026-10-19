@@ -76,3 +76,21 @@ test("a poll node renders a placeholder with its id, and the sanitizer keeps onl
   assert.doesNotMatch(sanitizeArticleHtml('<div data-poll="x" onclick="a()">Poll</div>'), /data-poll|onclick/);
   assert.doesNotMatch(sanitizeArticleHtml(`<p data-poll="${id}">x</p>`), /data-poll/);
 });
+
+// youtube.com sets advertising cookies as soon as a story loads, before the reader does anything,
+// so the sanitizer rewrites the host rather than dropping the video. Any route that writes
+// body_html goes through it, so this is the one place the rule has to hold.
+test("a plain youtube embed is rewritten to the no-cookie host", () => {
+  const html = sanitizeArticleHtml('<p>Watch</p><iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe>');
+  assert.match(html, /youtube-nocookie\.com\/embed\/dQw4w9WgXcQ/);
+  assert.doesNotMatch(html, /https:\/\/www\.youtube\.com/);
+
+  // Query strings survive the rewrite.
+  const timed = sanitizeArticleHtml('<iframe src="https://www.youtube.com/embed/abc123?start=30"></iframe>');
+  assert.match(timed, /youtube-nocookie\.com\/embed\/abc123\?start=30/);
+
+  // An embed that is already private is left alone, and a host we do not allow is still dropped.
+  const already = sanitizeArticleHtml('<iframe src="https://www.youtube-nocookie.com/embed/abc123"></iframe>');
+  assert.match(already, /youtube-nocookie\.com\/embed\/abc123/);
+  assert.doesNotMatch(sanitizeArticleHtml('<iframe src="https://evil.example/embed/x"></iframe>'), /iframe/);
+});

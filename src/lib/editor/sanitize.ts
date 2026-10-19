@@ -22,6 +22,18 @@ const IFRAME_SRC = [
   /^https:\/\/www\.instagram\.com\/(p|reel)\/[A-Za-z0-9_-]{1,40}\/embed\/?$/,
 ];
 
+// youtube.com sets advertising cookies the moment a story loads, with no consent asked and none
+// obtainable — it happens before the reader does anything. youtube-nocookie.com plays the same video
+// without them. An editor who pastes an ordinary YouTube URL still gets a working embed; it is
+// rewritten rather than rejected, because silently dropping the video teaches editors nothing.
+//
+// Keeping this at the sanitizer means it holds for anything ever written to body_html, by any route.
+const YOUTUBE_EMBED = /^https:\/\/www\.youtube\.com\/embed\//;
+
+export function privateEmbedSrc(src: string): string {
+  return src.replace(YOUTUBE_EMBED, "https://www.youtube-nocookie.com/embed/");
+}
+
 // Images must be https, or come from this project's own Storage (http on a local stack).
 const STORAGE_PREFIX = process.env.NEXT_PUBLIC_SUPABASE_URL
   ? `${process.env.NEXT_PUBLIC_SUPABASE_URL.replace(/\/+$/, "")}/storage/v1/`
@@ -49,6 +61,10 @@ DOMPurify.addHook("afterSanitizeAttributes", (node) => {
   const element = node as Element;
   if (element.tagName === "IMG" && !isAllowedImageSrc(element.getAttribute("src"))) {
     element.removeAttribute("src");
+  }
+  if (element.tagName === "IFRAME") {
+    const src = element.getAttribute("src");
+    if (src) element.setAttribute("src", privateEmbedSrc(src));
   }
   // A poll placeholder carries a uuid and nothing else; anything else is dropped.
   if (element.hasAttribute?.("data-poll")) {
