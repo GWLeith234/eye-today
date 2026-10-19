@@ -44,6 +44,36 @@ So the same helper, in the same deployment, in the same minutes, returns 3 rows 
 - **The 4-second timeout.** Railway's HTTP logs put `/directory` at 4–189 ms.
 - **An error being swallowed.** No `public read … failed` line since 4 October.
 
+### Evidence added 18 Oct, evening
+
+The diagnostic logging was added, deployed, and probed. **No app log line appears for any page
+request** — not from `/directory`, and not from `/podcasts` either. (The first attempt used
+`console.log`, which Railway's deploy stream does not carry; it was moved to `console.error`, which
+the stream demonstrably does carry — `public read directory_categories failed PGRST205` from
+4 October is a `console.error` from this same module.)
+
+If `searchDirectory()` never logs, it is never called, which means **these pages are not being
+rendered per request at all — they are served from a cache.** That fits everything:
+
+- `/directory` shows exactly the content it had before the podcast listings were added on 12 October.
+- `/podcasts` shows current content because it was cached more recently — *not* because it rendered.
+  This kills the earlier "the control proves it renders" reasoning: a cached page with correct
+  content is indistinguishable from a fresh one by content alone.
+- Response times of 4–189 ms.
+- The database is correct and was never the problem.
+
+`export const dynamic = "force-dynamic"` is set on `src/app/(public)/directory/page.tsx` and is not
+having the effect it would have had in Next 14. **This is Next.js 16.3.6** — the version `AGENTS.md`
+opens by warning about — and `node_modules/next/dist/docs/01-app/02-guides/migrating-to-cache-components.md`
+documents `force-dynamic` as "not needed" under the new caching model. `cacheComponents` is *not*
+enabled in `next.config.ts`, so the classic model should still apply; that contradiction is the
+thread to pull.
+
+**Start here:** read `caching-without-cache-components.md` and `migrating-to-cache-components.md` in
+the bundled docs, then confirm with response headers (`x-nextjs-cache`, `age`) whether the live
+`/directory` is a cache hit. If it is, the fix is a caching declaration, not a query — and it will
+be affecting more pages than the directory.
+
 ### What has been added to help
 
 `src/lib/directory/public.ts` now logs when `within()` takes a fallback, when there is no Supabase
