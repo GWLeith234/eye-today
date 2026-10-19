@@ -6,7 +6,9 @@ import { type AdSlotName, type PageType, PAGE_COLUMN_PX, SLOT_SIZES } from "@/li
 
 export type { AdSlotName };
 
-type Creative = { id: string; alt: string; imageUrl: string | null; html: string | null; house?: boolean };
+// No `html`: the client HTML path is gone. /api/ads/serve resolves a creative's HTML to an image
+// server-side and hardcodes html: null, so a field here only invites someone to render it again.
+type Creative = { id: string; alt: string; imageUrl: string | null; house?: boolean };
 
 // Pages pass only the slot name: they read no cookies and query no ads, so they stay cached.
 // The ad is fetched in the browser. Nothing is rendered until one arrives, and nothing at all
@@ -74,7 +76,7 @@ const clickHref = (ad: Creative, page: PageType) => `/api/ads/click/${ad.id}?pag
 export function AdSlot({ name, page = "other", className = "" }: { name: AdSlotName; page?: PageType; className?: string }) {
   const ad = useAd(name, page);
   const [dismissed, setDismissed] = useState(false);
-  const region = useRef<HTMLElement>(null);
+  const region = useRef<HTMLDivElement>(null);
   useImpression(region, ad, name, page);
 
   if (!ad || dismissed || !ad.imageUrl) return null;
@@ -82,17 +84,20 @@ export function AdSlot({ name, page = "other", className = "" }: { name: AdSlotN
 
   if (name === "mobile-banner") {
     return (
-      <aside ref={region} aria-label="Advertisement" data-ad-slot={name} data-ad-house={ad.house ? "1" : undefined} className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-center gap-2 border-t border-ad-line bg-ad-ground px-2 py-1 sm:hidden">
+      <div ref={region} data-ad-slot={name} data-ad-house={ad.house ? "1" : undefined} className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-center gap-2 border-t border-ad-line bg-ad-ground px-2 py-1 sm:hidden">
         <a href={clickHref(ad, page)} target="_blank" rel="sponsored noopener noreferrer" className="block" style={{ width, height }}>
           {/* eslint-disable-next-line @next/next/no-img-element -- third-party ad creative at the unit's IAB size */}
           <img src={ad.imageUrl} alt={ad.alt} width={width} height={height} loading="lazy" className="block h-full w-full object-contain" />
         </a>
         <button type="button" onClick={() => setDismissed(true)} aria-label="Close advertisement" className="shrink-0 rounded border border-ad-line bg-paper px-1.5 text-xs leading-5">×</button>
-      </aside>
+      </div>
     );
   }
+  // A plain container, not <aside aria-label="Advertisement">. A desktop cover carries five units, so
+  // every one of them was a duplicate landmark — and an ad is not somewhere a reader navigates to. The
+  // visible "Advertisement" label below is what actually does the work, for everyone.
   return (
-    <aside ref={region} aria-label="Advertisement" data-ad-slot={name} data-ad-house={ad.house ? "1" : undefined} className={`flex w-full flex-col items-center gap-1.5 border-y border-ad-line bg-ad-ground px-2 pb-2.5 pt-1.5 ${className}`}>
+    <div ref={region} data-ad-slot={name} data-ad-house={ad.house ? "1" : undefined} className={`flex w-full flex-col items-center gap-1.5 border-y border-ad-line bg-ad-ground px-2 pb-2.5 pt-1.5 ${className}`}>
       <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted">Advertisement</p>
       {/* An editor can save a creative with no alt text, and a link whose only content is an image
           with an empty alt has no accessible name at all. The unit's own label stands in. */}
@@ -100,7 +105,7 @@ export function AdSlot({ name, page = "other", className = "" }: { name: AdSlotN
         {/* eslint-disable-next-line @next/next/no-img-element -- third-party ad creative at the unit's IAB size */}
         <img src={ad.imageUrl} alt={ad.alt} width={width} height={height} loading="lazy" className="block h-full w-full object-contain" />
       </a>
-    </aside>
+    </div>
   );
 }
 
@@ -121,7 +126,7 @@ export function SkinSlot({ page }: { page: PageType }) {
 
 function SkinLayer({ page }: { page: PageType }) {
   const ad = useAd("skin", page);
-  const region = useRef<HTMLElement>(null);
+  const region = useRef<HTMLDivElement>(null);
   useImpression(region, ad, "skin", page);
   if (!ad?.imageUrl) return null;
   // 100% of the fixed layer, not 100vw: vw includes a classic scrollbar and the layer does not, so on
@@ -130,9 +135,9 @@ function SkinLayer({ page }: { page: PageType }) {
   const gutter = `calc((100% - ${PAGE_COLUMN_PX}px) / 2)`;
   const href = clickHref(ad, page);
   return (
-    <aside ref={region} aria-label="Advertisement" data-ad-slot="skin" data-ad-house={ad.house ? "1" : undefined} className="pointer-events-none fixed inset-0 z-0" style={{ backgroundImage: `url("${ad.imageUrl}")`, backgroundPosition: "top center", backgroundRepeat: "no-repeat", backgroundSize: `${SLOT_SIZES.skin.width}px auto`, backgroundColor: "var(--color-stage)" }}>
+    <div ref={region} data-ad-slot="skin" data-ad-house={ad.house ? "1" : undefined} className="pointer-events-none fixed inset-0 z-0" style={{ backgroundImage: `url("${ad.imageUrl}")`, backgroundPosition: "top center", backgroundRepeat: "no-repeat", backgroundSize: `${SLOT_SIZES.skin.width}px auto`, backgroundColor: "var(--color-stage)" }}>
       <a href={href} target="_blank" rel="sponsored noopener noreferrer" aria-label={ad.alt || "Advertisement"} className="pointer-events-auto absolute inset-y-0 left-0 block" style={{ width: gutter }} />
       <a href={href} target="_blank" rel="sponsored noopener noreferrer" aria-label={ad.alt || "Advertisement"} className="pointer-events-auto absolute inset-y-0 right-0 block" style={{ width: gutter }} />
-    </aside>
+    </div>
   );
 }
