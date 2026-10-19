@@ -43,12 +43,18 @@ self.addEventListener("install", (event) => {
   );
 });
 
-// Drops every older cache, including v1's accumulated build output.
+// Drops every older cache, including v1's accumulated build output, and turns on navigation preload.
+//
+// Preload matters here precisely because every navigation is network-first: without it the browser
+// waits for this worker to boot before the request is even sent, so an installed reader pays worker
+// startup on every page to receive exactly what the network would have given them anyway. With it,
+// the request goes out in parallel with the boot.
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
       .then((keys) => Promise.all(keys.filter((key) => key !== SHELL).map((key) => caches.delete(key))))
+      .then(() => (self.registration.navigationPreload ? self.registration.navigationPreload.enable() : undefined))
       .then(() => self.clients.claim()),
   );
 });
@@ -64,5 +70,15 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
   if (BYPASS.test(url.pathname)) return;
 
-  event.respondWith(fetch(request).catch(() => caches.match(OFFLINE).then((hit) => hit ?? Response.error())));
+  // Use the preloaded response when there is one, otherwise go to the network as before.
+  event.respondWith(
+    (async () => {
+      try {
+        const preloaded = await event.preloadResponse;
+        return preloaded || (await fetch(request));
+      } catch {
+        return (await caches.match(OFFLINE)) ?? Response.error();
+      }
+    })(),
+  );
 });

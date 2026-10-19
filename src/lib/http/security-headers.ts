@@ -8,7 +8,11 @@ const CSP = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://plausible.io https://*.sentry.io",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://*.supabase.co https://i.ytimg.com https://tile.openstreetmap.org",
+  // `https:` rather than a host list, because display advertising means advertiser-hosted creative:
+  // sanitizeAdHtml accepts any https image, and there is already a live creative on evolvedpros.com
+  // that a host list would block the day this policy is enforced. The named hosts stay for the
+  // documentation value — they are where our own images come from.
+  "img-src 'self' data: blob: https: https://*.supabase.co https://i.ytimg.com https://tile.openstreetmap.org",
   // No www.youtube.com: the sanitizer rewrites every YouTube embed to youtube-nocookie, and leaving
   // the cookie-setting host in the policy would quietly permit one that slipped past it.
   "frame-src 'self' https://www.youtube-nocookie.com https://platform.twitter.com https://www.instagram.com https://challenges.cloudflare.com",

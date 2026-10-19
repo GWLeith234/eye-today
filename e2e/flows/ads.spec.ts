@@ -38,7 +38,7 @@ test("an approved creative records an impression and a click", async ({ browser 
   const reader = await browser.newContext();
   const page = await reader.newPage();
   await page.goto("/");
-  const link = page.locator('aside[data-ad-slot="leaderboard"]').getByRole("link", { name: sponsor });
+  const link = page.locator('[data-ad-slot="leaderboard"]').getByRole("link", { name: sponsor });
   await expect(link).toBeVisible();
   await expect(link.getByRole("img")).toHaveAttribute("src", /\/house-ads\/leaderboard-728x90\.png$/);
   // The leaderboard sits under the lead, so it may start below the fold.

@@ -1,4 +1,5 @@
 import type { AdSlotName, PageType } from "./slots";
+import { isReservedSectionSlug } from "@/lib/public/reserved";
 
 // Which units each page type carries. Placement is data so a page declares its type once and the
 // units follow; run of site means a campaign's creatives rotate through all of them. The skin is on
@@ -18,12 +19,10 @@ export const PLACEMENTS: Record<PageType, { top: AdSlotName[]; side: AdSlotName[
 // After which list item the in-river unit appears (0-based index of the item it follows).
 export const RIVER_AFTER = 3;
 
-const RESERVED = new Set([
-  "account", "admin", "api", "auth", "author", "contribute", "login", "preview", "search", "tag",
-  "write-for-us", "about", "contact", "advertise", "newsletter", "newsletters", "support",
-  "editorial-policy", "corrections", "privacy", "terms", "disclaimer", "ad-policy",
-  "community-guidelines", "classifieds", "contests", "news-feed", "legal-map", "tracker", "survey",
-]);
+// This used to be a second copy of the app's reserved first segments, kept in step by hand. The two
+// lists agreed, but a route added to one and not the other would have mislabelled every ad
+// impression on that page silently rather than failing — so there is one list now, and the switch
+// below claims the segments that have a page type of their own before this is consulted.
 
 // The page type of a public path, for units that live in the layout and cannot be told by the
 // page. Mirrors the routing: a first segment that is not an app route is a section, and a second
@@ -39,7 +38,7 @@ export function pageTypeFromPath(pathname: string | null): PageType {
     case "editions": return "editions";
     case "articles": return second ? "article" : "other";
     default:
-      if (RESERVED.has(first)) return "other";
+      if (isReservedSectionSlug(first)) return "other";
       return second ? "article" : "section";
   }
 }

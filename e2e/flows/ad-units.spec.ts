@@ -12,21 +12,21 @@ test("house ads fill the units on every page type", async ({ page }) => {
   test.skip(process.env.E2E_FULL !== "1", "Needs the seeded local Supabase with the house campaign.");
   for (const path of ["/", "/news", "/news/welcome-to-eye-today", "/directory", "/events", "/jobs", "/editions"]) {
     await page.goto(path);
-    const billboard = page.locator('aside[data-ad-slot="billboard"]');
+    const billboard = page.locator('[data-ad-slot="billboard"]');
     await expect(billboard, path).toBeVisible();
     await expect(billboard.getByRole("img"), `${path} billboard is the house artwork`).toHaveAttribute("src", /\/house-ads\/billboard-970x250\.png$/);
     if (path === "/") {
-      await expect(page.locator('aside[data-ad-slot="leaderboard"]'), "leaderboard band on the cover").toBeVisible();
-      await expect(page.locator('aside[data-ad-slot="half-page"]'), "half page on the cover").toBeVisible();
+      await expect(page.locator('[data-ad-slot="leaderboard"]'), "leaderboard band on the cover").toBeVisible();
+      await expect(page.locator('[data-ad-slot="half-page"]'), "half page on the cover").toBeVisible();
     }
     // There is no house skin: the takeover is sold or absent, never filled.
-    await expect(page.locator('aside[data-ad-slot="skin"]'), `${path} has no skin`).toHaveCount(0);
-    await expect(page.locator("aside[data-ad-house='1']").first(), `${path} shows a house ad`).toBeAttached();
+    await expect(page.locator('[data-ad-slot="skin"]'), `${path} has no skin`).toHaveCount(0);
+    await expect(page.locator("[data-ad-house='1']").first(), `${path} shows a house ad`).toBeAttached();
   }
   // The mobile banner is for phones only.
   await page.setViewportSize({ width: 390, height: 800 });
   await page.goto("/");
-  const banner = page.locator('aside[data-ad-slot="mobile-banner"]');
+  const banner = page.locator('[data-ad-slot="mobile-banner"]');
   await expect(banner).toBeVisible();
   await banner.getByRole("button", { name: "Close advertisement" }).click();
   await expect(banner).toHaveCount(0);
@@ -124,7 +124,7 @@ test("an advertiser buys a run-of-site campaign, an editor approves it, and it s
 
   // Not serving yet: the big box on the home page is still the house ad.
   await page.goto("/");
-  await expect(page.locator('aside[data-ad-slot="bigbox-1"]')).toHaveAttribute("data-ad-house", "1");
+  await expect(page.locator('[data-ad-slot="bigbox-1"]')).toHaveAttribute("data-ad-house", "1");
 
   const editor = await signIn(browser, "editor");
   await test.step("the editor finds it in the queue and approves it", async () => {
@@ -141,7 +141,7 @@ test("an advertiser buys a run-of-site campaign, an editor approves it, and it s
 
   await test.step("the creative serves on the home page and a click is counted on the home page type", async () => {
     await page.goto("/");
-    const image = page.locator('aside[data-ad-slot="bigbox-1"]').getByRole("img", { name: alt });
+    const image = page.locator('[data-ad-slot="bigbox-1"]').getByRole("img", { name: alt });
     await expect(image).toBeVisible();
     await image.scrollIntoViewIfNeeded();
     await page.waitForTimeout(1500);

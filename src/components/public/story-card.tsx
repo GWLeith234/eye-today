@@ -45,18 +45,6 @@ function CardMedia({
   );
 }
 
-export function HeroImage({
-  card,
-  sizes,
-  priority = false,
-}: {
-  card: Pick<ArticleCard, "hero_storage_path" | "hero_alt" | "hero_width" | "hero_height" | "title" | "section_slug" | "section_name">;
-  sizes: string;
-  priority?: boolean;
-}) {
-  return <CardMedia card={card as ArticleCard} sizes={sizes} priority={priority} />;
-}
-
 export function Kicker({ card }: { card: Pick<ArticleCard, "is_sponsored" | "section_name" | "section_slug"> }) {
   return (
     <p className="text-xs font-semibold uppercase tracking-widest">

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { capReached, parseFrequency, serializeFrequency, withServed } from "./frequency";
+import { pageTypeFromPath } from "./placements";
 import { imageFromHtml, pointLinksAt, sanitizeAdHtml } from "./sanitize";
 
 test("a script and a javascript: link sanitize to nothing usable", () => {
@@ -91,5 +92,28 @@ test("the billboard tops every page type and the takeover is never self-serve", 
   for (const name of AD_SLOT_NAMES) {
     if (name === "skin") continue;
     assert.ok(iab.has(`${SLOT_SIZES[name].width}x${SLOT_SIZES[name].height}`), `${name} is an IAB size`);
+  }
+});
+
+// The ad page type used to come from a second, hand-maintained copy of the app's reserved first
+// segments. A route added to one list and not the other would have mislabelled every impression on
+// that page silently. One list now — these pin the cases that differ from a plain section.
+test("page type follows the app's own reserved segments", () => {
+  assert.equal(pageTypeFromPath("/"), "home");
+  assert.equal(pageTypeFromPath("/news"), "section");
+  assert.equal(pageTypeFromPath("/news/a-story"), "article");
+
+  // Routes with a page type of their own are claimed before the reserved list is consulted.
+  assert.equal(pageTypeFromPath("/directory"), "directory");
+  assert.equal(pageTypeFromPath("/directory/listing/zed-clinic"), "directory");
+  assert.equal(pageTypeFromPath("/events"), "events");
+  assert.equal(pageTypeFromPath("/jobs"), "jobs");
+  assert.equal(pageTypeFromPath("/editions"), "editions");
+  assert.equal(pageTypeFromPath("/articles/a-story"), "article");
+
+  // Reserved app routes are "other" — including the two that render through ListPage and so used to
+  // report "section" from the page while the layout's units reported "other".
+  for (const path of ["/tag/ibogaine", "/author/jeff-davis", "/search", "/about", "/legal-map", "/tracker", "/survey", "/news-feed"]) {
+    assert.equal(pageTypeFromPath(path), "other", path);
   }
 });
