@@ -63,7 +63,11 @@ test("legal pages omit the draft status and keep the publisher notes", async ({ 
   expect(policy).toContain("Transcend Ibogaine Clinic");
   expect(policy).not.toContain("TODO for the publisher");
   expect(await (await request.get("/about")).text()).toContain("Jeff Davis");
-  expect(await (await request.get("/disclaimer")).text()).toContain("TODO for the publisher");
+  // The disclaimer carried its own editorial TODO in public until 18 Oct. No page a reader can open
+  // may show one — least of all the one they reach when something has gone wrong.
+  const disclaimer = await (await request.get("/disclaimer")).text();
+  expect(disclaimer).not.toContain("TODO for the publisher");
+  expect(disclaimer).toContain("emergency");
 });
 
 test("health reports the database when a real one is required", async ({ request }) => {

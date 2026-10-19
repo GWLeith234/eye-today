@@ -1,7 +1,7 @@
 import { countryName } from "@/lib/directory/countries";
-import { isTimeZone } from "@/lib/events/time";
+import { plateDate } from "@/lib/events/time";
 import type { Attendance, EventType } from "@/lib/events/types";
-import { onBand } from "@/lib/brand/palette";
+import { EVENT_TYPE_COLORS, onBand } from "@/lib/brand/palette";
 
 // Most of what gets listed here is somebody else's conference, and their artwork is theirs. So an
 // event with no picture of its own gets a plate drawn from its own facts instead of a grey box: the
@@ -13,16 +13,6 @@ import { onBand } from "@/lib/brand/palette";
 // only stands in. The plate repeats what the card already says in text, so it is hidden from screen
 // readers rather than read out twice.
 
-// Keyed to the section palette, so an events page sits in the same colour world as the paper.
-const FIELD: Record<EventType, string> = {
-  conference: "#1E5B4A",
-  retreat: "#976912",
-  webinar: "#2F6FA3",
-  integration_circle: "#6B4C9A",
-  training: "#A9472F",
-  other: "#3F3F46",
-};
-
 export type PosterEvent = {
   event_type: EventType;
   attendance: Attendance;
@@ -33,21 +23,6 @@ export type PosterEvent = {
   country_code: string | null;
 };
 
-function part(iso: string, tz: string, options: Intl.DateTimeFormatOptions): string {
-  return new Intl.DateTimeFormat("en-US", { timeZone: isTimeZone(tz) ? tz : "UTC", ...options }).format(new Date(iso));
-}
-
-// "27" for a single day, "27–29" when it runs on into the following days of the same month. An
-// event ending exactly at midnight does not run on the next day, so the end is nudged back 1ms —
-// the same rule the calendar grid uses.
-function days(event: PosterEvent): string {
-  const last = new Date(new Date(event.ends_at).getTime() - 1).toISOString();
-  const start = part(event.starts_at, event.tz, { day: "numeric" });
-  const end = part(last, event.tz, { day: "numeric" });
-  const sameMonth = part(event.starts_at, event.tz, { month: "short", year: "numeric" }) === part(last, event.tz, { month: "short", year: "numeric" });
-  return sameMonth && start !== end ? `${start}–${end}` : start;
-}
-
 // The city alone. The card beside the plate already gives the full "Tacoma, United States", and a
 // country name repeated here only ran off the edge of a 224px plate.
 function where(event: PosterEvent): string {
@@ -56,10 +31,12 @@ function where(event: PosterEvent): string {
 }
 
 export function EventPoster({ event }: { event: PosterEvent }) {
-  const field = FIELD[event.event_type] ?? FIELD.other;
+  const field = EVENT_TYPE_COLORS[event.event_type] ?? EVENT_TYPE_COLORS.other;
   const ink = onBand(field);
-  const month = part(event.starts_at, event.tz, { month: "short" });
-  const year = part(event.starts_at, event.tz, { year: "numeric" });
+  const date = plateDate(event.starts_at, event.ends_at, event.tz);
+  // An event that runs into another month needs both months, so it is set on two lines at a smaller
+  // size. Everything else keeps the big day and a single month beside it.
+  const spansMonths = Boolean(date.end?.month);
 
   return (
     <div
@@ -75,12 +52,25 @@ export function EventPoster({ event }: { event: PosterEvent }) {
       </svg>
       {/* No event-type word: the card already prints it an inch to the right, and the field colour
           carries the same signal without saying it twice. */}
-      <p className="relative flex items-baseline gap-2">
-        <span className="font-display text-5xl font-semibold leading-none">{days(event)}</span>
-        <span className="font-display text-xl font-semibold uppercase leading-none">{month}</span>
-      </p>
+      {spansMonths ? (
+        <p className="relative font-display text-3xl font-semibold leading-none">
+          <span className="block">
+            {date.start.day} <span className="text-xl uppercase">{date.start.month}</span>
+          </span>
+          <span className="block">
+            &ndash;{date.end!.day} <span className="text-xl uppercase">{date.end!.month}</span>
+          </span>
+        </p>
+      ) : (
+        <p className="relative flex items-baseline gap-2">
+          <span className="font-display text-5xl font-semibold leading-none">
+            {date.end ? `${date.start.day}–${date.end.day}` : date.start.day}
+          </span>
+          <span className="font-display text-xl font-semibold uppercase leading-none">{date.start.month}</span>
+        </p>
+      )}
       <p className="relative truncate text-xs font-semibold uppercase tracking-wider">
-        {where(event)} <span className="opacity-70">· {year}</span>
+        {where(event)} <span className="opacity-70">· {date.year}</span>
       </p>
     </div>
   );

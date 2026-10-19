@@ -4,6 +4,7 @@ import { test } from "node:test";
 import {
   AMBER,
   BRAND,
+  EVENT_TYPE_COLORS,
   INK,
   MUTED,
   PAPER,
@@ -26,6 +27,17 @@ test("section bands keep paper or white text at AA", () => {
   for (const color of Object.values(SECTION_COLORS)) {
     const foreground = onBand(color);
     assert.ok(passesAa(foreground, color), `${foreground} on ${color} is ${contrastRatio(foreground, color).toFixed(2)}`);
+  }
+});
+
+// The date on an event plate is the whole point of the plate, so every field colour has to carry it.
+test("event plate fields keep paper or white text at AA", () => {
+  for (const [type, color] of Object.entries(EVENT_TYPE_COLORS)) {
+    const foreground = onBand(color);
+    assert.ok(
+      passesAa(foreground, color),
+      `${type}: ${foreground} on ${color} is ${contrastRatio(foreground, color).toFixed(2)}`,
+    );
   }
 });
 

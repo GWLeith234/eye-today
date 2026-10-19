@@ -94,7 +94,9 @@ export function AdSlot({ name, page = "other", className = "" }: { name: AdSlotN
   return (
     <aside ref={region} aria-label="Advertisement" data-ad-slot={name} data-ad-house={ad.house ? "1" : undefined} className={`flex w-full flex-col items-center gap-1.5 border-y border-ad-line bg-ad-ground px-2 pb-2.5 pt-1.5 ${className}`}>
       <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted">Advertisement</p>
-      <a href={clickHref(ad, page)} target="_blank" rel="sponsored noopener noreferrer" className="block w-full max-w-full border border-ad-line bg-paper" style={{ maxWidth: width, aspectRatio: `${width} / ${height}` }}>
+      {/* An editor can save a creative with no alt text, and a link whose only content is an image
+          with an empty alt has no accessible name at all. The unit's own label stands in. */}
+      <a href={clickHref(ad, page)} target="_blank" rel="sponsored noopener noreferrer" aria-label={ad.alt ? undefined : "Advertisement"} className="block w-full max-w-full border border-ad-line bg-paper" style={{ maxWidth: width, aspectRatio: `${width} / ${height}` }}>
         {/* eslint-disable-next-line @next/next/no-img-element -- third-party ad creative at the unit's IAB size */}
         <img src={ad.imageUrl} alt={ad.alt} width={width} height={height} loading="lazy" className="block h-full w-full object-contain" />
       </a>
@@ -122,7 +124,10 @@ function SkinLayer({ page }: { page: PageType }) {
   const region = useRef<HTMLElement>(null);
   useImpression(region, ad, "skin", page);
   if (!ad?.imageUrl) return null;
-  const gutter = `calc((100vw - ${PAGE_COLUMN_PX}px) / 2)`;
+  // 100% of the fixed layer, not 100vw: vw includes a classic scrollbar and the layer does not, so on
+  // Windows and Linux a vw gutter overhangs the paper column and the outer few pixels of the story
+  // click through to the advertiser.
+  const gutter = `calc((100% - ${PAGE_COLUMN_PX}px) / 2)`;
   const href = clickHref(ad, page);
   return (
     <aside ref={region} aria-label="Advertisement" data-ad-slot="skin" data-ad-house={ad.house ? "1" : undefined} className="pointer-events-none fixed inset-0 z-0" style={{ backgroundImage: `url("${ad.imageUrl}")`, backgroundPosition: "top center", backgroundRepeat: "no-repeat", backgroundSize: `${SLOT_SIZES.skin.width}px auto`, backgroundColor: "var(--color-stage)" }}>
