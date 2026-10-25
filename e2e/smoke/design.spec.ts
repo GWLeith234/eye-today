@@ -7,6 +7,9 @@ test("the masthead shows the wordmark, the date and the section nav", async ({ p
   await expect(page.getByTestId("section-nav")).toBeAttached();
   await expect(page.getByRole("link", { name: "Support" }).first()).toBeVisible();
   await expect(page.getByText("Published by EvolveX360")).toBeVisible();
+  const publisher = page.getByRole("link", { name: "EvolveX360" });
+  await expect(publisher).toHaveAttribute("href", "https://www.evolvex360.com/");
+  await expect(publisher).not.toHaveAttribute("rel");
 });
 
 test("the mobile menu traps focus and Escape closes it", async ({ page }) => {

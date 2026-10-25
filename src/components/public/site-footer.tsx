@@ -84,7 +84,7 @@ export function SiteFooter({ sections }: { sections: Section[] }) {
       </div>
       <div className="border-t border-rule">
         <div className="mx-auto flex max-w-page flex-col gap-2 px-4 py-4 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
-          <p>Published by EvolveX360</p>
+          <p>Published by <a href="https://www.evolvex360.com/" className="hover:underline">EvolveX360</a></p>
           <p>
             <Link href="/disclaimer" className="hover:underline">Information only — not medical advice.</Link>
           </p>
